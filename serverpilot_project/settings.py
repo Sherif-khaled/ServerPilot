@@ -88,7 +88,8 @@ AUTH_USER_MODEL = 'Users.CustomUser'
 INSTALLED_APPS = [
     'daphne',
     'ServerPilot_API.Servers',
-    'ServerPilot_API.Customers.apps.CustomersConfig',
+    'ServerPilot_API.Customers',
+    'ServerPilot_API.audit_log.apps.AuditLogConfig',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
@@ -151,6 +152,8 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+import sys
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -161,6 +164,13 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
+# Use in-memory SQLite database for testing to avoid permission issues
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
 
 
 # Password validation

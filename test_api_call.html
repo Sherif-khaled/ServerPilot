@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API POST Test for Server Creation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input[type="text"], textarea { 
+            width: calc(100% - 20px); 
+            padding: 10px; 
+            margin-top: 5px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            margin-top: 20px; 
+            padding: 12px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre { 
+            background-color: #e9e9e9; 
+            padding: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .output-section { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Server Creation API Call</h1>
+
+        <label for="authToken">Auth Token (from your app's localStorage, key 'authToken'):</label>
+        <textarea id="authToken" rows="4" placeholder="Paste your authentication token here"></textarea>
+
+        <label for="customerId">Customer ID:</label>
+        <input type="text" id="customerId" value="3" placeholder="Enter Customer ID (e.g., 3)">
+
+        <label for="serverName">Server Name:</label>
+        <input type="text" id="serverName" value="Test Server via Script" placeholder="Enter Server Name">
+
+        <label for="serverIp">Server IP:</label>
+        <input type="text" id="serverIp" value="192.168.1.200" placeholder="Enter Server IP">
+
+        <button onclick="makeApiCall()">Make API Call</button>
+
+        <div class="output-section">
+            <h2>Request Details:</h2>
+            <pre id="requestDetails">Fill in the details and click "Make API Call".</pre>
+        </div>
+
+        <div class="output-section">
+            <h2>Response Status:</h2>
+            <pre id="responseStatus">...</pre>
+        </div>
+
+        <div class="output-section">
+            <h2>Response Headers:</h2>
+            <pre id="responseHeaders">...</pre>
+        </div>
+
+        <div class="output-section">
+            <h2>Response Body (JSON):</h2>
+            <pre id="responseBody">...</pre>
+        </div>
+    </div>
+
+    <script>
+        async function makeApiCall() {
+            const token = document.getElementById('authToken').value.trim();
+            const customerId = document.getElementById('customerId').value.trim();
+            const serverName = document.getElementById('serverName').value.trim();
+            const serverIp = document.getElementById('serverIp').value.trim();
+
+            if (!token) {
+                alert('Please provide an Auth Token.');
+                document.getElementById('responseBody').textContent = 'Error: Auth Token is missing.';
+                return;
+            }
+            if (!customerId) {
+                alert('Please provide a Customer ID.');
+                document.getElementById('responseBody').textContent = 'Error: Customer ID is missing.';
+                return;
+            }
+
+            const url = `http://127.0.0.1:8000/api/customers/${customerId}/servers/`;
+            const payload = {
+                server_name: serverName,
+                server_ip: serverIp,
+                ssh_port: 22,
+                login_using_root: false,
+                is_active: true,
+            };
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`
+            };
+
+            document.getElementById('requestDetails').textContent = `URL: POST ${url}\n\nHeaders: ${JSON.stringify(headers, null, 2)}\n\nPayload: ${JSON.stringify(payload, null, 2)}`;
+            document.getElementById('responseStatus').textContent = 'Sending request...';
+            document.getElementById('responseHeaders').textContent = '...';
+            document.getElementById('responseBody').textContent = '...';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                document.getElementById('responseStatus').textContent = `${response.status} ${response.statusText}`;
+                
+                const responseHeadersObj = {};
+                response.headers.forEach((value, name) => {
+                    responseHeadersObj[name] = value;
+                });
+                document.getElementById('responseHeaders').textContent = JSON.stringify(responseHeadersObj, null, 2);
+
+                let responseDataText = await response.text();
+                try {
+                    const responseDataJson = JSON.parse(responseDataText);
+                    document.getElementById('responseBody').textContent = JSON.stringify(responseDataJson, null, 2);
+                } catch (e) {
+                    document.getElementById('responseBody').textContent = responseDataText;
+                }
+                
+
+            } catch (error) {
+                document.getElementById('responseStatus').textContent = `Network or other error: ${error.message}`;
+                document.getElementById('responseBody').textContent = error.stack || 'No stack trace available.';
+                console.error('API Call Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

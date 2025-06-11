@@ -15,6 +15,7 @@ import ServerForm from './features/servers/components/ServerForm'; // Import Ser
 import SettingsPage from './features/settings/pages/SettingsPage';
 import UserCreateEditPage from './features/users/pages/UserCreateEditPage'; // Import the new page
 import ProtectedRoute from './features/core/components/ProtectedRoute'; // Import ProtectedRoute
+import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/servers/:serverId/console" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SshTerminalPage /></Dashboard>} />
         {/* Add other protected dashboard routes here if needed */}
         <Route path="/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SettingsPage /></Dashboard>} />
+        <Route path="/audit-logs" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AuditLogList /></Dashboard>} />
       </Route>
     </Routes>
   );

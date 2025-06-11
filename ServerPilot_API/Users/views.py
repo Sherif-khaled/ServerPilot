@@ -63,7 +63,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return ProfileSerializer
 
 from .permissions import IsAdminOrSelf
-from .logging_utils import log_user_action
+from ServerPilot_API.audit_log.services import log_action
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -91,7 +91,7 @@ class RegisterView(generics.CreateAPIView):
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email]
             )
-            log_user_action(user, 'register', f'Activation email sent to {user.email}')
+            log_action(user, 'register', self.request, f'Activation email sent to {user.email}')
         except Exception as e:
             raise APIException(f'Error sending activation email: {e}')
 
@@ -103,7 +103,7 @@ class ActivateView(views.APIView):
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            log_user_action(user, 'activate', 'CustomUser activated account')
+            log_action(user, 'activate', request, 'User activated account')
             return Response({'status': 'activated'})
         return Response({'error': 'Invalid token'}, status=400)
 
@@ -112,9 +112,9 @@ class LogoutView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        user = request.user
+        log_action(user=user, action='logout', request=request, details='User logged out successfully.')
         logout(request)
-        # Optionally, log the logout action if you have a logging utility
-        # log_user_action(request.user, 'logout', 'User logged out') 
         return Response({'status': 'logged out'}, status=status.HTTP_200_OK)
 
 # Login (basic)
@@ -160,7 +160,7 @@ class LoginView(views.APIView):
             from django.utils import timezone
             user.last_login = timezone.now()
             user.save(update_fields=['last_login'])
-            log_user_action(user, 'login', 'User logged in successfully')
+            log_action(user=user, action='login', request=request, details='User logged in successfully.')
 
             # Prepare response data, adding a flag if MFA setup is needed.
             profile_data = ProfileSerializer(user, context={'request': request}).data
@@ -191,7 +191,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
     def perform_update(self, serializer):
         instance = serializer.save()
-        log_user_action(instance, 'profile_update', 'CustomUser updated profile')
+        log_action(instance, 'profile_update', self.request, 'User updated profile')
 
 # Password change
 class PasswordChangeView(views.APIView):
@@ -201,13 +201,22 @@ class PasswordChangeView(views.APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = request.user
-        if not user.check_password(serializer.validated_data['old_password']):
-            return Response({'error': 'Wrong old password'}, status=400)
-        user.set_password(serializer.validated_data['new_password'])
+
+        # Check old password
+        if not user.check_password(serializer.validated_data.get('old_password')):
+            return Response({'error': 'Wrong old password.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set new password
+        user.set_password(serializer.validated_data.get('new_password'))
         user.save()
+        
+        # Log the action
+        log_action(user=user, action='password_change', request=request, details='User changed their password successfully.')
+        
+        # Keep the user logged in
         update_session_auth_hash(request, user)
-        log_user_action(user, 'password_change', 'CustomUser changed password')
-        return Response({'status': 'password changed'})
+        
+        return Response({'status': 'password changed'}, status=status.HTTP_200_OK)
 
 # MFA Views
 def get_user_totp_device(user):
@@ -374,7 +383,7 @@ class MFAVerifySetupView(views.APIView):
                 device.save()
                 user.mfa_enabled = True
                 user.save()
-                log_user_action(user, 'mfa_enable', 'MFA has been enabled.')
+                log_action(user, 'mfa_enable', request, 'MFA has been enabled.')
             return Response({'status': 'MFA enabled successfully.'})
         else:
             # Log more details about the failure
