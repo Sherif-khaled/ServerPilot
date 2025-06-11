@@ -5,6 +5,7 @@ import logging
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from ..models import Server
+from ServerPilot_API.audit_log.services import log_action
 from typing import Optional
 
 class SshConsumer(AsyncWebsocketConsumer):
@@ -52,6 +53,7 @@ class SshConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
         self.logger.info(f"WebSocket connected for user {self.user.username} to server {self.server.id}")
+        await self.log_ssh_connect()
         
         conn_details = await self.get_ssh_details_from_db()
         asyncio.create_task(self.start_ssh_session(conn_details))
@@ -149,6 +151,7 @@ class SshConsumer(AsyncWebsocketConsumer):
             return
 
         full_command_str = data_str # Frontend now sends the newline
+        await self.log_command(full_command_str)
 
         try:
             underlying_channel_encoding = self.ssh_stdin._chan._encoding
@@ -182,6 +185,24 @@ class SshConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             self.logger.error(f"Error resizing PTY: {e}")
             await self.safe_send_json({'type': 'error', 'message': f'Error resizing PTY: {str(e)}'})
+
+    @database_sync_to_async
+    def log_ssh_connect(self):
+        log_action(
+            self.user,
+            'ssh_connect',
+            None, # No request object available in consumer
+            f'Connected to server {self.server.server_name} (ID: {self.server.id})'
+        )
+
+    @database_sync_to_async
+    def log_command(self, command):
+        log_action(
+            self.user,
+            'ssh_command_execute',
+            None, # No request object available in consumer
+            f'Executed command on server {self.server.server_name} (ID: {self.server.id}): {command.strip()}'
+        )
 
     async def start_ssh_session(self, conn_details):
         self.logger.info(f"Starting SSH session with: {conn_details}")

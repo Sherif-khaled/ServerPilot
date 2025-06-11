@@ -30,8 +30,8 @@ const apiClient = axios.create({
 // Add CSRF token to requests
 apiClient.interceptors.request.use(
   (config) => {
-    // Only add CSRF token for mutating requests
-    if (['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    // Add CSRF token to all requests
+    if (config.method) {
       const csrfToken = getCookie('csrftoken');
       if (csrfToken) {
         config.headers['X-CSRFToken'] = csrfToken;

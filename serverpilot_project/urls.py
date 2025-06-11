@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/', api_root, name='api-root'),
     path('api/users/', include('ServerPilot_API.Users.urls')),
     path('api/customers/', include('ServerPilot_API.Customers.urls')), # Route for Customers API
+    path('api/audit/', include('ServerPilot_API.audit_log.urls')),
 ]
 
 if settings.DEBUG:

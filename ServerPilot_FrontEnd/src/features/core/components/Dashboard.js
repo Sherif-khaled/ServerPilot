@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, Switch, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, useMediaQuery } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom'; // Removed Outlet
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -59,6 +59,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
     // Conditionally show the 'Users' link for admin users (is_staff)
     ...(user?.is_staff ? [{ text: 'Users', icon: <People />, path: '/users' }] : []),
     { text: 'Customers', icon: <ContactsIcon />, path: '/customers' },
+    ...(user?.is_staff ? [{ text: 'Audit Logs', icon: <PolicyIcon />, path: '/audit-logs' }] : []),
 
     { text: 'Logout', icon: <LogoutIcon />, action: handleLogout },
   ];

@@ -13,6 +13,7 @@ from ServerPilot_API.Customers.models import Customer
 from .serializers import ServerSerializer
 from .permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
 from rest_framework import exceptions
+from ServerPilot_API.audit_log.services import log_action
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,12 @@ class ServerViewSet(viewsets.ModelViewSet):
             try:
                 server = serializer.save(customer=customer)
                 logger.info(f"Successfully created server: {server.id}")
+                log_action(
+                    self.request.user,
+                    'server_create',
+                    self.request,
+                    f'Created server {server.server_name} (ID: {server.id}) for customer {customer.customer_name} (ID: {customer.id})'
+                )
             except Exception as save_error:
                 logger.error(f"Error saving server: {str(save_error)}", exc_info=True)
                 raise
@@ -130,6 +137,12 @@ class ServerViewSet(viewsets.ModelViewSet):
 
             if success:
                 logger.info(f"Connection test successful for server {server.id}.")
+                log_action(
+                    request.user,
+                    'server_test_connection',
+                    request,
+                    f'Successfully tested connection to server {server.server_name} (ID: {server.id})'
+                )
                 return Response({
                     'status': 'success',
                     'message': 'Connection test successful.',
@@ -137,6 +150,12 @@ class ServerViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_200_OK)
             else:
                 logger.error(f"Connection test failed for server {server.id}: {output}")
+                log_action(
+                    request.user,
+                    'server_test_connection_failed',
+                    request,
+                    f'Failed to test connection to server {server.server_name} (ID: {server.id}). Error: {output}'
+                )
                 return Response({
                     'status': 'error',
                     'message': 'Connection test failed.',
@@ -144,16 +163,37 @@ class ServerViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Unexpected error during connection test for server {server.id}: {str(e)}", exc_info=True)
+            log_action(
+                request.user,
+                'server_test_connection_error',
+                request,
+                f'Error testing connection to server {server.server_name} (ID: {server.id}). Error: {str(e)}'
+            )
             return Response({
                 'status': 'error',
                 'message': 'An unexpected error occurred.',
                 'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # Optional: Override other methods like perform_update, perform_destroy if specific logic is needed.
-    # For example, to prevent changing the 'customer' field during an update:
-    # def perform_update(self, serializer):
-    #     serializer.save(customer=self.get_object().customer) # Ensure customer is not changed
+    def perform_update(self, serializer):
+        server = serializer.save()
+        log_action(
+            self.request.user,
+            'server_update',
+            self.request,
+            f'Updated server {server.server_name} (ID: {server.id})'
+        )
+
+    def perform_destroy(self, instance):
+        server_name = instance.server_name
+        server_id = instance.id
+        instance.delete()
+        log_action(
+            self.request.user,
+            'server_delete',
+            self.request,
+            f'Deleted server {server_name} (ID: {server_id})'
+        )
 
 
 class AsyncAPIView(APIView):
