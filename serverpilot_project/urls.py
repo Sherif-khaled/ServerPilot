@@ -27,7 +27,7 @@ urlpatterns = [
     path('api/servers/', include('ServerPilot_API.Servers.urls')),
     path('api/customers/', include('ServerPilot_API.Customers.urls')), 
     path('api/audit/', include('ServerPilot_API.audit_log.urls')),
-    path('api/security/', include('security.urls')),
+    path('api/security/', include('ServerPilot_API.security.urls')),
     path('api/users/', include('ServerPilot_API.Users.urls')),
 ]
 

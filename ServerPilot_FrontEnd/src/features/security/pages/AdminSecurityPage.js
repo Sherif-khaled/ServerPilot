@@ -18,7 +18,7 @@ const AdminSecurityPage = () => {
         const fetchedSettings = {
           recaptcha_site_key: response.data.recaptcha_site_key || '',
           recaptcha_secret_key: response.data.recaptcha_secret_key || '',
-          recaptcha_enabled: response.data.recaptcha_enabled === 'True',
+          recaptcha_enabled: response.data.recaptcha_enabled,
         };
         setSettings(fetchedSettings);
       } catch (err) {

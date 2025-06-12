@@ -5,7 +5,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from security.models import PasswordHistory, PasswordPolicy
+
 
 class RecoveryCode(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recovery_codes')
@@ -55,6 +55,7 @@ class CustomUser(AbstractUser):
 
     def set_password(self, raw_password):
         # If user has a usable password, save old password to history
+        from ServerPilot_API.security.models import PasswordPolicy, PasswordHistory
         if self.has_usable_password():
             policy = PasswordPolicy.get_policy()
             if policy.password_history_limit > 0:
@@ -71,6 +72,7 @@ class CustomUser(AbstractUser):
 
     @property
     def is_password_expired(self):
+        from ServerPilot_API.security.models import PasswordPolicy
         policy = PasswordPolicy.get_policy()
         if not policy or policy.password_expiration_days == 0:
             return False
