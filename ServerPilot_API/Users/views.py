@@ -204,11 +204,11 @@ class GitHubAuthView(views.APIView):
         # log_user_action(user, 'login_github', 'CustomUser logged in via GitHub')
         return Response({'status': 'GitHub login not implemented in backend-only example'})
 
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 # Profile view/update
 class ProfileView(generics.RetrieveUpdateAPIView):
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_object(self):
