@@ -245,19 +245,33 @@ class PasswordResetRequestView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
         
-        recaptcha_response = request.data.get('recaptcha_token')
-        if not recaptcha_response:
-            return Response({'detail': 'reCAPTCHA token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        recaptcha_enabled_setting = Setting.objects.filter(name='recaptcha_enabled').first()
+        recaptcha_enabled = recaptcha_enabled_setting and recaptcha_enabled_setting.value.lower() == 'true'
 
-        data = {
-            'secret': settings.GOOGLE_RECAPTCHA_SECRET_KEY, 
-            'response': recaptcha_response
-        }
-        r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
-        result = r.json()
+        if recaptcha_enabled:
+            recaptcha_response = request.data.get('recaptcha_token')
+            if not recaptcha_response:
+                return Response({'detail': 'reCAPTCHA token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not result.get('success'):
-            return Response({'detail': 'Invalid reCAPTCHA. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+            secret_key_setting = Setting.objects.filter(name='recaptcha_secret_key').first()
+            if not secret_key_setting or not secret_key_setting.value:
+                return Response({'detail': 'reCAPTCHA is not configured correctly on the server.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            data = {
+                'secret': secret_key_setting.value,
+                'response': recaptcha_response
+            }
+            try:
+                r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data, timeout=5)
+                r.raise_for_status()  # Raises an exception for 4XX/5XX responses
+                result = r.json()
+                if not result.get('success'):
+                    # Consider logging the error codes from Google for debugging
+                    # result.get('error-codes')
+                    return Response({'detail': 'Invalid reCAPTCHA. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+            except requests.exceptions.RequestException as e:
+                # Log the exception e
+                return Response({'detail': 'Could not verify reCAPTCHA.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         try:
             user = CustomUser.objects.get(email__iexact=email)
