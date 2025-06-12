@@ -87,7 +87,7 @@ class ServerViewSet(viewsets.ModelViewSet):
                     self.request.user,
                     'server_create',
                     self.request,
-                    f'Created server {server.server_name} (ID: {server.id}) for customer {customer.customer_name} (ID: {customer.id})'
+                    f'Created server {server.server_name} (ID: {server.id}) for customer {customer.first_name} {customer.last_name} (ID: {customer.id})'
                 )
             except Exception as save_error:
                 logger.error(f"Error saving server: {str(save_error)}", exc_info=True)
