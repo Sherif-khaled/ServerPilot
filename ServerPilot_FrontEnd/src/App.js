@@ -16,6 +16,9 @@ import SettingsPage from './features/settings/pages/SettingsPage';
 import UserCreateEditPage from './features/users/pages/UserCreateEditPage'; // Import the new page
 import ProtectedRoute from './features/core/components/ProtectedRoute'; // Import ProtectedRoute
 import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
+import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
+import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
+import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
   const navigate = useNavigate();
@@ -29,6 +32,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><DashboardPage /></Dashboard>} />
         <Route path="/profile" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserProfile /></Dashboard>} />
+        <Route path="/change-password" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ChangePasswordPage /></Dashboard>} />
         <Route path="/users" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserList /></Dashboard>} />
         <Route path="/users/new" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserCreateEditPage /></Dashboard>} />
         <Route path="/users/edit/:userId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserCreateEditPage /></Dashboard>} />
@@ -45,6 +49,8 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         {/* Add other protected dashboard routes here if needed */}
         <Route path="/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SettingsPage /></Dashboard>} />
         <Route path="/audit-logs" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AuditLogList /></Dashboard>} />
+        <Route path="/password-policy" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><PasswordPolicyPage /></Dashboard>} />
+        <Route path="/database-management" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><DatabaseManagementPage /></Dashboard>} />
       </Route>
     </Routes>
   );
