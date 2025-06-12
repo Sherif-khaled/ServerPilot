@@ -178,6 +178,12 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                       </ListItemIcon>
                       <ListItemText primary="Database Management" />
                     </ListItem>
+                    <ListItem button sx={{ pl: 4 }} component={Link} to="/admin/settings" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                      <ListItemIcon>
+                        <SettingsIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Settings" />
+                    </ListItem>
                   </List>
                 </Collapse>
               </>

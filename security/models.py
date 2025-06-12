@@ -3,17 +3,26 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+class Setting(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    value = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
 class PasswordPolicy(models.Model):
     """
     A singleton model to store the system-wide password policy.
     """
     min_length = models.PositiveIntegerField(default=8, help_text=_("Minimum password length."))
-    require_uppercase = models.BooleanField(default=True, help_text=_("Require at least one uppercase letter."))
-    require_lowercase = models.BooleanField(default=True, help_text=_("Require at least one lowercase letter."))
-    require_number = models.BooleanField(default=True, help_text=_("Require at least one number."))
-    require_symbol = models.BooleanField(default=True, help_text=_("Require at least one special character."))
-    password_expiration_days = models.PositiveIntegerField(default=90, help_text=_("Number of days until a password expires. 0 for no expiration."))
-    password_history_limit = models.PositiveIntegerField(default=5, help_text=_("Number of old passwords to remember to prevent reuse."))
+    max_length = models.PositiveIntegerField(null=True, blank=True)
+    uppercase_required = models.BooleanField(default=True, help_text=_("Require at least one uppercase letter."))
+    lowercase_required = models.BooleanField(default=True, help_text=_("Require at least one lowercase letter."))
+    digit_required = models.BooleanField(default=True, help_text=_("Require at least one number."))
+    special_char_required = models.BooleanField(default=True, help_text=_("Require at least one special character."))
+    special_characters = models.CharField(max_length=255, default=r"!@#$%^&*()_+-=[]{};':\|,.<>/?")
+    history_limit = models.PositiveIntegerField(default=3, help_text=_("Number of old passwords to remember to prevent reuse."))
+    expiry_days = models.PositiveIntegerField(default=90, help_text=_("Number of days until a password expires. 0 for no expiration."))
 
     def save(self, *args, **kwargs):
         """

@@ -19,6 +19,7 @@ import AuditLogList from './features/audit/components/AuditLogList'; // Import A
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
 import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
 import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
+import AdminSettingsPage from './features/administration/pages/AdminSettingsPage';
 import ForgotPassword from './features/users/components/ForgotPassword';
 import ResetPassword from './features/users/components/ResetPassword';
 
@@ -55,6 +56,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/audit-logs" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AuditLogList /></Dashboard>} />
         <Route path="/password-policy" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><PasswordPolicyPage /></Dashboard>} />
         <Route path="/database-management" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><DatabaseManagementPage /></Dashboard>} />
+        <Route path="/admin/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AdminSettingsPage /></Dashboard>} />
       </Route>
     </Routes>
   );
