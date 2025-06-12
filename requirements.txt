@@ -13,3 +13,4 @@ asyncssh>=2.13,<3.0
 pytest-asyncio>=0.21,<0.24
 webauthn>=1.6.0,<2.0.0
 dotenv
+django-filter>=24.2

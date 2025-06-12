@@ -8,7 +8,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'profiles', UserViewSet, basename='user')
+router.register(r'', UserViewSet, basename='user') # Changed from 'profiles' to '' to make it the base
 router.register(r'admin/users', UserAdminViewSet, basename='admin-users')
 router.register(r'admin/logs', UserActionLogViewSet, basename='admin-logs')
 router.register(r'webauthn', WebAuthnViewSet, basename='webauthn')

@@ -49,8 +49,16 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action # Added for custom actions
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = CustomUser.objects.all()
     serializer_class = ProfileSerializer
+
+    def get_queryset(self):
+        """
+        Optionally disables pagination if the `all` query parameter is set to `true`.
+        """
+        queryset = CustomUser.objects.all()
+        if self.request.query_params.get('all', '').lower() == 'true':
+            self.pagination_class = None  # Disable pagination for this request
+        return queryset
 
     def get_permissions(self):
         if self.action == 'create':
@@ -58,6 +66,8 @@ class UserViewSet(viewsets.ModelViewSet):
         return [IsAdminUser()]
 
     def get_serializer_class(self):
+        if self.action == 'list':
+            return UserListSerializer
         if self.action == 'create':
             return RegisterSerializer
         return ProfileSerializer
@@ -519,15 +529,15 @@ class UserAdminViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        log_user_action(user, 'admin_create_user', f'Admin {self.request.user.username} created user {user.username}')
+        log_action(user=self.request.user, action='admin_create_user', request=self.request, details=f'Admin {self.request.user.username} created user {user.username}')
 
     def perform_update(self, serializer):
         user = serializer.save()
-        log_user_action(user, 'admin_update_user', f'Admin {self.request.user.username} updated user {user.username}')
+        log_action(user=self.request.user, action='admin_update_user', request=self.request, details=f'Admin {self.request.user.username} updated user {user.username}')
 
     def perform_destroy(self, instance):
         user_username = instance.username # Capture username before deletion
-        log_user_action(instance, 'admin_delete_user', f'Admin {self.request.user.username} deleted user {user_username}')
+        log_action(user=self.request.user, action='admin_delete_user', request=self.request, details=f'Admin {self.request.user.username} deleted user {user_username}')
         instance.delete()
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
@@ -625,6 +635,8 @@ class RecoveryCodeViewSet(viewsets.GenericViewSet):
         # Also reset the verification status, forcing user to re-confirm
         user.recovery_codes_verified = False
         user.save(update_fields=['recovery_codes_verified'])
+
+        log_action(user=user, action='generate_recovery_codes', request=request, details='User generated new recovery codes.')
 
         return Response({'codes': new_codes, 'verified': user.recovery_codes_verified}, status=status.HTTP_201_CREATED)
 

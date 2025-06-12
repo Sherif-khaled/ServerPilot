@@ -200,6 +200,38 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     </>
                 )}
                 <Box>
+                    <FormControl fullWidth>
+                        <InputLabel id="is_active-label">Status</InputLabel>
+                        <Select
+                            labelId="is_active-label"
+                            id="is_active"
+                            name="is_active"
+                            value={formData.is_active}
+                            onChange={handleChange}
+                            label="Status"
+                        >
+                            <MenuItem value={true}>Active</MenuItem>
+                            <MenuItem value={false}>Inactive</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Box>
+                    <FormControl fullWidth>
+                        <InputLabel id="is_staff-label">Role</InputLabel>
+                        <Select
+                            labelId="is_staff-label"
+                            id="is_staff"
+                            name="is_staff"
+                            value={formData.is_staff}
+                            onChange={handleChange}
+                            label="Role"
+                        >
+                            <MenuItem value={true}>Admin</MenuItem>
+                            <MenuItem value={false}>User</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Box>
                     <FormControl fullWidth sx={{ mt: 1 }}>
                         <InputLabel id="role-select-label">Role</InputLabel>
                         <Select
