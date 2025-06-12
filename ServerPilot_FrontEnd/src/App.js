@@ -19,6 +19,8 @@ import AuditLogList from './features/audit/components/AuditLogList'; // Import A
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
 import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
 import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
+import ForgotPassword from './features/users/components/ForgotPassword';
+import ResetPassword from './features/users/components/ResetPassword';
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
   const navigate = useNavigate();
@@ -26,6 +28,8 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
     <Routes>
       <Route path="/login" element={<UserLoginForm onLoginSuccess={() => navigate("/profile", { replace: true })} />} />
       <Route path="/register" element={<UserRegisterForm />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Protected Routes */}

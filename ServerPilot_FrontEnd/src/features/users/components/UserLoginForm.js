@@ -4,6 +4,7 @@ import { challengeMfa } from '../../../api/userService';
 import { Box, TextField, Button, Typography, Alert, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../AuthContext';
+import { Link as RouterLink } from 'react-router-dom';
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -95,7 +96,7 @@ const StyledButton = styled(Button)({
 
 export default function UserLoginForm({ onLoginSuccess }) {
   useEffect(() => {
-    api.get('/users/csrf/').catch(err => console.error('CSRF pre-flight failed:', err));
+    api.get('users/csrf/').catch(err => console.error('CSRF pre-flight failed:', err));
   }, []);
 
   const { loginAuth } = useAuth();
@@ -118,7 +119,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
     }
 
     const timerId = setTimeout(() => {
-        api.get(`/users/profile-picture/${form.username}/`)
+        api.get(`users/profile-picture/${form.username}/`)
             .then(response => {
                 setProfilePicUrl(response.data.profile_photo_url);
             })
@@ -136,7 +137,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/users/login/', form, {
+      const response = await api.post('users/login/', form, {
         withCredentials: true,
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
@@ -250,7 +251,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
                   control={<Checkbox value="remember" sx={{color: 'rgba(255, 255, 255, 0.7)', '&.Mui-checked': { color: '#2196F3' }}}/>}
                   label="Remember me"
                 />
-                <Link href="#" variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': {color: '#fff'} }}>
+                <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ color: '#fff', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                   Forgot Password?
                 </Link>
               </Box>
