@@ -1,25 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useParams, useNavigate } from 'react-router-dom'; 
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Button, Typography, Paper, List, ListItem, ListItemText,
   ListItemIcon, IconButton, CircularProgress, Alert, Dialog,
   DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, Chip,
-  Tooltip, Menu, MenuItem
+  Tooltip, Menu, MenuItem, Grid, Card, CardContent
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DnsIcon from '@mui/icons-material/Dns'; 
-import PowerIcon from '@mui/icons-material/Power'; 
+import DnsIcon from '@mui/icons-material/Dns';
+import PowerIcon from '@mui/icons-material/Power';
 import PowerOffIcon from '@mui/icons-material/PowerOff';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import {
+  ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
+} from 'recharts';
 
 import { getServers, deleteServer, testServerConnection, getServerInfo } from '../../../api/serverService';
-import ServerForm from './ServerForm'; 
+import ServerForm from './ServerForm';
+
+const COLORS = ['#0088FE', '#FF8042']; // Blue for Used, Orange for Available 
 
 export default function ServerList({ customerId: propCustomerId }) {
   const { customerId: paramCustomerId } = useParams(); 
@@ -32,7 +38,7 @@ export default function ServerList({ customerId: propCustomerId }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serverToDelete, setServerToDelete] = useState(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
-  const [serverInfo, setServerInfo] = useState(null);
+  const [serverInfo, setServerInfo] = useState({ data: null, error: null, serverName: '' });
   const [infoLoading, setInfoLoading] = useState(false);
   const [testConnectionStatus, setTestConnectionStatus] = useState({}); 
 
@@ -109,7 +115,7 @@ export default function ServerList({ customerId: propCustomerId }) {
 
   const handleCloseInfoModal = () => {
     setInfoModalOpen(false);
-    setServerInfo(null);
+    setServerInfo({ data: null, error: null, serverName: '' });
   };
 
   const handleOpenModal = (server = null) => {
@@ -265,41 +271,151 @@ export default function ServerList({ customerId: propCustomerId }) {
       </Dialog>
 
       {/* Server Info Modal */}
-      <Dialog open={infoModalOpen} onClose={handleCloseInfoModal} fullWidth maxWidth="sm">
-        <DialogTitle>Server Info: {serverInfo?.serverName}</DialogTitle>
-        <DialogContent>
-          {infoLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : serverInfo?.error ? (
-            <Alert severity="error">{serverInfo.error}</Alert>
-          ) : serverInfo?.data ? (
-            <List dense>
-              <ListItem>
-                <ListItemText primary="Operating System" secondary={serverInfo.data.os} />
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText primary="CPU Usage" secondary={serverInfo.data.cpu_usage} />
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText primary="Memory Usage" secondary={serverInfo.data.memory_usage} />
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText primary="Disk Usage" secondary={serverInfo.data.disk_usage} />
-              </ListItem>
-            </List>
-          ) : (
-            <Typography>No information available.</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseInfoModal}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      {infoModalOpen && (
+        <Dialog open={infoModalOpen} onClose={handleCloseInfoModal} fullWidth maxWidth="md">
+          <DialogTitle>Server Statistics: {serverInfo?.serverName}</DialogTitle>
+          <DialogContent>
+            {infoLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>
+            ) : serverInfo?.error ? (
+              <Alert severity="error">{serverInfo.error}</Alert>
+            ) : serverInfo?.data ? (
+              (() => {
+              // Safely destructure and parse CPU usage to a number
+              const { os, cpu_usage: cpuUsageStr, memory = {}, swap = {}, disks = [] } = serverInfo.data;
+              const cpu_usage = cpuUsageStr != null ? parseFloat(cpuUsageStr) : null;
+
+              // Prepare data for charts
+              const memoryChartData = [
+                { name: 'Used', value: memory.used_gb || 0 },
+                { name: 'Available', value: memory.available_gb || 0 }
+              ];
+              
+              const cpuChartData = cpu_usage != null ? [
+                { name: 'Used', value: cpu_usage },
+                { name: 'Free', value: 100 - cpu_usage }
+              ] : [];
+
+              return (
+                <Grid container spacing={3} sx={{ mt: 1 }}>
+                  {/* OS Info */}
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>System Overview</Typography>
+                        {os && <Typography variant="body2"><strong>OS:</strong> {os}</Typography>}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  {/* CPU Usage Chart */}
+                  {cpu_usage != null && (
+                    <Grid item xs={12} md={6}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>CPU Usage</Typography>
+                          <ResponsiveContainer width="110%" height={170}>
+                            <PieChart>
+                              <Pie
+                                data={cpuChartData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                paddingAngle={5}
+                                dataKey="value"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {cpuChartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <RechartsTooltip formatter={(value) => `${value.toFixed(2)}%`} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                            Usage: {cpu_usage.toFixed(2)}%
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+
+                  {/* Memory Chart and Info */}
+                  {memory.total_gb != null && (
+                    <Grid item xs={12} md={6}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>Memory Usage</Typography>
+                          <ResponsiveContainer width="110%" height={170}>
+                            <PieChart>
+                              <Pie
+                                data={memoryChartData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                paddingAngle={5}
+                                dataKey="value"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {memoryChartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <RechartsTooltip formatter={(value) => `${value.toFixed(2)} GB`} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                            Total: {memory.total_gb} GB | Used: {memory.used_gb} GB | Available: {memory.available_gb} GB
+                          </Typography>
+                          {swap.total_gb != null && (
+                            <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                              Swap: {swap.used_gb} GB / {swap.total_gb} GB
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+
+                  {/* Disk Usage Chart */}
+                  {disks.length > 0 && (
+                    <Grid item xs={12}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
+                          <ResponsiveContainer width="110%" height={150}>
+                            <BarChart data={disks} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis type="number" />
+                              <YAxis dataKey="mountpoint" type="category" width={80} />
+                              <RechartsTooltip formatter={(value) => `${value} GB`} />
+                              <Legend />
+                              <Bar dataKey="used_gb" name="Used" stackId="a" fill="#0088FE" />
+                              <Bar dataKey="available_gb" name="Available" stackId="a" fill="#FF8042" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+                </Grid>
+              );
+            })()
+            ) : (
+              <Typography>No information available.</Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseInfoModal}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Add/Edit Server Modal */}
       <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>

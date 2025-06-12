@@ -296,36 +296,70 @@ class ServerInfoView(AsyncAPIView):
                 if hasattr(server, 'ssh_password') and server.ssh_password:
                     conn_options['password'] = server.ssh_password
 
+            BYTES_PER_GB = 1024**3
+
             async with asyncssh.connect(
                 str(server.server_ip), port=server.ssh_port, **conn_options
             ) as conn:
-                os_result = await conn.run('uname -a', check=True)
-                cpu_result1 = await conn.run("grep 'cpu ' /proc/stat", check=True)
-                await asyncio.sleep(1)
-                cpu_result2 = await conn.run("grep 'cpu ' /proc/stat", check=True)
-                mem_result = await conn.run('free -m', check=True)
-                disk_result = await conn.run('df -h /', check=True)
+                # --- Concurrently run all commands --- #
+                results = await asyncio.gather(
+                    conn.run('uname -a'),
+                    conn.run("grep 'cpu ' /proc/stat"),
+                    conn.run('free -b'), # Get memory in bytes
+                    conn.run('df -B1'),   # Get disk usage in bytes
+                    asyncio.sleep(1),    # Sleep for CPU calculation
+                )
+                # After sleep, get the second CPU stat
+                cpu_result2 = await conn.run("grep 'cpu ' /proc/stat")
 
+                os_result, cpu_result1, mem_result, disk_result, _ = results
+
+                # --- Process CPU Usage --- #
                 cpu_line1 = list(map(int, cpu_result1.stdout.split()[1:]))
                 cpu_line2 = list(map(int, cpu_result2.stdout.split()[1:]))
                 total_diff = sum(cpu_line2) - sum(cpu_line1)
                 idle_diff = cpu_line2[3] - cpu_line1[3]
                 cpu_usage = 100 * (total_diff - idle_diff) / total_diff if total_diff else 0
 
+                # --- Process Memory and Swap --- #
                 mem_lines = mem_result.stdout.strip().split('\n')
                 mem_parts = mem_lines[1].split()
-                total_mem, used_mem = int(mem_parts[1]), int(mem_parts[2])
-                mem_usage = (used_mem / total_mem) * 100 if total_mem else 0
+                swap_parts = mem_lines[2].split()
+                memory_data = {
+                    'total_gb': round(int(mem_parts[1]) / BYTES_PER_GB, 2),
+                    'used_gb': round(int(mem_parts[2]) / BYTES_PER_GB, 2),
+                    'available_gb': round(int(mem_parts[6]) / BYTES_PER_GB, 2),
+                }
+                swap_data = {
+                    'total_gb': round(int(swap_parts[1]) / BYTES_PER_GB, 2),
+                    'used_gb': round(int(swap_parts[2]) / BYTES_PER_GB, 2),
+                }
 
-                disk_lines = disk_result.stdout.strip().split('\n')
-                disk_parts = disk_lines[1].split()
-                total_disk, used_disk, disk_percent = disk_parts[1], disk_parts[2], disk_parts[4]
+                # --- Process Disk Usage --- #
+                disk_lines = disk_result.stdout.strip().split('\n')[1:]
+                disks_data = []
+                for line in disk_lines:
+                    parts = line.split()
+                    if parts[0].startswith('/dev/'): # Filter for physical devices
+                        total_gb = round(int(parts[1]) / BYTES_PER_GB, 2)
+                        used_gb = round(int(parts[2]) / BYTES_PER_GB, 2)
+                        available_gb = round(int(parts[3]) / BYTES_PER_GB, 2)
+                        disks_data.append({
+                            'filesystem': parts[0],
+                            'total_gb': total_gb,
+                            'used_gb': used_gb,
+                            'available_gb': available_gb,
+                            'use_percent': int(parts[4].replace('%', '')),
+                            'mountpoint': parts[5],
+                        })
 
+                # --- Final Data Structure --- #
                 data = {
                     'os': os_result.stdout.strip(),
-                    'cpu_usage': f'{cpu_usage:.2f}%',
-                    'memory_usage': f'{mem_usage:.2f}% ({used_mem}MB / {total_mem}MB)',
-                    'disk_usage': f'{disk_percent} ({used_disk} / {total_disk})'
+                    'cpu_usage': f'{cpu_usage:.2f}',
+                    'memory': memory_data,
+                    'swap': swap_data,
+                    'disks': disks_data,
                 }
                 return Response(data)
 
