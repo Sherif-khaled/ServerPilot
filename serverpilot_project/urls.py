@@ -24,8 +24,8 @@ from ServerPilot_API.api_root import api_root
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', api_root, name='api-root'),
-    path('api/users/', include('ServerPilot_API.Users.urls')),
-    path('api/customers/', include('ServerPilot_API.Customers.urls')), # Route for Customers API
+    path('api/servers/', include('ServerPilot_API.Servers.urls')),
+    path('api/customers/', include('ServerPilot_API.Customers.urls')), 
     path('api/audit/', include('ServerPilot_API.audit_log.urls')),
     path('api/security/', include('security.urls')),
 ]

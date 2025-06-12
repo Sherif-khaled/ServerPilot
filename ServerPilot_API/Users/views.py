@@ -76,6 +76,16 @@ from .permissions import IsAdminOrSelf
 from ServerPilot_API.audit_log.services import log_action
 
 
+class UserProfilePictureView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, username, *args, **kwargs):
+        user = get_object_or_404(CustomUser, username__iexact=username)
+        if user.profile_photo:
+            return Response({'profile_photo_url': request.build_absolute_uri(user.profile_photo.url)})
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class CsrfTokenView(View):
     """
