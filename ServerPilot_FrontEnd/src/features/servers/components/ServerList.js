@@ -5,7 +5,7 @@ import {
   Box, Button, Typography, Paper, List, ListItem, ListItemText,
   ListItemIcon, IconButton, CircularProgress, Alert, Dialog,
   DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, Chip,
-  Tooltip
+  Tooltip, Menu, MenuItem
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -16,6 +16,7 @@ import PowerOffIcon from '@mui/icons-material/PowerOff';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 import { getServers, deleteServer, testServerConnection, getServerInfo } from '../../../api/serverService';
 import ServerForm from './ServerForm'; 
@@ -37,6 +38,19 @@ export default function ServerList({ customerId: propCustomerId }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingServer, setEditingServer] = useState(null);
+
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [currentServerForMenu, setCurrentServerForMenu] = useState(null);
+
+  const handleMenuOpen = (event, server) => {
+    setMenuAnchorEl(event.currentTarget);
+    setCurrentServerForMenu(server);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setCurrentServerForMenu(null);
+  };
 
   const fetchServers = useCallback(async () => {
     if (!customerId) return;
@@ -160,12 +174,36 @@ export default function ServerList({ customerId: propCustomerId }) {
         <Typography sx={{mt: 2, textAlign: 'center'}}>No servers found for this customer.</Typography>
       )}
 
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+      >
+        {currentServerForMenu && [
+          <MenuItem key="connect" component={Link} to={`/servers/${currentServerForMenu.id}/console`} onClick={handleMenuClose}>
+            <ListItemIcon><DnsIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Connect</ListItemText>
+          </MenuItem>,
+          <MenuItem key="info" onClick={() => { handleOpenInfoModal(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><InfoIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Get Server Info</ListItemText>
+          </MenuItem>,
+          <MenuItem key="edit" onClick={() => { handleOpenModal(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>,
+          <MenuItem key="delete" onClick={() => { handleOpenDeleteDialog(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        ]}
+      </Menu>
       <List>
         {servers.map(server => (
           <React.Fragment key={server.id}>
             <ListItem 
               secondaryAction={
-                <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Tooltip title="Test Connection">
                     <IconButton edge="end" aria-label="test" onClick={() => handleTestConnection(server.id)} disabled={testConnectionStatus[server.id]?.testing}>
                       {testConnectionStatus[server.id]?.testing ? <CircularProgress size={24} /> : 
@@ -174,22 +212,12 @@ export default function ServerList({ customerId: propCustomerId }) {
                        <PowerIcon />}
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Console">
-                    <Link to={`/servers/${server.id}/console`} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-2 transition duration-300 ease-in-out">Console</Link>
-                  </Tooltip>
-                  <Tooltip title="Get Server Info">
-                    <IconButton edge="end" aria-label="info" onClick={() => handleOpenInfoModal(server)}>
-                      <InfoIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Edit Server">
-                    <IconButton edge="end" aria-label="edit" onClick={() => handleOpenModal(server)}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete Server">
-                    <IconButton edge="end" aria-label="delete" onClick={() => handleOpenDeleteDialog(server)}>
-                      <DeleteIcon />
+                  <Tooltip title="Actions">
+                    <IconButton
+                      aria-label="more"
+                      onClick={(e) => handleMenuOpen(e, server)}
+                    >
+                      <MoreVertIcon />
                     </IconButton>
                   </Tooltip>
                 </Box>
