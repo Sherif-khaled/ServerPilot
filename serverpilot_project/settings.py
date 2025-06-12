@@ -57,6 +57,13 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # Can be 'Lax' or 'None' if needed for cross-si
 
 # CSRF settings
 CSRF_USE_SESSIONS = False  # Store CSRF token in cookie, not in session
+
+# Frontend URL
+FRONTEND_URL = 'http://localhost:3000'
+
+# Google reCAPTCHA keys
+GOOGLE_RECAPTCHA_SECRET_KEY = 'your-secret-key-here' # Replace with your secret key
+GOOGLE_RECAPTCHA_SITE_KEY = 'your-site-key-here' # Replace with your site key
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read the CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'  # Match SESSION_COOKIE_SAMESITE
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token

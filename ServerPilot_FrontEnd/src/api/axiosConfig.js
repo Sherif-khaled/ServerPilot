@@ -18,7 +18,7 @@ function getCookie(name) {
 }
 
 const instance = axios.create({
-    baseURL: '/api',
+    baseURL: '/api/',
     withCredentials: true, // Send cookies with requests
 });
 

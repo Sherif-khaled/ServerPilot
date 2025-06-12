@@ -14,6 +14,10 @@ from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
 from django.views import View
 from rest_framework.response import Response
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+import requests
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -35,7 +39,7 @@ import base64
 from .serializers import (
     RegisterSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer, MFASerializer, MFAVerifySerializer,
     UserAdminCreateSerializer, UserAdminUpdateSerializer, GitHubAuthSerializer, UserActionLogSerializer,
-    AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer
+    AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 )
 import logging
 import datetime
@@ -230,6 +234,76 @@ class PasswordChangeView(generics.GenericAPIView):
         # Keep the user logged in
         update_session_auth_hash(request, user)
         return Response({"detail": "New password has been saved."}, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequestView(generics.GenericAPIView):
+    serializer_class = PasswordResetRequestSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        
+        recaptcha_response = request.data.get('recaptcha_token')
+        if not recaptcha_response:
+            return Response({'detail': 'reCAPTCHA token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = {
+            'secret': settings.GOOGLE_RECAPTCHA_SECRET_KEY, 
+            'response': recaptcha_response
+        }
+        r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
+        result = r.json()
+
+        if not result.get('success'):
+            return Response({'detail': 'Invalid reCAPTCHA. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = CustomUser.objects.get(email__iexact=email)
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_link = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
+            
+            send_mail(
+                'Password Reset Request',
+                f'Click the link to reset your password: {reset_link}',
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email]
+            )
+            log_action(user, 'password_reset_request', request, f'Password reset email sent to {user.email}')
+        except CustomUser.DoesNotExist:
+            logger.warning(f"Password reset requested for non-existent email: {email}")
+            pass
+        
+        return Response({'detail': 'If an account with that email exists, a password reset link has been sent.'}, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(generics.GenericAPIView):
+    serializer_class = PasswordResetConfirmSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        uidb64 = serializer.validated_data['uid']
+        token = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = CustomUser.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            log_action(user, 'password_reset_confirm', request, 'User successfully reset their password.')
+            return Response({'detail': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'detail': 'The reset link is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
 
 # MFA Views
 def get_user_totp_device(user):
