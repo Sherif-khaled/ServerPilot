@@ -4,7 +4,7 @@ import { challengeMfa } from '../../../api/userService';
 import { Box, TextField, Button, Typography, Alert, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../AuthContext';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -99,7 +99,14 @@ export default function UserLoginForm({ onLoginSuccess }) {
     api.get('users/csrf/').catch(err => console.error('CSRF pre-flight failed:', err));
   }, []);
 
-  const { loginAuth } = useAuth();
+  const { loginAuth, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/profile', { replace: true });
+    }
+  }, [user, navigate]);
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);

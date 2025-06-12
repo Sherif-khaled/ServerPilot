@@ -41,12 +41,14 @@ class SecuritySettings(models.Model):
     recaptcha_site_key = models.CharField(max_length=255, blank=True)
     recaptcha_secret_key = models.CharField(max_length=255, blank=True)
     recaptcha_enabled = models.BooleanField(default=False)
+    session_expiration_hours = models.PositiveIntegerField(default=24, help_text="Number of hours before a user session expires.")
 
     def __str__(self):
         return "Security Settings"
 
     @staticmethod
     def get_settings():
+        # Use get_or_create to ensure a settings object always exists.
         settings, created = SecuritySettings.objects.get_or_create(pk=1)
         return settings
 

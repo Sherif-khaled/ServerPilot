@@ -7,6 +7,7 @@ const AdminSecurityPage = () => {
     recaptcha_site_key: '',
     recaptcha_secret_key: '',
     recaptcha_enabled: false,
+    session_expiration_hours: 24,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
@@ -19,6 +20,7 @@ const AdminSecurityPage = () => {
           recaptcha_site_key: response.data.recaptcha_site_key || '',
           recaptcha_secret_key: response.data.recaptcha_secret_key || '',
           recaptcha_enabled: response.data.recaptcha_enabled,
+          session_expiration_hours: response.data.session_expiration_hours || 24,
         };
         setSettings(fetchedSettings);
       } catch (err) {
@@ -109,6 +111,19 @@ const AdminSecurityPage = () => {
             />
           </Box>
         </Box>
+        <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
+          Session Settings
+        </Typography>
+        <TextField
+          fullWidth
+          label="Session Expiration (Hours)"
+          name="session_expiration_hours"
+          type="number"
+          value={settings.session_expiration_hours}
+          onChange={handleChange}
+          helperText="The number of hours before an inactive session expires."
+          sx={{ mt: 2 }}
+        />
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Button type="submit" variant="contained">
             Save Settings

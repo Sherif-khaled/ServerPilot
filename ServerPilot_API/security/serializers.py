@@ -10,4 +10,4 @@ class PasswordPolicySerializer(serializers.ModelSerializer):
 class SecuritySettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SecuritySettings
-        fields = ('recaptcha_site_key', 'recaptcha_secret_key', 'recaptcha_enabled')
+        fields = ('recaptcha_site_key', 'recaptcha_secret_key', 'recaptcha_enabled', 'session_expiration_hours')
