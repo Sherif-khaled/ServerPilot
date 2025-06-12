@@ -1,10 +1,10 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, Switch, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, useMediaQuery } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom'; // Removed Outlet
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
-import { Avatar } from '@mui/material';
+import { Avatar, Collapse } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -17,6 +17,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [drawerOpen, setDrawerOpen] = React.useState(isSmUp); // Open by default on larger screens
+  const [adminOpen, setAdminOpen] = React.useState(false);
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -33,6 +34,10 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
+  };
+
+  const handleAdminClick = () => {
+    setAdminOpen(!adminOpen);
   };
 
   const handleLogout = async () => {
@@ -59,8 +64,6 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
     // Conditionally show the 'Users' link for admin users (is_staff)
     ...(user?.is_staff ? [{ text: 'Users', icon: <People />, path: '/users' }] : []),
     { text: 'Customers', icon: <ContactsIcon />, path: '/customers' },
-    ...(user?.is_staff ? [{ text: 'Audit Logs', icon: <PolicyIcon />, path: '/audit-logs' }] : []),
-
     { text: 'Logout', icon: <LogoutIcon />, action: handleLogout },
   ];
 
@@ -117,7 +120,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
       >
         {/* Toolbar spacer to align drawer content below AppBar */}
         <Toolbar /> 
-        <Box sx={{ overflow: 'auto' }} role="presentation" onClick={isSmUp ? undefined : handleDrawerToggle}> {/* Close on click only if temporary */}
+        <Box sx={{ overflow: 'auto' }} role="presentation">
           <List>
             {drawerNavItems.map((item) => {
               const commonProps = {
@@ -133,19 +136,52 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
 
               if (item.path) {
                 return (
-                  <ListItem {...commonProps} component={Link} to={item.path}>
+                  <ListItem {...commonProps} component={Link} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}>
                     {listItemContent}
                   </ListItem>
                 );
               } else if (item.action) {
                 return (
-                  <ListItem {...commonProps} onClick={item.action}>
+                  <ListItem {...commonProps} onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
                     {listItemContent}
                   </ListItem>
                 );
               }
               return null; // Should not happen if items are structured correctly
             })}
+            {user?.is_staff && (
+              <>
+                <ListItem button onClick={handleAdminClick}>
+                  <ListItemIcon>
+                    <AdminPanelSettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Administration" />
+                  {adminOpen ? <ExpandLess /> : <ExpandMore />}
+                </ListItem>
+                <Collapse in={adminOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    <ListItem button sx={{ pl: 4 }} component={Link} to="/audit-logs" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                      <ListItemIcon>
+                        <PolicyIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Audit Logs" />
+                    </ListItem>
+                    <ListItem button sx={{ pl: 4 }} component={Link} to="/password-policy" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                      <ListItemIcon>
+                        <PolicyIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Password Policy" />
+                    </ListItem>
+                    <ListItem button sx={{ pl: 4 }} component={Link} to="/database-management" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                      <ListItemIcon>
+                        <StorageIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Database Management" />
+                    </ListItem>
+                  </List>
+                </Collapse>
+              </>
+            )}
           </List>
         </Box>
       </Drawer>

@@ -7,9 +7,20 @@ logger = logging.getLogger(__name__)
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'password', 'first_name', 'last_name')
+
+    def validate_password(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
+
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
         user.is_active = False  # Require email activation
@@ -89,8 +100,43 @@ class UserListSerializer(serializers.ModelSerializer):
 
 
 class PasswordChangeSerializer(serializers.Serializer):
-    old_password = serializers.CharField()
-    new_password = serializers.CharField()
+    current_password = serializers.CharField(style={"input_type": "password"}, required=True)
+    new_password = serializers.CharField(style={"input_type": "password"}, required=True)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        logger.info(f"Attempting password change for user: {user.username}")
+
+        # Note: Do not log the password 'value' itself for security.
+        # The password hash is stored in user.password.
+        logger.debug(f"Stored password hash for {user.username}: {user.password}")
+
+        is_correct = user.check_password(value)
+        
+        if not is_correct:
+            logger.warning(f"Password change failed for user '{user.username}': Current password did not match.")
+            # The error message should be generic to avoid leaking information.
+            raise serializers.ValidationError({'current_password': 'Your old password was entered incorrectly. Please enter it again.'})
+        
+        logger.info(f"Current password verified for user: {user.username}")
+        return value
+
+    def validate(self, data):
+        # It's a good practice to still use Django's password validation
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError
+        try:
+            validate_password(data['new_password'], self.context['request'].user)
+        except ValidationError as e:
+            raise serializers.ValidationError({'new_password': list(e.messages)})
+        return data
+
+    def save(self, **kwargs):
+        password = self.validated_data['new_password']
+        user = self.context['request'].user
+        user.set_password(password)
+        user.save()
+        return user
 
 
 class MFAVerifySerializer(serializers.Serializer):
@@ -108,6 +154,15 @@ class UserAdminCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'password', 'first_name', 'last_name', 'is_active', 'is_staff')
+
+    def validate_password(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(

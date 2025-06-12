@@ -204,29 +204,22 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         log_action(instance, 'profile_update', self.request, 'User updated profile')
 
 # Password change
-class PasswordChangeView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
+class PasswordChangeView(generics.GenericAPIView):
+    """
+    An endpoint for changing password.
+    """
     serializer_class = PasswordChangeSerializer
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = request.user
+    permission_classes = (permissions.IsAuthenticated,)
 
-        # Check old password
-        if not user.check_password(serializer.validated_data.get('old_password')):
-            return Response({'error': 'Wrong old password.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Set new password
-        user.set_password(serializer.validated_data.get('new_password'))
-        user.save()
-        
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
         # Log the action
         log_action(user=user, action='password_change', request=request, details='User changed their password successfully.')
-        
         # Keep the user logged in
         update_session_auth_hash(request, user)
-        
-        return Response({'status': 'password changed'}, status=status.HTTP_200_OK)
+        return Response({"detail": "New password has been saved."}, status=status.HTTP_200_OK)
 
 # MFA Views
 def get_user_totp_device(user):

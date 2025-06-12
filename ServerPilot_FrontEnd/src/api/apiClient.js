@@ -52,11 +52,16 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Handle password expiration
+    if (error.response?.status === 403 && error.response.data?.error === 'password_expired') {
+      console.error('Password has expired - redirecting to change password page');
+      window.location.href = '/change-password';
+      return Promise.reject(error); // Prevent further processing
+    }
+
     // Handle session expiration or authentication errors
     if (error.response?.status === 401) {
-      // Redirect to login or refresh token
       console.error('Authentication required - redirecting to login');
-      // Redirect to login page
       window.location.href = '/login';
     }
     return Promise.reject(error);

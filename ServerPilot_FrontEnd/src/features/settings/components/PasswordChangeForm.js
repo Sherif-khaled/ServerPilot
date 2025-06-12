@@ -20,7 +20,7 @@ const PasswordChangeForm = () => {
     }
 
     try {
-      await changePassword({ old_password: oldPassword, new_password: newPassword });
+      await changePassword({ current_password: oldPassword, new_password: newPassword });
       setSuccess('Password changed successfully.');
       setOldPassword('');
       setNewPassword('');
