@@ -93,25 +93,28 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'Users.CustomUser'
 
 INSTALLED_APPS = [
-    'daphne',
-    'ServerPilot_API.Servers',
-    'ServerPilot_API.Customers',
-    'ServerPilot_API.audit_log.apps.AuditLogConfig',
-    'security.apps.SecurityConfig',
-    'corsheaders',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'django_otp',
-    'django_otp.plugins.otp_totp',
+    # Django Contrib Apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third-Party Apps
+    'corsheaders',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
     'channels',
-    'ServerPilot_API',
+
+    # Local Apps
     'ServerPilot_API.Users',
+    'ServerPilot_API.Servers',
+    'ServerPilot_API.Customers',
+    'ServerPilot_API.audit_log',
+    'ServerPilot_API.security',
 ]
 
 MIDDLEWARE = [
@@ -121,7 +124,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'security.middleware.PasswordExpirationMiddleware',
+    # 'security.middleware.PasswordExpirationMiddleware', # Disabled: Middleware not implemented yet
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_otp.middleware.OTPMiddleware',
