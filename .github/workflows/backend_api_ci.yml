@@ -43,10 +43,10 @@ jobs:
         DB_HOST: localhost
         DB_PORT: 5432
       run: |
-        # Create any missing migrations
-        python manage.py makemigrations
+        # First create core tables
+        python manage.py migrate --run-syncdb
         
-        # Run all migrations - Django will handle core tables automatically
+        # Then run all migrations
         python manage.py migrate
         
         # Verify migrations
