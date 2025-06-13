@@ -64,7 +64,7 @@ jobs:
         SSH_TEST_PASSWORD: ${{ secrets.SSH_TEST_PASSWORD }}
         SSH_TEST_ROOT_PASSWORD: ${{ secrets.SSH_TEST_ROOT_PASSWORD }}
       run: |
-        pytest ServerPilot_API/ -v --no-create-db --cov=ServerPilot_API --cov-report=xml
+        pytest ServerPilot_API/ -v --cov=ServerPilot_API --cov-report=xml
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
