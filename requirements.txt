@@ -3,6 +3,9 @@ django-redis==5.2.0
 djangorestframework>=3.14,<3.16
 pytest==7.4.4
 pytest-django==4.8.0
+pytest-asyncio
+coverage
+pytest-cov
 django-cors-headers>=4.0,<4.4
 psycopg2-binary>=2.9,<2.10
 drf-nested-routers>=0.90,<1.0
@@ -17,3 +20,5 @@ django-filter>=24.2
 pyotp>=2.6.0
 django-otp>=1.2.2
 paramiko>=2.10.0
+requests
+qrcode
