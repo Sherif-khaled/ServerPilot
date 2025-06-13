@@ -44,6 +44,12 @@ jobs:
         DB_PORT: 5432
       run: |
         python manage.py migrate
+        python manage.py migrate --run-syncdb
+        python manage.py migrate Customers
+        python manage.py migrate Users
+        python manage.py migrate Servers
+        python manage.py migrate security
+        python manage.py migrate audit_log
     
     - name: Run tests
       env:
