@@ -44,7 +44,7 @@ class TestServerSSHConnection(TestCase):
             'ssh_port': 22,
         }
 
-    @patch('API.Servers.models.paramiko.SSHClient')
+    @patch('ServerPilot_API.Servers.models.paramiko.SSHClient')
     def test_connect_ssh_password_non_root_success(self, MockSSHClient):
         mock_client_instance = MockSSHClient.return_value
         mock_stdout = MagicMock()

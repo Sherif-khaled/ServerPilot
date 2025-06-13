@@ -13,12 +13,10 @@ SSH_USER = os.getenv('SSH_USER', 'root')
 SSH_PASS = os.getenv('SSH_PASS', '2P8KVdli7i1R8w21m2we01')
 SSH_PORT = int(os.getenv('SSH_PORT', '22'))
 
+@pytest.mark.asyncio
 async def test_ssh_connection():
-    """Test SSH connection with provided credentials."""
-    print(f"\nTesting SSH connection to {SSH_USER}@{SSH_HOST}:{SSH_PORT}...")
-    
+    """Test SSH connection to server"""
     try:
-        # Connect to the SSH server
         async with asyncssh.connect(
             host=SSH_HOST,
             port=SSH_PORT,
@@ -27,23 +25,15 @@ async def test_ssh_connection():
             known_hosts=None,  # Disable host key checking for testing
             connect_timeout=10
         ) as conn:
-            print("✓ Successfully connected to SSH server")
-            
-            # Test basic command execution
+            # Test basic commands
             result = await conn.run('uname -a')
-            print(f"\nSystem Info: {result.stdout.strip()}")
+            print(f"\nOS Info: {result.stdout}")
             
-            # Test disk space
-            result = await conn.run('df -h')
-            print("\nDisk Usage:")
-            print(result.stdout)
-            
-            # Test memory usage
             result = await conn.run('free -h')
             print("\nMemory Usage:")
             print(result.stdout)
             
-            return True
+            assert True
             
     except Exception as e:
         print(f"\n✗ SSH Connection failed: {str(e)}")

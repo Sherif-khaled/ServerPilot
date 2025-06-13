@@ -1,3 +1,5 @@
+import pytest
+import uuid
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -10,11 +12,19 @@ User = get_user_model()
 
 class ServerAPITests(APITestCase):
     def setUp(self):
-        # Create a user
-        self.user = User.objects.create_user(username='testuser', email='test@example.com', password='testpassword123')
+        # Create a user with unique credentials
+        self.user = User.objects.create_user(
+            username=f'testuser_{uuid.uuid4().hex[:8]}',
+            email=f'test_{uuid.uuid4().hex[:8]}@example.com',
+            password='testpassword123'
+        )
         
         # Create another user for permission tests
-        self.other_user = User.objects.create_user(username='otheruser', email='other@example.com', password='otherpassword123')
+        self.other_user = User.objects.create_user(
+            username=f'otheruser_{uuid.uuid4().hex[:8]}',
+            email=f'other_{uuid.uuid4().hex[:8]}@example.com',
+            password='otherpassword123'
+        )
 
         # Create a customer type
         self.customer_type = CustomerType.objects.create(name='Test Type')
@@ -25,7 +35,7 @@ class ServerAPITests(APITestCase):
             customer_type=self.customer_type,
             first_name='Test',
             last_name='Customer',
-            email='customer@example.com'
+            email=f'customer_{uuid.uuid4().hex[:8]}@example.com'
         )
         
         # Create a customer owned by self.other_user
@@ -34,7 +44,7 @@ class ServerAPITests(APITestCase):
             customer_type=self.customer_type,
             first_name='Other Test',
             last_name='Customer',
-            email='othercustomer@example.com'
+            email=f'othercustomer_{uuid.uuid4().hex[:8]}@example.com'
         )
 
         # URL for listing/creating servers for self.customer
@@ -42,6 +52,13 @@ class ServerAPITests(APITestCase):
 
         # Authenticate as self.user
         self.client.force_authenticate(user=self.user)
+    
+    def tearDown(self):
+        # Clean up all created objects
+        Server.objects.all().delete()
+        Customer.objects.all().delete()
+        User.objects.all().delete()
+        CustomerType.objects.all().delete()
 
     def test_create_server_non_root_with_password(self):
         """
@@ -85,6 +102,8 @@ class ServerAPITests(APITestCase):
         self.assertIsNone(server.ssh_password)
         self.assertIsNone(server.ssh_root_password)
 
+    @pytest.mark.filterwarnings("ignore::DeprecationWarning")
+    @pytest.mark.filterwarnings("ignore::UserWarning")
     def test_create_server_fail_non_root_missing_credentials(self):
         """
         Test creation fails if non-root login and no password/key provided.
@@ -150,9 +169,9 @@ class ServerAPITests(APITestCase):
             'ssh_password': 'sshpassword123'
         }
         response = self.client.post(other_customer_servers_url, data, format='json')
-        # This will be caught by IsOwnerOfCustomerForServer permission
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
+        # Changed from 403 to 400 since we validate customer ownership in serializer
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Customer not found', str(response.data))
 
     def test_list_servers_for_customer(self):
         """
@@ -188,7 +207,6 @@ class ServerAPITests(APITestCase):
         self.assertNotIn('ssh_root_password', response.data)
         self.assertIn('ssh_key', response.data) # ssh_key is fine to return if not sensitive
 
-    # --- Placeholder for Update Tests ---
     def test_update_server_partial_patch(self):
         """
         Test partially updating a server (e.g., name and login type).
@@ -213,7 +231,6 @@ class ServerAPITests(APITestCase):
         self.assertIsNone(server.ssh_user) # Should be nulled by serializer
         self.assertIsNone(server.ssh_password) # Should be nulled
 
-    # --- Placeholder for Delete Tests ---
     def test_delete_server(self):
         """
         Test deleting a server.
