@@ -43,17 +43,19 @@ jobs:
         DB_HOST: localhost
         DB_PORT: 5432
       run: |
-        # First create auth tables
-        python manage.py migrate auth
+        # Create initial migrations
+        python manage.py makemigrations
+        
+        # First create core tables
         python manage.py migrate contenttypes
+        python manage.py migrate auth
+        python manage.py migrate admin
+        python manage.py migrate sessions
         
-        # Then run syncdb for basic tables
-        python manage.py migrate --run-syncdb
-        
-        # Finally run app migrations
+        # Then run all other migrations
         python manage.py migrate
         
-        # Optional: Verify migrations
+        # Verify migrations
         python manage.py showmigrations
     
     - name: Run tests
