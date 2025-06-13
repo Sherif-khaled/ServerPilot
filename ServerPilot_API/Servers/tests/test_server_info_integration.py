@@ -16,10 +16,17 @@ def live_server_data():
     A synchronous pytest fixture to set up all necessary database objects.
     This runs entirely before the async test, avoiding context conflicts.
     """
-    # 1. Setup: Use the provided live server credentials
-    SSH_HOST = "167.86.76.14"
-    SSH_USER = "root"
-    SSH_PASS = "2P8KVdli7i1R8w21m2we01"
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # 1. Setup: Use environment variables for credentials
+    SSH_HOST = os.getenv('SSH_HOST')
+    SSH_USER = os.getenv('SSH_USER')
+    SSH_PASS = os.getenv('SSH_PASS')
+    
+    if not all([SSH_HOST, SSH_USER, SSH_PASS]):
+        pytest.skip("SSH credentials not configured in environment variables")
 
     # Create User
     user, _ = User.objects.get_or_create(
@@ -79,8 +86,26 @@ async def test_get_server_info_live_connection(live_server_data, settings):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
 
-    # Check for the presence and basic validity of data
-    assert 'os' in data and 'Linux' in data['os']
-    assert 'cpu_usage' in data and '%' in data['cpu_usage']
-    assert 'memory_usage' in data and '%' in data['memory_usage']
-    assert 'disk_usage' in data and '%' in data['disk_usage']
+    # Check for the presence of basic metrics
+    required_keys = ['os', 'cpu_usage', 'memory', 'disks']
+    for key in required_keys:
+        assert key in data, f"Missing expected key: {key}"
+    
+    # Verify OS contains Linux
+    assert 'Linux' in data['os'], "Expected Linux OS"
+    
+    # Verify CPU usage is numeric
+    assert isinstance(float(data['cpu_usage']), (int, float)), "CPU usage should be numeric"
+    
+    # Verify memory structure
+    memory_keys = ['total_gb', 'used_gb', 'available_gb']
+    for key in memory_keys:
+        assert key in data['memory'], f"Missing memory key: {key}"
+        assert isinstance(data['memory'][key], (int, float)), f"Memory {key} should be numeric"
+    
+    # Verify disks structure
+    assert isinstance(data['disks'], list), "Disks should be a list"
+    assert len(data['disks']) > 0, "Expected at least one disk"
+    disk_keys = ['filesystem', 'total_gb', 'used_gb', 'available_gb', 'mountpoint']
+    for key in disk_keys:
+        assert key in data['disks'][0], f"Missing disk key: {key}"
