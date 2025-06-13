@@ -43,16 +43,10 @@ jobs:
         DB_HOST: localhost
         DB_PORT: 5432
       run: |
-        # Create initial migrations
+        # Create any missing migrations
         python manage.py makemigrations
         
-        # First create core tables
-        python manage.py migrate contenttypes
-        python manage.py migrate auth
-        python manage.py migrate admin
-        python manage.py migrate sessions
-        
-        # Then run all other migrations
+        # Run all migrations - Django will handle core tables automatically
         python manage.py migrate
         
         # Verify migrations
