@@ -5,8 +5,8 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from rest_framework import status
 from django.test import AsyncClient
 from django.contrib.auth import get_user_model
-from API.Customers.models import Customer
-from API.Servers.models import Server
+from ServerPilot_API.Customers.models import Customer
+from ServerPilot_API.Servers.models import Server
 
 User = get_user_model()
 
@@ -39,7 +39,7 @@ def create_test_server(customer):
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
-@patch('API.Servers.views.asyncssh.connect')
+@patch('ServerPilot_API.Servers.views.asyncssh.connect')
 async def test_get_server_info_success(mock_connect):
     """Test successfully fetching server information with a mocked SSH connection."""
     # Setup test data

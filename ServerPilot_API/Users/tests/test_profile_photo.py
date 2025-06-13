@@ -1,7 +1,7 @@
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
-from API.Users.models import CustomUser
+from ServerPilot_API.Users.models import CustomUser
 from django.core.files.uploadedfile import SimpleUploadedFile
 import base64
 

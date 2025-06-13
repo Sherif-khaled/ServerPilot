@@ -6,8 +6,8 @@ import io
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from API.Customers.models import Customer, CustomerType
-from API.Servers.models import Server
+from ServerPilot_API.Customers.models import Customer, CustomerType
+from ServerPilot_API.Servers.models import Server
 
 User = get_user_model()
 
@@ -82,10 +82,10 @@ class TestServerSSHConnection(TestCase):
         mock_client_instance.exec_command.assert_called_once_with('whoami', timeout=10)
         mock_client_instance.close.assert_called_once()
 
-    @patch('API.Servers.models.paramiko.RSAKey.from_private_key')
-    @patch('API.Servers.models.paramiko.Ed25519Key.from_private_key')
-    @patch('API.Servers.models.paramiko.ECDSAKey.from_private_key')
-    @patch('API.Servers.models.paramiko.SSHClient')
+    @patch('ServerPilot_API.Servers.models.paramiko.RSAKey.from_private_key')
+    @patch('ServerPilot_API.Servers.models.paramiko.Ed25519Key.from_private_key')
+    @patch('ServerPilot_API.Servers.models.paramiko.ECDSAKey.from_private_key')
+    @patch('ServerPilot_API.Servers.models.paramiko.SSHClient')
     def test_connect_ssh_key_root_success(self, MockSSHClient, MockECDSAKey, MockEd25519Key, MockRSAKey):
         # Assume RSA key is the one that successfully loads
         mock_rsa_loaded_key = MagicMock(spec=paramiko.RSAKey)
@@ -132,7 +132,7 @@ class TestServerSSHConnection(TestCase):
         )
         mock_client_instance.close.assert_called_once()
 
-    @patch('API.Servers.models.paramiko.SSHClient')
+    @patch('ServerPilot_API.Servers.models.paramiko.SSHClient')
     def test_connect_ssh_authentication_failure(self, MockSSHClient):
         mock_client_instance = MockSSHClient.return_value
         mock_client_instance.connect.side_effect = paramiko.AuthenticationException("Auth failed")
@@ -150,7 +150,7 @@ class TestServerSSHConnection(TestCase):
         self.assertIn("Authentication failed: Auth failed", output)
         mock_client_instance.close.assert_called_once() # Ensure close is called even on failure
 
-    @patch('API.Servers.models.paramiko.SSHClient')
+    @patch('ServerPilot_API.Servers.models.paramiko.SSHClient')
     def test_connect_ssh_connection_timeout(self, MockSSHClient):
         mock_client_instance = MockSSHClient.return_value
         # Simulate paramiko raising a generic exception that might wrap a timeout,
@@ -182,7 +182,7 @@ class TestServerSSHConnection(TestCase):
         self.assertFalse(success)
         self.assertEqual(output, "SSH username is not configured for the selected login type.")
 
-    @patch('API.Servers.models.paramiko.SSHClient')
+    @patch('ServerPilot_API.Servers.models.paramiko.SSHClient')
     def test_connect_ssh_command_execution_error(self, MockSSHClient):
         mock_client_instance = MockSSHClient.return_value
         mock_stdout = MagicMock()
@@ -201,11 +201,11 @@ class TestServerSSHConnection(TestCase):
         self.assertIn("STDERR: critical error message", output)
         mock_client_instance.close.assert_called_once()
 
-    @patch('API.Servers.models.io.StringIO') # Mock StringIO to control key loading
-    @patch('API.Servers.models.paramiko.RSAKey.from_private_key')
-    @patch('API.Servers.models.paramiko.Ed25519Key.from_private_key')
-    @patch('API.Servers.models.paramiko.ECDSAKey.from_private_key')
-    @patch('API.Servers.models.paramiko.SSHClient')
+    @patch('ServerPilot_API.Servers.models.io.StringIO') # Mock StringIO to control key loading
+    @patch('ServerPilot_API.Servers.models.paramiko.RSAKey.from_private_key')
+    @patch('ServerPilot_API.Servers.models.paramiko.Ed25519Key.from_private_key')
+    @patch('ServerPilot_API.Servers.models.paramiko.ECDSAKey.from_private_key')
+    @patch('ServerPilot_API.Servers.models.paramiko.SSHClient')
     def test_connect_ssh_key_loading_all_fail(self, MockSSHClient, MockECDSAKey, MockEd25519Key, MockRSAKey, MockStringIO):
         # Make all key loading attempts fail
         MockRSAKey.side_effect = paramiko.SSHException("Not RSA")

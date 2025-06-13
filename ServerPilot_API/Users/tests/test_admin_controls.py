@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
-from API.Users.models import CustomUser
+from ServerPilot_API.Users.models import CustomUser
 
 @pytest.mark.django_db
 def test_admin_deactivate_user():

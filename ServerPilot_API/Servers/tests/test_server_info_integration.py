@@ -4,8 +4,8 @@ from django.urls import reverse
 from rest_framework import status
 from django.test import AsyncClient
 from django.contrib.auth import get_user_model
-from API.Customers.models import Customer
-from API.Servers.models import Server
+from ServerPilot_API.Customers.models import Customer
+from ServerPilot_API.Servers.models import Server
 
 User = get_user_model()
 
