@@ -23,7 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
-        user.is_active = False  # Require email activation
+        user.is_active = True  # Make users active immediately
         user.save()
         return user
 

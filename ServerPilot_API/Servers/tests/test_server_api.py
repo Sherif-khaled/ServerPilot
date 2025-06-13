@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from API.Customers.models import Customer, CustomerType
-from API.Servers.models import Server
+from ServerPilot_API.Customers.models import Customer, CustomerType
+from ServerPilot_API.Servers.models import Server
 
 User = get_user_model()
 

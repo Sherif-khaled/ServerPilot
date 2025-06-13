@@ -7,9 +7,9 @@ from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase, override_settings
 from channels.db import database_sync_to_async
 
-from API.Customers.models import Customer, CustomerType
-from API.Servers.models import Server
-from servera_project.asgi import application
+from ServerPilot_API.Customers.models import Customer, CustomerType
+from ServerPilot_API.Servers.models import Server
+from serverpilot_project.asgi import application
 
 User = get_user_model()
 
@@ -20,8 +20,8 @@ User = get_user_model()
         },
     }
 )
-@patch('API.Servers.ssh_terminal.consumers.asyncssh.connect', new_callable=AsyncMock)
-@patch('API.Servers.ssh_terminal.consumers.asyncssh.import_private_key')
+@patch('ServerPilot_API.Servers.ssh_terminal.consumers.asyncssh.connect', new_callable=AsyncMock)
+@patch('ServerPilot_API.Servers.ssh_terminal.consumers.asyncssh.import_private_key')
 class SshTerminalConsumerTest(TransactionTestCase):
 
     @database_sync_to_async
