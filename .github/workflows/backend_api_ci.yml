@@ -1,0 +1,64 @@
+name: Backend API CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready" --health-interval 10s --health-timeout 5s --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django pytest-asyncio
+    
+    - name: Run migrations
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        DB_NAME: testdb
+        DB_USER: testuser
+        DB_PASSWORD: testpassword
+        DB_HOST: localhost
+        DB_PORT: 5432
+      run: |
+        python manage.py migrate
+    
+    - name: Run tests
+      env:
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        DB_NAME: testdb
+        DB_USER: testuser
+        DB_PASSWORD: testpassword
+        DB_HOST: localhost
+        DB_PORT: 5432
+        SSH_TEST_USER: ${{ secrets.SSH_TEST_USER }}
+        SSH_TEST_PASSWORD: ${{ secrets.SSH_TEST_PASSWORD }}
+        SSH_TEST_ROOT_PASSWORD: ${{ secrets.SSH_TEST_ROOT_PASSWORD }}
+      run: |
+        pytest ServerPilot_API/ -v --no-create-db --cov=ServerPilot_API --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
