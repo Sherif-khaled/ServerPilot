@@ -36,7 +36,6 @@ jobs:
     
     - name: Run migrations
       env:
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
         DB_NAME: testdb
         DB_USER: testuser
         DB_PASSWORD: testpassword
@@ -54,17 +53,14 @@ jobs:
     
     - name: Run tests
       env:
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
         DB_NAME: testdb
         DB_USER: testuser
         DB_PASSWORD: testpassword
         DB_HOST: localhost
         DB_PORT: 5432
-        SSH_TEST_USER: ${{ secrets.SSH_TEST_USER }}
-        SSH_TEST_PASSWORD: ${{ secrets.SSH_TEST_PASSWORD }}
-        SSH_TEST_ROOT_PASSWORD: ${{ secrets.SSH_TEST_ROOT_PASSWORD }}
+
       run: |
-        pytest ServerPilot_API/ -v --cov=ServerPilot_API --cov-report=xml
+        pytest ServerPilot_API/ -v
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
