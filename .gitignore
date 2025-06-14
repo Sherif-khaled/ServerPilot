@@ -70,3 +70,9 @@ debug.log
 cookies.txt
 .DS_Store
 node_modules/
+ServerPilot_API/Servers/ssh_terminal/node_modules/
+ServerPilot_API/Servers/ssh_terminal/node_modules/ssh2/test/fixtures/id_rsa
+ServerPilot_API/Servers/ssh_terminal/node_modules/ssh2/test/fixtures/id_rsa.pub
+ServerPilot_API/Servers/ssh_terminal/node_modules/ssh2/test/fixtures/id_rsa
+ServerPilot_API/Servers/ssh_terminal/node_modules/ssh2/test/fixtures/id_rsa.pub
+ServerPilot_API/Servers/ssh_terminal/node_modules/ssh2/test/fixtures/id_rsa
