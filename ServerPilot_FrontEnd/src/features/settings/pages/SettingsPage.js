@@ -6,6 +6,7 @@ import PasswordSettings from '../components/PasswordSettings';
 import AppearanceSettings from '../components/AppearanceSettings';
 import SecurityKeysSettings from '../components/SecurityKeysSettings';
 import RecoveryCodesSettings from '../components/RecoveryCodesSettings';
+import WebSessions from '../components/WebSessions';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -48,7 +49,8 @@ const SettingsPage = () => {
           <Tabs value={value} onChange={handleChange} aria-label="settings tabs" variant="scrollable" scrollButtons="auto">
             <Tab label="General" id="settings-tab-0" />
             <Tab label="Password & Authentication" id="settings-tab-1" />
-            <Tab label="Appearance" id="settings-tab-2" />
+            <Tab label="Sessions" id="settings-tab-2" />
+            <Tab label="Appearance" id="settings-tab-3" />
           </Tabs>
         </Box>
         <TabPanel value={value} index={0}>
@@ -70,6 +72,9 @@ const SettingsPage = () => {
           </Box>
         </TabPanel>
         <TabPanel value={value} index={2}>
+          <WebSessions />
+        </TabPanel>
+        <TabPanel value={value} index={3}>
           <AppearanceSettings />
         </TabPanel>
       </Paper>
