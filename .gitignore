@@ -69,3 +69,4 @@ ServerPilot_FrontEnd/build/
 debug.log
 cookies.txt
 .DS_Store
+node_modules/
