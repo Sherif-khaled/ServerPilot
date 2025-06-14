@@ -24,3 +24,8 @@ django-otp>=1.2.2
 paramiko>=2.10.0
 requests
 qrcode
+websockets
+fastapi==0.109.1
+uvicorn==0.27.0
+paramiko==3.4.0
+python-multipart==0.0.6
