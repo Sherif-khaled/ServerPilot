@@ -1,7 +1,7 @@
 import logging
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode
+from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode, UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -264,3 +264,13 @@ class WebAuthnKeySerializer(serializers.ModelSerializer):
         model = WebAuthnKey
         fields = ['id', 'name', 'credential_id', 'created_at', 'last_used_at']
         read_only_fields = ['credential_id', 'created_at', 'last_used_at']
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    is_current_session = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserSession
+        fields = ('id', 'ip_address', 'user_agent', 'location', 'last_activity', 'is_current_session')
+
+    def get_is_current_session(self, obj):
+        return obj.session_key == self.context['request'].session.session_key

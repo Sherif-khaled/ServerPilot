@@ -13,6 +13,7 @@ from ServerPilot_API.Customers.models import Customer
 from .serializers import ServerSerializer
 from .permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
 from rest_framework import exceptions
+from rest_framework.decorators import action
 from ServerPilot_API.audit_log.services import log_action
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,68 @@ class ServerViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(customer__pk=customer_pk)
         return queryset.order_by('-created_at')
 
+    @action(detail=True, methods=['get'], url_path='credentials', url_name='server-credentials',
+            permission_classes=[])
+    def get_credentials(self, request, pk=None, customer_pk=None):
+        """
+        Retrieve server credentials.
+        Only the server owner or admin can view the credentials.
+        """
+        # Check authentication first
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {"detail": "Authentication credentials were not provided."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+            
+        try:
+            # First check if the server exists and belongs to the specified customer
+            try:
+                server = Server.objects.get(pk=pk, customer__pk=customer_pk)
+            except Server.DoesNotExist:
+                return Response(
+                    {"detail": "Server not found for the specified customer."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check if the user has permission to view these credentials
+            if not (request.user.is_staff or server.customer.owner == request.user):
+                # Return 404 for security reasons to not leak information about server existence
+                return Response(
+                    {"detail": "Server not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Prepare the response with sensitive information
+            response_data = {
+                'id': server.id,
+                'server_name': server.server_name,
+                'server_ip': server.server_ip,
+                'ssh_port': server.ssh_port,
+                'login_using_root': server.login_using_root,
+                'ssh_user': server.ssh_user if not server.login_using_root else 'root',
+                'ssh_key_available': bool(server.ssh_key),
+                'created_at': server.created_at,
+                'updated_at': server.updated_at
+            }
+            
+            # Log the access to credentials
+            log_action(
+                user=request.user,
+                action='server_credentials_viewed',
+                request=request,
+                details=f'Viewed credentials for server {server.server_name} (ID: {server.id}) from IP {request.META.get("REMOTE_ADDR")}'
+            )
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving server credentials: {str(e)}", exc_info=True)
+            return Response(
+                {"detail": "An error occurred while retrieving server credentials."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
     def perform_create(self, serializer):
         """
         Associate the server with the customer specified in the URL.

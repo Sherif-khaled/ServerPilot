@@ -124,8 +124,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           <List>
             {drawerNavItems.map((item) => {
               const commonProps = {
-                button: true,
-                key: item.text,
+                button: 'true'
               };
               const listItemContent = (
                 <>
@@ -136,13 +135,13 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
 
               if (item.path) {
                 return (
-                  <ListItem {...commonProps} component={Link} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}>
+                  <ListItem key={item.text} {...commonProps} component={Link} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}>
                     {listItemContent}
                   </ListItem>
                 );
               } else if (item.action) {
                 return (
-                  <ListItem {...commonProps} onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
+                  <ListItem key={item.text} {...commonProps} onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
                     {listItemContent}
                   </ListItem>
                 );
@@ -151,7 +150,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
             })}
             {user?.is_staff && (
               <>
-                <ListItem button onClick={handleAdminClick}>
+                <ListItem button="true" onClick={handleAdminClick}>
                   <ListItemIcon>
                     <AdminPanelSettingsIcon />
                   </ListItemIcon>
@@ -160,25 +159,25 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                 </ListItem>
                 <Collapse in={adminOpen} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
-                    <ListItem button sx={{ pl: 4 }} component={Link} to="/audit-logs" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                    <ListItem button="true" sx={{ pl: 4 }} component={Link} to="/audit-logs" onClick={isSmUp ? undefined : handleDrawerToggle}>
                       <ListItemIcon>
                         <PolicyIcon />
                       </ListItemIcon>
                       <ListItemText primary="Audit Logs" />
                     </ListItem>
-                    <ListItem button sx={{ pl: 4 }} component={Link} to="/password-policy" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                    <ListItem button="true" sx={{ pl: 4 }} component={Link} to="/password-policy" onClick={isSmUp ? undefined : handleDrawerToggle}>
                       <ListItemIcon>
                         <PolicyIcon />
                       </ListItemIcon>
                       <ListItemText primary="Password Policy" />
                     </ListItem>
-                    <ListItem button sx={{ pl: 4 }} component={Link} to="/database-management" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                    <ListItem button="true" sx={{ pl: 4 }} component={Link} to="/database-management" onClick={isSmUp ? undefined : handleDrawerToggle}>
                       <ListItemIcon>
                         <StorageIcon />
                       </ListItemIcon>
                       <ListItemText primary="Database Management" />
                     </ListItem>
-                    <ListItem button sx={{ pl: 4 }} component={Link} to="/admin/settings" onClick={isSmUp ? undefined : handleDrawerToggle}>
+                    <ListItem button="true" sx={{ pl: 4 }} component={Link} to="/admin/settings" onClick={isSmUp ? undefined : handleDrawerToggle}>
                       <ListItemIcon>
                         <SettingsIcon />
                       </ListItemIcon>

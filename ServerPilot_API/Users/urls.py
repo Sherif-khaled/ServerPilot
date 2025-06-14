@@ -1,10 +1,13 @@
 from django.urls import path, include
+
+app_name = 'users'
 from rest_framework.routers import DefaultRouter
 from .views import (
     CsrfTokenView,
     RegisterView, ActivateView, LoginView, LogoutView, GitHubAuthView, ProfileView, PasswordChangeView, 
     UserAdminViewSet, UserStatsView, UserActionLogViewSet, UserViewSet, WebAuthnViewSet, RecoveryCodeViewSet,
-    MFAEnableSetupView, MFAVerifySetupView, MFADisableView, MFAChallengeView, UserProfilePictureView, PasswordResetRequestView, PasswordResetConfirmView
+    MFAEnableSetupView, MFAVerifySetupView, MFADisableView, MFAChallengeView, UserProfilePictureView, PasswordResetRequestView, PasswordResetConfirmView,
+    UserSessionListView, UserSessionRevokeView
 )
 
 router = DefaultRouter()
@@ -21,6 +24,9 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('login/github/', GitHubAuthView.as_view(), name='login-github'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    # Web Session Management
+    path('sessions/', UserSessionListView.as_view(), name='user-sessions-list'),
+    path('sessions/<int:pk>/revoke/', UserSessionRevokeView.as_view(), name='user-session-revoke'),
     path('csrf/', CsrfTokenView.as_view(), name='get-csrf-token'),
     path('password/change/', PasswordChangeView.as_view(), name='password-change'),
     path('password/reset/', PasswordResetRequestView.as_view(), name='password-reset-request'),

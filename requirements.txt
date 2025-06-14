@@ -1,4 +1,6 @@
 django>=5.0,<5.3
+requests
+geoip2
 django-redis==5.2.0
 djangorestframework>=3.14,<3.16
 pytest==7.4.4

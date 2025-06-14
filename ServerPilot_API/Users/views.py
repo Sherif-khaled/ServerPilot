@@ -1,4 +1,3 @@
-import io
 import random
 import string
 import logging
@@ -24,7 +23,7 @@ from django.core.mail import send_mail
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 from django.conf import settings
-from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode
+from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode, UserSession
 import webauthn
 from webauthn.helpers.structs import (
     RegistrationCredential, AuthenticatorSelectionCriteria, PublicKeyCredentialRpEntity,
@@ -39,7 +38,7 @@ import base64
 from .serializers import (
     RegisterSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer, MFASerializer, MFAVerifySerializer,
     UserAdminCreateSerializer, UserAdminUpdateSerializer, GitHubAuthSerializer, UserActionLogSerializer,
-    AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+    AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, UserSessionSerializer
 )
 import logging
 import datetime
@@ -242,6 +241,63 @@ class PasswordChangeView(generics.GenericAPIView):
         # Keep the user logged in
         update_session_auth_hash(request, user)
         return Response({"detail": "New password has been saved."}, status=status.HTTP_200_OK)
+
+
+# Web Session Management
+class UserSessionListView(generics.ListAPIView):
+    """
+    List all active web sessions for the current user.
+    """
+    serializer_class = UserSessionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Order by last activity to show the most recent sessions first
+        return self.request.user.web_sessions.order_by('-last_activity')
+
+    def get_serializer_context(self):
+        # Pass request to the serializer context to compare session keys
+        return {'request': self.request}
+
+
+class UserSessionRevokeView(views.APIView):
+    """
+    Revoke (delete) a specific web session.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            # Ensure the user can only revoke their own sessions
+            session_to_revoke = UserSession.objects.get(pk=pk, user=request.user)
+        except UserSession.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Do not allow revoking the current session via this endpoint
+        if session_to_revoke.session_key == request.session.session_key:
+            return Response({'detail': 'Cannot revoke the current session.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Invalidate the session in Django's session store
+        from django.contrib.sessions.models import Session
+        try:
+            django_session = Session.objects.get(session_key=session_to_revoke.session_key)
+            django_session.delete()
+        except Session.DoesNotExist:
+            # Session might have already expired or been cleared from Django's side
+            pass
+
+        # Log the action before deleting the record
+        log_action(
+            user=request.user,
+            action='session_revoke',
+            request=request,
+            details=f'User revoked session for IP {session_to_revoke.ip_address} ({session_to_revoke.user_agent})'
+        )
+
+        # Delete our tracked session record
+        session_to_revoke.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PasswordResetRequestView(generics.GenericAPIView):

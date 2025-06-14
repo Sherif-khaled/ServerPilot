@@ -1,44 +1,11 @@
-import secrets
 import hashlib
+import secrets
+from datetime import timedelta
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from datetime import timedelta
-
-
-class RecoveryCode(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recovery_codes')
-    code = models.CharField(max_length=128)
-    used = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"Recovery code for {self.user.username}"
-
-    @staticmethod
-    def hash_code(code):
-        return hashlib.sha256(code.encode('utf-8')).hexdigest()
-
-    @staticmethod
-    def generate_code():
-        return '-'.join(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(4)) for _ in range(3))
-
-
-class WebAuthnKey(models.Model):
-    user = models.ForeignKey(
-        'CustomUser',
-        on_delete=models.CASCADE,
-        related_name='webauthn_keys'
-    )
-    name = models.CharField(max_length=255, help_text="A user-friendly name for the key.")
-    credential_id = models.BinaryField(max_length=512, unique=True)
-    public_key = models.BinaryField(max_length=512)
-    sign_count = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    last_used_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"'{self.name}' for {self.user.username}"
 
 
 class CustomUser(AbstractUser):
@@ -82,6 +49,54 @@ class CustomUser(AbstractUser):
 
         expiration_date = self.password_changed_at + timedelta(days=policy.password_expiration_days)
         return timezone.now() > expiration_date
+
+
+class UserSession(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='web_sessions')
+    session_key = models.CharField(max_length=40, unique=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
+    location = models.CharField(max_length=100, null=True, blank=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ip_address}"
+
+
+class RecoveryCode(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recovery_codes')
+    code = models.CharField(max_length=128)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Recovery code for {self.user.username}"
+
+    @staticmethod
+    def hash_code(code):
+        return hashlib.sha256(code.encode('utf-8')).hexdigest()
+
+    @staticmethod
+    def generate_code():
+        return '-'.join(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(4)) for _ in range(3))
+
+
+class WebAuthnKey(models.Model):
+    user = models.ForeignKey(
+        'CustomUser',
+        on_delete=models.CASCADE,
+        related_name='webauthn_keys'
+    )
+    name = models.CharField(max_length=255, help_text="A user-friendly name for the key.")
+    credential_id = models.BinaryField(max_length=512, unique=True)
+    public_key = models.BinaryField(max_length=512)
+    sign_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"'{self.name}' for {self.user.username}"
+
 
 class UserActionLog(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

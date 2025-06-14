@@ -232,18 +232,25 @@ export default function ServerList({ customerId: propCustomerId }) {
               <ListItemIcon>
                 <DnsIcon />
               </ListItemIcon>
-              <ListItemText 
-                primary={server.server_name}
-                secondary={
-                  <>
-                    <Typography component="span" variant="body2" color="text.primary">
-                      {server.server_ip}:{server.ssh_port}
-                    </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography component="span" variant="body1">
+                  {server.server_name}
+                </Typography>
+                <Box component="div" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                  <Typography component="span" variant="body2" color="text.primary">
+                    {server.server_ip}:{server.ssh_port}
+                  </Typography>
+                  <Typography component="span" variant="body2" color="text.secondary">
                     {` - User: ${server.login_using_root ? 'root' : (server.ssh_user || 'N/A')}`}
-                    <Chip label={server.is_active ? 'Active' : 'Inactive'} color={server.is_active ? 'success' : 'default'} size="small" sx={{ml: 1}}/>
-                  </>
-                }
-              />
+                  </Typography>
+                  <Chip 
+                    label={server.is_active ? 'Active' : 'Inactive'} 
+                    color={server.is_active ? 'success' : 'default'} 
+                    size="small" 
+                    component="span"
+                  />
+                </Box>
+              </Box>
             </ListItem>
             {testConnectionStatus[server.id] && !testConnectionStatus[server.id]?.testing && (
               <ListItem sx={{ pl: 9, pt:0, pb: 1}}>

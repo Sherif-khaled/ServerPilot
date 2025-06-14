@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -9,6 +9,13 @@ const SshTerminalPage = () => {
     const terminalRef = useRef(null); // Ref for the container div
     const term = useRef(null); // Ref for the Terminal instance
     const socketRef = useRef(null);
+    const [connectionStatus, setConnectionStatus] = useState('disconnected');
+    const [connectionDetails, setConnectionDetails] = useState({
+      host: '167.86.76.14',
+      port: 22,
+      username: 'root',
+      password: '2P8KVdli7i1R8w21m2we01'
+    });
 
     useEffect(() => {
         if (!terminalRef.current || term.current) {
@@ -29,67 +36,93 @@ const SshTerminalPage = () => {
             }
         };
 
-        // Setup WebSocket
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//localhost:8000/ws/servers/${serverId}/ssh/`;
-        socketRef.current = new WebSocket(wsUrl);
+        // Setup WebSocket with reconnection
+        const connectWebSocket = async () => {
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.hostname}:5000/ws/servers/${serverId}/ssh`;
+                console.log('Connecting to:', wsUrl);
+                
+                socketRef.current = new WebSocket(wsUrl);
+                
+                socketRef.current.onopen = async () => {
+                    console.log('WebSocket connected');
+                    term.current.writeln('\x1B[1;32mConnected to terminal server\x1B[0m');
+                    
+                    // Send connection details
+                    socketRef.current.send(JSON.stringify({
+                        host: connectionDetails.host,
+                        port: connectionDetails.port,
+                        username: connectionDetails.username,
+                        password: connectionDetails.password
+                    }));
+                };
+                
+                socketRef.current.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    term.current.writeln('\x1B[1;31mConnection error. Retrying...\x1B[0m');
+                    setTimeout(connectWebSocket, 2000);
+                };
+                
+                socketRef.current.onclose = () => {
+                    console.log('WebSocket closed');
+                    term.current.writeln('\x1B[1;33mConnection closed. Reconnecting...\x1B[0m');
+                    setTimeout(connectWebSocket, 2000);
+                };
+                
+                socketRef.current.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'output') {
+                            term.current.write(data.output);
+                        } else if (data.type === 'error') {
+                            term.current.writeln(`\x1B[1;31m[ERROR]: ${data.message}\x1B[0m`);
+                        }
+                    } catch (e) {
+                        console.error('Error processing message:', e);
+                    }
+                };
 
-        socketRef.current.onopen = () => {
-            console.log('WebSocket connected');
-            handleResize(); // Perform initial fit
-            term.current.writeln('Welcome to the SSH Terminal! Connecting to server...');
-        };
+                // Handle terminal input
+                const onDataDisposable = term.current.onData(data => {
+                    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                        // After initial handshake (connection details sent in onopen),
+                        // subsequent data from xterm.js is raw input to be sent directly.
+                        socketRef.current.send(data);
+                    }
+                });
 
-        socketRef.current.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'terminal_output' && data.output) {
-                term.current.write(data.output);
-            } else if (data.type === 'status' || data.type === 'error') {
-                term.current.writeln(`[${data.type.toUpperCase()}]: ${data.message}`);
+                // Handle terminal resize
+                window.addEventListener('resize', handleResize);
+
+                const onResizeDisposable = term.current.onResize(size => {
+                    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                        const message = { action: 'resize', data: { cols: size.cols, rows: size.rows } };
+                        socketRef.current.send(JSON.stringify(message));
+                    }
+                });
+
+                // Cleanup on component unmount
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    onDataDisposable.dispose();
+                    onResizeDisposable.dispose();
+                    if (socketRef.current) {
+                        socketRef.current.close();
+                    }
+                    if (term.current) {
+                        term.current.dispose();
+                        term.current = null;
+                    }
+                };
+            } catch (error) {
+                console.error('WebSocket connection failed:', error);
+                setTimeout(connectWebSocket, 2000);
             }
         };
 
-        socketRef.current.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-            term.current.writeln('\n[ERROR]: WebSocket connection failed.');
-        };
+        connectWebSocket();
 
-        socketRef.current.onclose = () => {
-            console.log('WebSocket disconnected');
-            term.current.writeln('\n[INFO]: WebSocket connection closed.');
-        };
-
-        // Handle terminal input
-        const onDataDisposable = term.current.onData(data => {
-            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                const message = { action: 'send_ssh_data', data: { command: data } };
-                socketRef.current.send(JSON.stringify(message));
-            }
-        });
-
-        // Handle terminal resize
-        window.addEventListener('resize', handleResize);
-
-        const onResizeDisposable = term.current.onResize(size => {
-            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                const message = { action: 'resize', data: { cols: size.cols, rows: size.rows } };
-                socketRef.current.send(JSON.stringify(message));
-            }
-        });
-
-        // Cleanup on component unmount
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            onDataDisposable.dispose();
-            onResizeDisposable.dispose();
-            if (socketRef.current) {
-                socketRef.current.close();
-            }
-            if (term.current) {
-                term.current.dispose();
-                term.current = null;
-            }
-        };
     }, [serverId]);
 
     return (

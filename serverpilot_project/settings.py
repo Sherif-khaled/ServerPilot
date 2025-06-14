@@ -144,6 +144,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'ServerPilot_API.Users.middleware.UserSessionMiddleware',  # Added for web session tracking
     # 'security.middleware.PasswordExpirationMiddleware', # Disabled: Middleware not implemented yet
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -191,49 +192,15 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', 'sK49M8HrcvssSzOp'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
-        'TEST': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:'
-        }
     }
 }
 
-# Custom test runner that prevents any database creation
-class NoDbTestRunner:
-    """Test runner that prevents database creation"""
-    def __init__(self, *args, **kwargs):
-        from django.test.utils import setup_databases
-        
-        # Monkey patch setup_databases to prevent database creation
-        def patched_setup_databases(*args, **kwargs):
-            return {}
-            
-        setup_databases = patched_setup_databases
-
-    def run_tests(self, test_labels, extra_tests=None, **kwargs):
-        from django.test.utils import get_runner
-        TestRunner = get_runner(settings)
-        return TestRunner(
-            pattern="test_*.py",
-            verbosity=1,
-            interactive=False,
-            failfast=False,
-            keepdb=False,
-            reverse=False,
-            debug_mode=False,
-            debug_sql=False,
-            parallel=0,
-            tags=None,
-            exclude_tags=None,
-            **kwargs
-        ).run_tests(test_labels, extra_tests, **kwargs)
-
-# Use custom test runner during testing
-import sys
-if 'test' in sys.argv or 'pytest' in sys.argv[0]:
-    TEST_RUNNER = 'serverpilot_project.settings.NoDbTestRunner'
-    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-    DATABASES['default']['NAME'] = ':memory:'
+# Use SQLite for testing to avoid permission issues and for speed
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
 
 # Skip migrations during testing
 MIGRATION_MODULES = {

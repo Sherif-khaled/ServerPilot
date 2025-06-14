@@ -24,6 +24,11 @@ servers_router.register(r'servers', ServerViewSet, basename='customer-servers')
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(servers_router.urls)),
+    
+    # Add the credentials endpoint to the nested router
+    path('customers/<int:customer_pk>/servers/<int:pk>/credentials/', 
+         ServerViewSet.as_view({'get': 'get_credentials'}), 
+         name='server-credentials'),
 ]
 
 # For now, we will primarily focus on nested routes defined in the main API urls.py.
