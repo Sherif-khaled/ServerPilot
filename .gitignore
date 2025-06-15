@@ -71,3 +71,4 @@ cookies.txt
 .DS_Store
 node_modules/
 ServerPilot_API/Servers/ssh_terminal/node_modules/
+backups/
