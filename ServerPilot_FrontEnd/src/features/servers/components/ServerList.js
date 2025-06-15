@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Button, Typography, Paper, List, ListItem, ListItemText,
+  Box, Button, Typography, Paper, ListItemText,
   ListItemIcon, IconButton, CircularProgress, Alert, Dialog,
   DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, Chip,
-  Tooltip, Menu, MenuItem, Grid, Card, CardContent
+  Tooltip, Menu, MenuItem, Grid, Card, CardContent, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow, Collapse
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -204,65 +205,85 @@ export default function ServerList({ customerId: propCustomerId }) {
           </MenuItem>
         ]}
       </Menu>
-      <List>
-        {servers.map(server => (
-          <React.Fragment key={server.id}>
-            <ListItem 
-              secondaryAction={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Tooltip title="Test Connection">
-                    <IconButton edge="end" aria-label="test" onClick={() => handleTestConnection(server.id)} disabled={testConnectionStatus[server.id]?.testing}>
-                      {testConnectionStatus[server.id]?.testing ? <CircularProgress size={24} /> : 
-                       testConnectionStatus[server.id]?.status === 'success' ? <CheckCircleIcon color="success" /> : 
-                       testConnectionStatus[server.id]?.status === 'error' ? <ErrorIcon color="error" /> : 
-                       <PowerIcon />}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Actions">
+      <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 3 }}>
+        <Table sx={{ minWidth: 650 }} aria-label="servers table">
+          <TableHead sx={{ backgroundColor: 'action.hover' }}>
+            <TableRow>
+              <TableCell>Server</TableCell>
+              <TableCell>Connection Details</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="center">Connection Test</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {servers.map((server) => (
+              <React.Fragment key={server.id}>
+                <TableRow hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row">
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <DnsIcon sx={{ mr: 1.5, color: 'text.secondary' }} />
+                      <Typography variant="body1" fontWeight="medium">{server.server_name}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{server.server_ip}:{server.ssh_port}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      User: {server.login_using_root ? 'root' : (server.ssh_user || 'N/A')}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={server.is_active ? 'Active' : 'Inactive'}
+                      color={server.is_active ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title={
+                      testConnectionStatus[server.id]?.testing ? "Testing..." :
+                      testConnectionStatus[server.id]?.status === 'success' ? "Connection Successful" :
+                      testConnectionStatus[server.id]?.status === 'error' ? "Connection Failed" :
+                      "Test Connection"
+                    }>
+                      <IconButton onClick={() => handleTestConnection(server.id)} disabled={testConnectionStatus[server.id]?.testing}>
+                        {testConnectionStatus[server.id]?.testing ? <CircularProgress size={24} /> :
+                          testConnectionStatus[server.id]?.status === 'success' ? <CheckCircleIcon color="success" /> :
+                          testConnectionStatus[server.id]?.status === 'error' ? <ErrorIcon color="error" /> :
+                          <PowerIcon />}
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell align="right">
                     <IconButton
-                      aria-label="more"
+                      aria-label="more actions"
                       onClick={(e) => handleMenuOpen(e, server)}
                     >
                       <MoreVertIcon />
                     </IconButton>
-                  </Tooltip>
-                </Box>
-              }
-            >
-              <ListItemIcon>
-                <DnsIcon />
-              </ListItemIcon>
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography component="span" variant="body1">
-                  {server.server_name}
-                </Typography>
-                <Box component="div" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                  <Typography component="span" variant="body2" color="text.primary">
-                    {server.server_ip}:{server.ssh_port}
-                  </Typography>
-                  <Typography component="span" variant="body2" color="text.secondary">
-                    {` - User: ${server.login_using_root ? 'root' : (server.ssh_user || 'N/A')}`}
-                  </Typography>
-                  <Chip 
-                    label={server.is_active ? 'Active' : 'Inactive'} 
-                    color={server.is_active ? 'success' : 'default'} 
-                    size="small" 
-                    component="span"
-                  />
-                </Box>
-              </Box>
-            </ListItem>
-            {testConnectionStatus[server.id] && !testConnectionStatus[server.id]?.testing && (
-              <ListItem sx={{ pl: 9, pt:0, pb: 1}}>
-                 <Typography variant="caption" sx={{whiteSpace: 'pre-wrap', color: testConnectionStatus[server.id]?.status === 'error' ? 'error.main' : 'text.secondary'}}>
-                    {testConnectionStatus[server.id]?.message}
-                 </Typography>
-              </ListItem>
-            )}
-            <Divider component="li" />
-          </React.Fragment>
-        ))}
-      </List>
+                  </TableCell>
+                </TableRow>
+                {testConnectionStatus[server.id] && !testConnectionStatus[server.id]?.testing && (
+                  <TableRow>
+                    <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
+                      <Collapse in={true} timeout="auto" unmountOnExit>
+                        <Box sx={{ margin: 1, p: 2, border: '1px dashed', borderColor: 'grey.400', borderRadius: 1, bgcolor: testConnectionStatus[server.id]?.status === 'error' ? 'rgba(255, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.03)' }}>
+                          <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap', color: testConnectionStatus[server.id]?.status === 'error' ? 'error.main' : 'text.secondary', fontWeight:'bold' }}>
+                            Test Result:
+                          </Typography>
+                          <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap', color: testConnectionStatus[server.id]?.status === 'error' ? 'error.main' : 'text.secondary', display: 'block', mt: 0.5 }}>
+                            {testConnectionStatus[server.id]?.message}
+                          </Typography>
+                        </Box>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
         <DialogTitle>Delete Server</DialogTitle>
