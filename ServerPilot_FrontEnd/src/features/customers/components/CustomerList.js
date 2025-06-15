@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Box, Button, Typography, Paper, Table, TableBody, TableCell,
+  Box, Button, Typography, Card, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip
 } from '@mui/material';
@@ -78,7 +78,7 @@ export default function CustomerList() {
   }
 
   return (
-    <Paper sx={{ p: 3, m: 2, display: 'flex', flexDirection: 'column' }}>
+    <Card sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1">
           My Customers
@@ -169,6 +169,6 @@ export default function CustomerList() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+    </Card>
   );
 }

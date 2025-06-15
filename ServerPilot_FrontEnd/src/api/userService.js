@@ -34,7 +34,13 @@ export const adminBulkDeleteUsers = (userIds) => apiClient.post(`${ADMIN_USERS_U
 export const adminSetUserPassword = (userId, newPassword) => apiClient.post(`${ADMIN_USERS_URL}/${userId}/set-password/`, { new_password: newPassword });
 
 // --- Admin User Statistics Endpoint ---
-export const getUserStats = () => apiClient.get(`${ADMIN_API_URL}/stats/`);
+export const getUserStats = () => {
+    return apiClient.get('/api/users/stats/');
+};
+
+export const getDashboardStats = () => {
+    return apiClient.get('/stats/dashboard/');
+};
 
 // --- Customer Management Endpoints ---
 export const getCustomers = () => apiClient.get(CUSTOMER_API_URL);

@@ -211,7 +211,7 @@ export default function ServerList({ customerId: propCustomerId }) {
   }
 
   return (
-    <Paper sx={{ p: 3, m: 2 }}>
+    <Card sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" component="h2">Servers</Typography>
         <Button
@@ -259,7 +259,7 @@ export default function ServerList({ customerId: propCustomerId }) {
 
         ]}
       </Menu>
-      <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 3 }}>
+      <TableContainer sx={{ mt: 2 }}>
         <Table sx={{ minWidth: 650 }} aria-label="servers table">
           <TableHead sx={{ backgroundColor: 'action.hover' }}>
             <TableRow>
@@ -542,9 +542,7 @@ export default function ServerList({ customerId: propCustomerId }) {
             />
           )}
         </DialogContent>
-        {/* DialogActions can be part of ServerForm or here if ServerForm doesn't have its own submit/cancel buttons */}
-        {/* For now, assuming ServerForm handles its own actions, or actions are passed down to it */}
       </Dialog>
-    </Paper>
+    </Card>
   );
 }

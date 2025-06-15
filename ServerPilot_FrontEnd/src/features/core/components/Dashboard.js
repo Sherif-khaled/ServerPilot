@@ -194,15 +194,18 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
       <Box
         component="main"
         sx={{
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'light'
+              ? theme.palette.grey[100]
+              : theme.palette.grey[900],
           flexGrow: 1,
-          p: 3,
-          // width: { sm: `calc(100% - ${drawerWidth}px)` }, // No longer needed here as AppBar is offset
-          mt: '64px', // AppBar height, adjust if your AppBar height is different
+          height: '100vh',
+          overflow: 'auto',
         }}
       >
-        {/* <Toolbar />  // This Toolbar is a spacer if AppBar is not fixed or if you need to push content down manually */}
-        <Container maxWidth="lg"> {/* Or false to disable maxWidth and use full width */}
-          {children} {/* Render children passed to Dashboard */}
+        <Toolbar />
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+          {children}
         </Container>
       </Box>
       

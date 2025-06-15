@@ -135,6 +135,7 @@ INSTALLED_APPS = [
     'ServerPilot_API.Customers',
     'ServerPilot_API.audit_log',
     'ServerPilot_API.security',
+    'stats',
 ]
 
 MIDDLEWARE = [

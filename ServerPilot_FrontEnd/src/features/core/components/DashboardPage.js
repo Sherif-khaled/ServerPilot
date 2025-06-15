@@ -1,165 +1,229 @@
 import React, { useEffect, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Box, CircularProgress, Paper, Typography, Grid, Alert, Card, CardContent, Icon } from '@mui/material';
-import { PeopleAltOutlined, CheckCircleOutline, HighlightOffOutlined } from '@mui/icons-material';
-import { getUserStats } from '../../../api/userService';
+import { Box, CircularProgress, Typography, Alert, Card, CardContent, LinearProgress } from '@mui/material';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useAuth } from '../../../AuthContext';
+import { getDashboardStats } from '../../../api/userService';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-const DashboardPage = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const response = await getUserStats();
-        setStats(response.data);
-        setError('');
-      } catch (err) {
-        console.error('Failed to fetch user stats:', err);
-        setError('Failed to load user statistics. You may not have permission to view this data or the server might be down.');
-        setStats(null); // Clear any old stats
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const chartData = {
-    labels: ['Total Users', 'Active Users', 'Inactive Users'],
-    datasets: [
-      {
-        label: 'User Counts',
-        data: stats ? [stats.total_users, stats.active_users, stats.inactive_users] : [0, 0, 0],
-        backgroundColor: [
-          'rgba(54, 162, 235, 0.6)', // Blue
-          'rgba(75, 192, 192, 0.6)', // Green
-          'rgba(255, 99, 132, 0.6)',  // Red
-        ],
-        borderColor: [
-          'rgba(54, 162, 235, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'User Statistics Overview',
-        font: {
-            size: 18
-        }
-      },
-    },
-    scales: {
-        y: {
-            beginAtZero: true,
-            ticks: {
-                stepSize: 1 // Ensure y-axis shows whole numbers for user counts
-            }
-        }
-    }
-  };
-
-  const statItems = stats ? [
-    {
-      title: 'Total Users',
-      value: stats.total_users,
-      icon: <PeopleAltOutlined sx={{ fontSize: 40 }} />,
-      color: 'primary.main',
-    },
-    {
-      title: 'Active Users',
-      value: stats.active_users,
-      icon: <CheckCircleOutline sx={{ fontSize: 40 }} />,
-      color: 'success.main',
-    },
-    {
-      title: 'Inactive Users',
-      value: stats.inactive_users,
-      icon: <HighlightOffOutlined sx={{ fontSize: 40 }} />,
-      color: 'error.main',
-    },
-  ] : [];
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+const StatCard = ({ title, value, total, unit, color, uptimeComponents }) => {
+  let displayValue = `${value}${unit || ''}`;
+  if (uptimeComponents) {
+    const { years, months, days, hours, minutes } = uptimeComponents;
+    const parts = [];
+    if (years > 0) parts.push(`${years} year${years > 1 ? 's' : ''}`);
+    if (months > 0) parts.push(`${months} month${months > 1 ? 's' : ''}`);
+    if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+    if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+    if (minutes > 0 || parts.length === 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+    displayValue = parts.join(', ');
   }
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" gutterBottom component="div" sx={{ mb: 4, textAlign: 'center' }}>
-        Admin Dashboard
-      </Typography>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      {/* Statistics Cards */}
-      {stats && !error && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {statItems.map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item.title}>
-              <Card elevation={3}>
-                <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Icon component="div" sx={{ color: item.color, mr: 2 }}>{item.icon}</Icon>
-                    <Box>
-                      <Typography variant="h5" component="div">
-                        {item.value}
-                      </Typography>
-                      <Typography sx={{ mb: 0 }} color="text.secondary">
-                        {item.title}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+    <Card elevation={3} sx={{ height: '100%' }}>
+      <CardContent>
+        <Typography color="text.secondary" gutterBottom>{title}</Typography>
+        <Typography variant="h5" component="div">{displayValue}</Typography> 
+        {total && !uptimeComponents && (
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2">out of {total}{unit}</Typography>
+            <LinearProgress variant="determinate" value={(value / total) * 100} color={color || 'primary'} sx={{ mt: 0.5 }} />
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
-      {/* Bar Chart */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} sx={{ margin: 'auto' }}> 
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '400px' }}> 
-            {stats && !error ? (
-                <Bar options={chartOptions} data={chartData} />
-            ) : (
-                !error && !loading && <Typography>No statistics data available for chart.</Typography> 
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+const StatChartCard = ({ title, children }) => (
+    <Card elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Typography color="text.secondary" gutterBottom>{title}</Typography>
+        {children}
+      </CardContent>
+    </Card>
+);
+
+const RamUsageChart = ({ used, total }) => {
+  const free = total > used ? total - used : 0;
+  const data = [
+    { name: 'Used', value: parseFloat(used.toFixed(2)) },
+    { name: 'Free', value: parseFloat(free.toFixed(2)) },
+  ];
+  const COLORS = ['#82ca9d', '#DDDDDD'];
+
+  return (
+    <ResponsiveContainer width="100%" height={250}>
+      <PieChart>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          innerRadius={60}
+          outerRadius={90}
+          fill="#8884d8"
+          paddingAngle={5}
+          dataKey="value"
+        >
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip formatter={(value, name) => [`${value} GB`, name]} />
+        <Legend wrapperStyle={{ paddingTop: '20px' }} />
+        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="24">
+          {total > 0 ? `${((used / total) * 100).toFixed(0)}%` : '0%'}
+        </text>
+      </PieChart>
+    </ResponsiveContainer>
+  );
+};
+
+const CpuUsageChart = ({ usage }) => {
+  const data = [
+    { name: 'Used', value: usage },
+    { name: 'Idle', value: 100 - usage },
+  ];
+  const COLORS = ['#FF8042', '#DDDDDD'];
+
+  return (
+    <ResponsiveContainer width="100%" height={250}>
+      <PieChart>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          innerRadius={60}
+          outerRadius={90}
+          fill="#8884d8"
+          paddingAngle={5}
+          dataKey="value"
+          startAngle={180}
+          endAngle={-180}
+        >
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip formatter={(value) => [`${value.toFixed(2)}%`, 'Usage']} />
+         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="28" fontWeight="bold">
+          {`${usage.toFixed(0)}%`}
+        </text>
+      </PieChart>
+    </ResponsiveContainer>
+  );
+};
+
+
+const SortableCard = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+};
+
+const DashboardPage = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [cardOrder, setCardOrder] = useState([]);
+
+  useEffect(() => {
+    if (user?.is_staff) {
+      getDashboardStats()
+        .then(response => {
+          const statsData = response.data;
+          setStats(statsData);
+          const initialCards = [
+            { id: 'totalUsers', title: 'Total Users', value: statsData.users.total, unit: '' },
+            { id: 'activeUsers', title: 'Active Users', value: statsData.users.active, unit: '' },
+            { id: 'totalCustomers', title: 'Total Customers', value: statsData.customers.total, unit: '' },
+            { id: 'averageUptime', title: 'Average Server Uptime', uptimeComponents: statsData.system?.uptime_components },
+            { id: 'totalBandwidth', title: 'Total Bandwidth (since boot)', value: statsData.system?.total_bandwidth_gb_since_boot, unit: ' GB' },
+            { id: 'cpuUsage', title: 'CPU Usage', value: statsData.system.cpu_usage_percent },
+            { id: 'ramUsage', title: 'RAM Usage', value: statsData.system.ram.used_gb, total: statsData.system.ram.total_gb },
+            { id: 'storageUsage', title: 'Storage Usage', value: statsData.system.storage.used_gb, total: statsData.system.storage.total_gb, unit: ' GB', color: 'warning' },
+          ];
+          setCardOrder(initialCards);
+        })
+        .catch(err => {
+          console.error('Failed to fetch dashboard stats:', err);
+          setError('Failed to load dashboard statistics.');
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setCardOrder((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+  }
+
+  if (!user?.is_staff) {
+    return <Typography variant="h5" sx={{ p: 3 }}>Welcome, {user.first_name || user.username}!</Typography>;
+  }
+
+  const chartCards = cardOrder.filter(c => c.id === 'cpuUsage' || c.id === 'ramUsage');
+  const statCards = cardOrder.filter(c => c.id !== 'cpuUsage' && c.id !== 'ramUsage');
+
+  return (
+    <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Typography variant="h4" gutterBottom>Admin Dashboard</Typography>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {stats && (
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={cardOrder.map(c => c.id)} strategy={rectSortingStrategy}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5, mb: 4 }}>
+              {statCards.map(card => (
+                <Box sx={{ width: { xs: '100%', sm: '50%', md: '33.333%' }, p: 1.5 }} key={card.id}>
+                  <SortableCard id={card.id}>
+                     <StatCard {...card} />
+                  </SortableCard>
+                </Box>
+              ))}
+            </Box>
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
+              {chartCards.map(card => (
+                <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1.5 }} key={card.id}>
+                  <SortableCard id={card.id}>
+                    {card.id === 'cpuUsage' ? (
+                      <StatChartCard title={card.title}>
+                        <CpuUsageChart usage={card.value} />
+                      </StatChartCard>
+                    ) : (
+                      <StatChartCard title={card.title}>
+                        <RamUsageChart used={card.value} total={card.total} />
+                      </StatChartCard>
+                    )}
+                  </SortableCard>
+                </Box>
+              ))}
+            </Box>
+          </SortableContext>
+        </DndContext>
+      )}
     </Box>
   );
 };
