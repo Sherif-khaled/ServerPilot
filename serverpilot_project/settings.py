@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'django_otp',
     'django_otp.plugins.otp_totp',
     'channels',
+    'django_celery_beat',
 
     # Local Apps
     'ServerPilot_API.Users',
@@ -136,6 +137,7 @@ INSTALLED_APPS = [
     'ServerPilot_API.audit_log',
     'ServerPilot_API.security',
     'stats',
+    'db_management',
 ]
 
 MIDDLEWARE = [
@@ -328,3 +330,15 @@ CSRF_COOKIE_SECURE = not DEBUG  # Only in production with HTTPS
 CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None' if needed for cross-site cookies
 CSRF_USE_SESSIONS = False  # Store CSRF token in cookie, not in session
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token
+
+
+# Celery Configuration
+# ------------------------------------------------------------------------------
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC' # It's good practice to use UTC
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+

@@ -18,7 +18,7 @@ import ProtectedRoute from './features/core/components/ProtectedRoute'; // Impor
 import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
 
-import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
+import DatabaseManagementPage from './features/core/components/DatabaseManagementPage';
 import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
 import AdminSettingsPage from './features/administration/pages/AdminSettingsPage';
 import ForgotPassword from './features/users/components/ForgotPassword';

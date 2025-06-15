@@ -3,7 +3,7 @@ psutil>=5.9.0
 requests
 geoip2
 django-redis==5.2.0
-djangorestframework>=3.14,<3.16
+djangorestframework==3.15.1
 pytest==7.4.4
 pytest-django==4.8.0
 pytest-asyncio
@@ -18,7 +18,7 @@ channels-redis>=4.0,<5.0
 daphne>=4.0,<5.0
 asyncssh>=2.13,<3.0
 webauthn>=1.6.0,<2.0.0
-dotenv
+python-dotenv
 django-filter>=24.2
 pyotp>=2.6.0
 django-otp>=1.2.2
@@ -30,3 +30,5 @@ fastapi==0.109.1
 uvicorn==0.27.0
 paramiko==3.4.0
 python-multipart==0.0.6
+celery>=5.3,<5.4
+django-celery-beat>=2.6.0
