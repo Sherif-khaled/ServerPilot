@@ -118,6 +118,35 @@ class Server(models.Model):
             if client:
                 client.close()
 
+    def change_user_password(self, new_password):
+        """
+        Changes the password for the relevant user on the server via SSH and updates the model.
+        """
+        if self.login_using_root:
+            username_to_change = 'root'
+        else:
+            username_to_change = self.ssh_user
+
+        if not username_to_change:
+            return False, "SSH user is not configured."
+
+        # Escape single quotes in the password to prevent shell injection issues with the echo command.
+        escaped_password = new_password.replace("'", "'\\''")
+        command = f"echo '{username_to_change}:{escaped_password}' | sudo chpasswd"
+
+        success, output = self.connect_ssh(command=command)
+
+        if success:
+            # If the command was successful, update the password in the database.
+            if self.login_using_root:
+                self.ssh_root_password = new_password
+            else:
+                self.ssh_password = new_password
+            self.save(update_fields=['ssh_root_password' if self.login_using_root else 'ssh_password', 'updated_at'])
+            return True, "Password changed successfully."
+        else:
+            return False, f"Failed to change password on the remote server. Details: {output}"
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Server'

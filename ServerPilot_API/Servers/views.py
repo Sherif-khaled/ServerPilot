@@ -258,6 +258,25 @@ class ServerViewSet(viewsets.ModelViewSet):
             f'Deleted server {server_name} (ID: {server_id})'
         )
 
+    @action(detail=True, methods=['post'], url_path='change_password')
+    def change_password(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        password = request.data.get('password')
+        if not password:
+            return Response({'error': 'Password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            success, output = server.change_user_password(password)
+            if success:
+                log_action(request.user, 'server_password_change', request, f'Changed password for server {server.server_name}')
+                return Response({'status': 'success', 'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
+            else:
+                log_action(request.user, 'server_password_change_failed', request, f'Failed to change password for server {server.server_name}: {output}')
+                return Response({'status': 'error', 'message': 'Failed to change password.', 'details': output}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f'Error changing password for server {server.id}: {e}', exc_info=True)
+            return Response({'status': 'error', 'message': 'An unexpected error occurred.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class AsyncAPIView(APIView):
     """

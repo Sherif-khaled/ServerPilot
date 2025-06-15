@@ -6,10 +6,11 @@ import {
   ListItemIcon, IconButton, CircularProgress, Alert, Dialog,
   DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, Chip,
   Tooltip, Menu, MenuItem, Grid, Card, CardContent, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Collapse
+  TableCell, TableContainer, TableHead, TableRow, Collapse, TextField
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import LockResetIcon from '@mui/icons-material/LockReset';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DnsIcon from '@mui/icons-material/Dns';
 import PowerIcon from '@mui/icons-material/Power';
@@ -23,7 +24,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
 } from 'recharts';
 
-import { getServers, deleteServer, testServerConnection, getServerInfo } from '../../../api/serverService';
+import { getServers, deleteServer, testServerConnection, getServerInfo, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
 
 const COLORS = ['#0088FE', '#FF8042']; // Blue for Used, Orange for Available 
@@ -49,6 +50,12 @@ export default function ServerList({ customerId: propCustomerId }) {
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [currentServerForMenu, setCurrentServerForMenu] = useState(null);
 
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+  const [serverForPasswordChange, setServerForPasswordChange] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
   const handleMenuOpen = (event, server) => {
     setMenuAnchorEl(event.currentTarget);
     setCurrentServerForMenu(server);
@@ -59,10 +66,51 @@ export default function ServerList({ customerId: propCustomerId }) {
     setCurrentServerForMenu(null);
   };
 
+  const handleOpenChangePasswordDialog = (server) => {
+    setServerForPasswordChange(server);
+    setChangePasswordDialogOpen(true);
+    setNewPassword('');
+    setChangePasswordError('');
+  };
+
+  const handleCloseChangePasswordDialog = () => {
+    setChangePasswordDialogOpen(false);
+    setServerForPasswordChange(null);
+    setNewPassword('');
+    setChangePasswordError('');
+  };
+
+  const generateComplexPassword = () => {
+    const length = 16;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=<>?~";
+    let retVal = "";
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
+    }
+    setNewPassword(retVal);
+  };
+
+  const handleChangePassword = async () => {
+    if (!serverForPasswordChange || !newPassword) {
+      setChangePasswordError('Password cannot be empty.');
+      return;
+    }
+    setChangePasswordError('');
+    try {
+      await changeServerPassword(customerId, serverForPasswordChange.id, newPassword);
+      handleCloseChangePasswordDialog();
+      setSuccessMessage(`Password for server '${serverForPasswordChange.server_name}' has been changed successfully.`);
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Failed to change password.';
+      setChangePasswordError(errorMsg);
+    }
+  };
+
   const fetchServers = useCallback(async () => {
     if (!customerId) return;
     setLoading(true);
     setError('');
+    setSuccessMessage('');
     try {
       const response = await getServers(customerId);
       setServers(response.data || []);
@@ -176,6 +224,7 @@ export default function ServerList({ customerId: propCustomerId }) {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {successMessage && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
 
       {servers.length === 0 && !error && (
         <Typography sx={{mt: 2, textAlign: 'center'}}>No servers found for this customer.</Typography>
@@ -195,6 +244,10 @@ export default function ServerList({ customerId: propCustomerId }) {
             <ListItemIcon><InfoIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Get Server Info</ListItemText>
           </MenuItem>,
+          <MenuItem key="change-password" onClick={() => { handleOpenChangePasswordDialog(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Change Password</ListItemText>
+          </MenuItem>,
           <MenuItem key="edit" onClick={() => { handleOpenModal(currentServerForMenu); handleMenuClose(); }}>
             <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Edit</ListItemText>
@@ -202,7 +255,8 @@ export default function ServerList({ customerId: propCustomerId }) {
           <MenuItem key="delete" onClick={() => { handleOpenDeleteDialog(currentServerForMenu); handleMenuClose(); }}>
             <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Delete</ListItemText>
-          </MenuItem>
+          </MenuItem>,
+
         ]}
       </Menu>
       <TableContainer component={Paper} sx={{ mt: 3, boxShadow: 3 }}>
@@ -295,6 +349,35 @@ export default function ServerList({ customerId: propCustomerId }) {
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
           <Button onClick={handleDelete} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={changePasswordDialogOpen} onClose={handleCloseChangePasswordDialog}>
+        <DialogTitle>Change Server Password for {serverForPasswordChange?.server_name}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Enter a new password for the server. You can also generate a complex password.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="password"
+            label="New Password"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            error={!!changePasswordError}
+            helperText={changePasswordError}
+          />
+          <Button onClick={generateComplexPassword} sx={{ mt: 2 }}>
+            Generate Complex Password
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseChangePasswordDialog}>Cancel</Button>
+          <Button onClick={handleChangePassword}>Change Password</Button>
         </DialogActions>
       </Dialog>
 

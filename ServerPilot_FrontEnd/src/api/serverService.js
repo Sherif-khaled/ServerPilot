@@ -29,6 +29,10 @@ const getServerInfo = (customerId, serverId) => {
   return apiClient.get(`/customers/${customerId}/servers/${serverId}/get-info/`);
 };
 
+const changeServerPassword = (customerId, serverId, password) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/change_password/`, { password });
+};
+
 export {
   getServers,
   getServerDetails,
@@ -37,4 +41,5 @@ export {
   deleteServer,
   testServerConnection,
   getServerInfo,
+  changeServerPassword,
 };
