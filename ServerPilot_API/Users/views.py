@@ -40,6 +40,8 @@ from .serializers import (
     UserAdminCreateSerializer, UserAdminUpdateSerializer, GitHubAuthSerializer, UserActionLogSerializer,
     AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, UserSessionSerializer
 )
+from .logging_utils import log_user_action
+import pyotp
 import logging
 import datetime
 
@@ -406,10 +408,12 @@ class MFAEnableSetupView(views.APIView):
                 # Create a new TOTP device with explicit parameters
                 logger.info(f"MFAEnableSetupView: Creating new TOTP device for user {user.username}")
                 
-                # Generate a random hexadecimal key for the TOTP device
-                # Using 20 bytes (40 hex chars) for the key as per TOTP standard
-                random_key = ''.join(random.choices('0123456789abcdef', k=40))
-                
+                # Generate a random 20-byte (160-bit) key for TOTP
+                import base64, os, urllib.parse, io
+                random_bytes = os.urandom(20)
+                hex_key = random_bytes.hex()  # Hex-encoded key for storage
+                base32_key = base64.b32encode(random_bytes).decode('utf-8').replace('=', '') # Base32 for provisioning URI
+
                 device = TOTPDevice(
                     user=user,
                     name=f"{user.username}'s TOTP Device",
@@ -417,27 +421,17 @@ class MFAEnableSetupView(views.APIView):
                     step=30,  # 30-second time step
                     digits=6,  # 6-digit tokens
                     tolerance=1,  # Allow 1 step (30s) of clock drift
-                    key=random_key  # Use the generated random key
+                    key=hex_key  # Store hex-encoded string
                 )
+                logger.debug(f"About to save TOTPDevice: key type={type(device.key)}, key repr={repr(device.key)}")
                 device.save()
                 logger.info(f"MFAEnableSetupView: Successfully created new device (ID: {device.id})")
-                
-                # Generate provisioning URI, ensuring the key is correctly base32 encoded.
-                import base64
-                import urllib.parse
-                from binascii import unhexlify
 
                 issuer_name = "ServerPilotApp"
                 account_name = user.email
-
-                # The key is stored as hex. It must be decoded to binary and then base32-encoded for the URI.
-                binary_key = unhexlify(device.key.encode('ascii'))
-                base32_key = base64.b32encode(binary_key).decode('utf-8')
-
                 # URL-encode the issuer and account name for safety.
                 encoded_issuer = urllib.parse.quote(issuer_name)
                 encoded_account = urllib.parse.quote(account_name)
-
                 # Construct the final URI.
                 uri = (
                     f"otpauth://totp/{encoded_issuer}:{encoded_account}?"
@@ -585,6 +579,15 @@ class MFAChallengeView(views.APIView):
     serializer_class = MFAVerifySerializer
 
     def post(self, request, *args, **kwargs):
+        # Log session and request state for debugging
+        logger.debug(f"MFAChallengeView: session keys: {list(request.session.keys())}")
+        logger.debug(f"MFAChallengeView: request data: {request.data}")
+
+        # Check if CSRF failed (Django sets request.META['CSRF_COOKIE_USED'] if checked)
+        if hasattr(request, 'csrf_processing_failed') and request.csrf_processing_failed:
+            logger.error("CSRF validation failed for MFA challenge endpoint.")
+            return Response({'error': 'CSRF validation failed.'}, status=status.HTTP_403_FORBIDDEN)
+
         user_id = request.session.get('mfa_user_id')
         if not user_id:
             logger.warning("MFA challenge failed: No user_id in session")
@@ -622,30 +625,38 @@ class MFAChallengeView(views.APIView):
         try:
             # Set tolerance on the device (1 step = 30 seconds)
             device.tolerance = 1
+
+            # --- DEBUG LOGGING ---
+            import time, base64
+            logger.info(f"MFAChallengeView: Verifying token '{otp_token}' at time {time.time()}")
+            try:
+                # The key stored in the device is hex, so we get bin_key and re-encode to base32.
+                b32_secret = base64.b32encode(device.bin_key).decode('utf-8')
+                server_totp = pyotp.TOTP(b32_secret)
+                expected_otp_now = server_totp.now()
+                logger.info(f"MFAChallengeView: Expected OTP (now): {expected_otp_now}")
+            except Exception as debug_e:
+                logger.error(f"MFAChallengeView: Error during debug logging: {debug_e}")
+            # --- END DEBUG LOGGING ---
+
             if device.verify_token(otp_token):
-                    # Log the user in with the session backend
+                # Log the user in with the session backend
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                
                 # Update last login time
                 user.last_login = timezone.now()
                 user.save(update_fields=['last_login'])
-                
                 # Ensure the session is saved with the auth data
                 request.session.cycle_key()
                 request.session.save()
-                
                 # Clear the MFA session data
                 if 'mfa_user_id' in request.session:
                     del request.session['mfa_user_id']
                 if 'mfa_verified_at' in request.session:
                     del request.session['mfa_verified_at']
-                
                 # Save the session to ensure it's persisted
                 request.session.save()
-                
                 logger.info(f"MFA login successful for user {user.username}")
                 log_user_action(user, 'login_mfa', 'User logged in successfully with MFA')
-                
                 # Return the user data
                 return Response(ProfileSerializer(user, context={'request': request}).data)
             else:
@@ -654,9 +665,8 @@ class MFAChallengeView(views.APIView):
                     {'error': 'Invalid verification code. Please try again.'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
         except Exception as e:
-            logger.error(f"MFA verification error for user {user.username}: {str(e)}", exc_info=True)
+            logger.error(f"MFA verification error for user {user.username if 'user' in locals() else user_id}: {str(e)}", exc_info=True)
             return Response(
                 {'error': 'An error occurred during verification. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -907,5 +917,10 @@ class UserActionLogViewSet(viewsets.ReadOnlyModelViewSet):
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class CsrfTokenView(View):
     def get(self, request, *args, **kwargs):
-        csrf_token = get_csrf_token_value(request)
-        return JsonResponse({'csrfToken': csrf_token})
+        try:
+            csrf_token = get_csrf_token_value(request)
+            return JsonResponse({'csrfToken': csrf_token})
+        except Exception as e:
+            logger.error(f"CSRF token endpoint error: {str(e)}", exc_info=True)
+            return JsonResponse({'error': 'An error occurred while retrieving CSRF token.'}, status=500)
+
