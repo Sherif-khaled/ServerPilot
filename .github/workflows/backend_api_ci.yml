@@ -70,7 +70,17 @@ jobs:
         DB_PORT: 5432
 
       run: |
+        echo "Starting WebSocket server in the background..."
+        python ServerPilot_API/Servers/ssh_terminal/ws_server.py &
+        WEBSOCKET_PID=$!
+        echo "WebSocket server started with PID $WEBSOCKET_PID"
+        sleep 3 # Give server time to start
+
+        echo "Running tests..."
         pytest ServerPilot_API/ -v
+
+        echo "Stopping WebSocket server..."
+        kill $WEBSOCKET_PID
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3

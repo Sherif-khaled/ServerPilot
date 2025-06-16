@@ -8,9 +8,9 @@ import pytest
 load_dotenv()
 
 # Get SSH credentials from environment variables with defaults from user input
-SSH_HOST = os.getenv('SSH_HOST', '167.86.76.14')
-SSH_USER = os.getenv('SSH_USER', 'root')
-SSH_PASS = os.getenv('SSH_PASS', '2P8KVdli7i1R8w21m2we01')
+SSH_HOST = os.getenv('SSH_HOST', '192.168.1.1')
+SSH_USER = os.getenv('SSH_USER', 'testuser')
+SSH_PASS = os.getenv('SSH_PASS', 'testpass123')
 SSH_PORT = int(os.getenv('SSH_PORT', '22'))
 
 @pytest.mark.asyncio
