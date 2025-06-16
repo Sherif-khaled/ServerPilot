@@ -99,6 +99,7 @@ class ServerViewSet(viewsets.ModelViewSet):
                 'ssh_port': server.ssh_port,
                 'login_using_root': server.login_using_root,
                 'ssh_user': server.ssh_user if not server.login_using_root else 'root',
+                'ssh_password': server.ssh_root_password if server.login_using_root else server.ssh_password,
                 'ssh_key_available': bool(server.ssh_key),
                 'created_at': server.created_at,
                 'updated_at': server.updated_at

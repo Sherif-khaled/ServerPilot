@@ -11,6 +11,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
 import sys
 import os
 
@@ -22,17 +29,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-s_5*isjws)ulo@l759e+utm)3=_csr_%f)w&6xh9h7cv)3-pd+'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-s_5*isjws)ulo@l759e+utm)3=_csr_%f)w&6xh9h7cv)3-pd+')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+# Frontend URL Configuration
+FRONTEND_ORIGINS = os.getenv('FRONTEND_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+
+CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
@@ -48,10 +55,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
 
 # Allow session authentication from JavaScript
 SESSION_COOKIE_HTTPONLY = True # Prevent JavaScript from accessing the session cookie
@@ -64,8 +68,10 @@ CSRF_USE_SESSIONS = False  # Store CSRF token in cookie, not in session
 FRONTEND_URL = 'http://localhost:3000'
 
 # Google reCAPTCHA keys
-GOOGLE_RECAPTCHA_SECRET_KEY = 'your-secret-key-here' # Replace with your secret key
-GOOGLE_RECAPTCHA_SITE_KEY = 'your-site-key-here' # Replace with your site key
+GOOGLE_RECAPTCHA_SECRET_KEY = os.getenv('GOOGLE_RECAPTCHA_SECRET_KEY', 'your-secret-key-here')
+GOOGLE_RECAPTCHA_SITE_KEY = os.getenv('GOOGLE_RECAPTCHA_SITE_KEY', 'your-site-key-here')
+
+# CSRF settings
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read the CSRF token
 CSRF_COOKIE_SAMESITE = 'Lax'  # Match SESSION_COOKIE_SAMESITE
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token
@@ -74,13 +80,16 @@ CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token
 CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
 SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
 
+# Redis Configuration
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
+REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 
 # Cache
 # ------------------------------------------------------------------------------
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -181,7 +190,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, int(REDIS_PORT))],
         },
     },
 }
@@ -198,11 +207,15 @@ DATABASES = {
     }
 }
 
-# Use SQLite for testing to avoid permission issues and for speed
+# Use PostgreSQL for testing
 if 'test' in sys.argv:
     DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('TEST_DB_NAME', 'test_serverpilot_db'),
+        'USER': os.environ.get('DB_USER', 'serverpilot_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'sK49M8HrcvssSzOp'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 
 # Skip migrations during testing
@@ -334,11 +347,11 @@ CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token
 
 # Celery Configuration
 # ------------------------------------------------------------------------------
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC' # It's good practice to use UTC
+CELERY_TIMEZONE = os.getenv('CELERY_TIMEZONE', 'UTC')
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 

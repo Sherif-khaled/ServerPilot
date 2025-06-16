@@ -12,58 +12,61 @@ User = get_user_model()
 
 class ServerAPITests(APITestCase):
     def setUp(self):
-        # Create a user with unique credentials
-        self.user = User.objects.create_user(
-            username=f'testuser_{uuid.uuid4().hex[:8]}',
-            email=f'test_{uuid.uuid4().hex[:8]}@example.com',
-            password='testpassword123'
-        )
+        # Clean up any existing test data
+        Server.objects.all().delete()
+        Customer.objects.all().delete()
+        User.objects.all().delete()
+        CustomerType.objects.all().delete()
         
-        # Create another user for permission tests
-        self.other_user = User.objects.create_user(
-            username=f'otheruser_{uuid.uuid4().hex[:8]}',
-            email=f'other_{uuid.uuid4().hex[:8]}@example.com',
-            password='otherpassword123'
+        # Generate unique usernames for each test run
+        test_prefix = f'test_{uuid.uuid4().hex[:8]}_'
+        
+        # Create test user and customer
+        self.user = User.objects.create_user(
+            username=f'{test_prefix}user',
+            password='testpass123',
+            email=f'{test_prefix}user@example.com'
         )
-
-        # Create a customer type
-        self.customer_type = CustomerType.objects.create(name='Test Type')
-
-        # Create a customer owned by self.user
         self.customer = Customer.objects.create(
             owner=self.user,
-            customer_type=self.customer_type,
             first_name='Test',
             last_name='Customer',
-            email=f'customer_{uuid.uuid4().hex[:8]}@example.com'
+            email=f'{test_prefix}customer@example.com'
         )
         
-        # Create a customer owned by self.other_user
+        # Create another user and customer for permission tests
+        self.other_user = User.objects.create_user(
+            username=f'{test_prefix}other_user',
+            password='otherpass123',
+            email=f'{test_prefix}other@example.com'
+        )
         self.other_customer = Customer.objects.create(
             owner=self.other_user,
-            customer_type=self.customer_type,
             first_name='Other Test',
             last_name='Customer',
-            email=f'othercustomer_{uuid.uuid4().hex[:8]}@example.com'
+            email=f'{test_prefix}othercustomer@example.com'
         )
-
+        
         # URL for listing/creating servers for self.customer
         self.servers_url = reverse('customer-servers-list', kwargs={'customer_pk': self.customer.pk})
 
         # Authenticate as self.user
         self.client.force_authenticate(user=self.user)
-    
+
     def tearDown(self):
-        # Clean up all created objects
+        # Clean up all created objects in reverse order of creation
         Server.objects.all().delete()
         Customer.objects.all().delete()
-        User.objects.all().delete()
         CustomerType.objects.all().delete()
+        User.objects.all().delete()
 
     def test_create_server_non_root_with_password(self):
         """
         Ensure we can create a new server for a customer (non-root login with password).
         """
+        # Ensure we start with clean database
+        self.assertEqual(Server.objects.count(), 0)
+        
         data = {
             'server_name': 'My Test Server',
             'server_ip': '192.168.1.100',
@@ -75,6 +78,8 @@ class ServerAPITests(APITestCase):
         response = self.client.post(self.servers_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Server.objects.count(), 1)
+        
+        # Verify server details
         server = Server.objects.first()
         self.assertEqual(server.server_name, data['server_name'])
         self.assertEqual(server.ssh_port, data['ssh_port'])

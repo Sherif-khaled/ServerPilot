@@ -10,7 +10,7 @@ def test_profile_photo_upload():
     client = APIClient()
     user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='pass1234', is_active=True)
     client.force_login(user)
-    url = reverse('profile')
+    url = reverse('users:profile')
     # Use a minimal valid PNG image for testing
     # A valid 1x1 transparent PNG, base64 encoded
     base64_png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='

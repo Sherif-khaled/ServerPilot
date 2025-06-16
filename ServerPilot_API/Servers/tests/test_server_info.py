@@ -104,14 +104,11 @@ async def test_get_server_info_permission_denied():
     customer1 = await create_test_customer(owner=user1)
     server1 = await create_test_server(customer=customer1)
     
-    # Create a different user
-    user2 = await sync_to_async(User.objects.create_user)(
-        username='otheruser',
-        password='testpass123',
-        email='other@example.com'
-    )
+    # Create a different user and customer
+    user2 = await create_test_user()
+    customer2 = await create_test_customer(owner=user2)
     
-    # Make request with different user
+    # Make request with user2 trying to access server1 (which belongs to customer1)
     client = AsyncClient()
     await sync_to_async(client.force_login, thread_sensitive=True)(user2)
     
@@ -124,3 +121,5 @@ async def test_get_server_info_permission_denied():
     
     # Verify access is denied
     assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert 'error' in response.json()
+    assert 'permission' in response.json()['error'].lower()

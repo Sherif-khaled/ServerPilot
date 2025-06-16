@@ -11,7 +11,7 @@ async def test_websocket():
             "host": "167.86.76.14",
             "port": 22,
             "username": "root",
-            "password": "2P8KVdli7i1R8w21m2we01"
+            "password": "Q5@qOwIriE7g0!5H"
         }))
         
         # Test sending a command

@@ -14,7 +14,7 @@ def test_login():
         first_name='Test',
         last_name='User'
     )
-    url = reverse('login')
+    url = reverse('users:login')
     data = {'username': 'testuser', 'password': 'pass1234'}
     response = client.post(url, data)
     assert response.status_code == 200

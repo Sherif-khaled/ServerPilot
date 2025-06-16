@@ -51,7 +51,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/customers/:customerId/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerList /></Dashboard>} />
         <Route path="/customers/:customerId/servers/add" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerForm /></Dashboard>} />
         <Route path="/customers/:customerId/servers/edit/:serverId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerForm /></Dashboard>} />
-        <Route path="/servers/:serverId/console" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SshTerminalPage /></Dashboard>} />
+        <Route path="/customers/:customerId/servers/:serverId/console" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SshTerminalPage /></Dashboard>} />
         {/* Add other protected dashboard routes here if needed */}
         <Route path="/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SettingsPage /></Dashboard>} />
         <Route path="/audit-logs" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AuditLogList /></Dashboard>} />

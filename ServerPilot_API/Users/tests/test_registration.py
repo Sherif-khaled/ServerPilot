@@ -7,7 +7,7 @@ from unittest.mock import patch
 @pytest.mark.django_db
 def test_register_and_activate():
     client = APIClient()
-    url = reverse('register')
+    url = reverse('users:register')
     data = {
         'username': 'testuser',
         'email': 'test@example.com',

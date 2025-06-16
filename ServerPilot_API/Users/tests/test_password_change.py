@@ -8,7 +8,7 @@ def test_password_change():
     client = APIClient()
     user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='oldpass', is_active=True)
     client.force_login(user)
-    url = reverse('password-change')
+    url = reverse('users:password-change')
     data = {
         'current_password': 'oldpass',  # Changed from old_password to current_password
         'new_password': 'newpass123'

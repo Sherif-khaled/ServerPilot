@@ -10,7 +10,7 @@ def test_admin_deactivate_user():
     admin = CustomUser.objects.create_superuser('admin', 'admin@example.com', 'adminpass')
     user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='pass1234', is_active=True)
     client.force_login(admin)
-    url = reverse('admin-users-detail', args=[user.pk])
+    url = reverse('users:admin-users-detail', kwargs={'pk': user.pk})
     response = client.delete(url)
     assert response.status_code == status.HTTP_204_NO_CONTENT
     with pytest.raises(CustomUser.DoesNotExist):

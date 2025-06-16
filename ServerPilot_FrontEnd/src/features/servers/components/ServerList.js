@@ -236,7 +236,7 @@ export default function ServerList({ customerId: propCustomerId }) {
         onClose={handleMenuClose}
       >
         {currentServerForMenu && [
-          <MenuItem key="connect" component={Link} to={`/servers/${currentServerForMenu.id}/console`} onClick={handleMenuClose}>
+          <MenuItem key="connect" component={Link} to={`/customers/${customerId}/servers/${currentServerForMenu.id}/console`} onClick={handleMenuClose}>
             <ListItemIcon><DnsIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Connect</ListItemText>
           </MenuItem>,

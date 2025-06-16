@@ -55,6 +55,7 @@ def live_server_data():
 
 
 # --- Integration Test ---
+pytestmark = pytest.mark.real_server
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
 async def test_get_server_info_live_connection(live_server_data, settings):

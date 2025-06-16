@@ -66,6 +66,7 @@ ServerPilot_FrontEnd/node_modules/
 ServerPilot_FrontEnd/build/
 
 # Other
+.env
 debug.log
 cookies.txt
 .DS_Store

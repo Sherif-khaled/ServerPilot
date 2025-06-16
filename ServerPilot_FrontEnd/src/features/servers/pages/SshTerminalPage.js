@@ -5,21 +5,56 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 
 const SshTerminalPage = () => {
-    const { serverId } = useParams();
+    const { customerId, serverId } = useParams();
+    console.log('Attempting to fetch credentials for customer:', customerId, 'server:', serverId);
     const terminalRef = useRef(null); // Ref for the container div
     const term = useRef(null); // Ref for the Terminal instance
     const socketRef = useRef(null);
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
-    const [connectionDetails, setConnectionDetails] = useState({
-      host: '167.86.76.14',
-      port: 22,
-      username: 'root',
-      password: '2P8KVdli7i1R8w21m2we01'
-    });
+
+    const [connectionDetails, setConnectionDetails] = useState(null);
+
 
     useEffect(() => {
-        if (!terminalRef.current || term.current) {
-            return; // Don't re-initialize
+        const fetchCredentials = async () => {
+            // Reset state on new server navigation to prevent using stale details
+            setConnectionDetails(null);
+            setConnectionStatus('connecting');
+
+            try {
+                const response = await fetch(`/api/customers/${customerId}/servers/${serverId}/credentials/`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch credentials');
+                }
+                const data = await response.json();
+                setConnectionDetails({
+                    host: data.server_ip,
+                    port: data.ssh_port,
+                    username: data.ssh_user,
+                    password: data.ssh_password
+                });
+                setConnectionStatus('loaded');
+            } catch (error) {
+                console.error('Error fetching credentials:', error);
+                setConnectionStatus('error');
+            }
+        };
+
+        if (customerId && serverId) {
+            fetchCredentials();
+        }
+    }, [customerId, serverId]);
+
+    useEffect(() => {
+        // This effect handles the terminal and WebSocket setup.
+        // It depends on `connectionDetails`, so it will only run after credentials are fetched.
+        if (!connectionDetails || !terminalRef.current) {
+            return; // Exit if no details, or if the terminal container isn't ready.
+        }
+
+        // Avoid re-initializing the terminal if it already exists.
+        if (term.current) {
+            return;
         }
 
         // Initialize Terminal
@@ -35,95 +70,91 @@ const SshTerminalPage = () => {
                 console.error("Error fitting terminal:", e);
             }
         };
+        
+        handleResize(); // Initial fit
+        window.addEventListener('resize', handleResize);
 
-        // Setup WebSocket with reconnection
-        const connectWebSocket = async () => {
-            try {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.hostname}:5000/ws/servers/${serverId}/ssh`;
-                console.log('Connecting to:', wsUrl);
+        // Setup WebSocket
+        const connectWebSocket = () => {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:5000/ws/servers/${serverId}/ssh`;
+            console.log('Connecting to:', wsUrl);
+            
+            socketRef.current = new WebSocket(wsUrl);
+            
+            socketRef.current.onopen = () => {
+                console.log('WebSocket connected');
+                term.current.writeln('\x1B[1;32mConnected to terminal server\x1B[0m');
                 
-                socketRef.current = new WebSocket(wsUrl);
+                socketRef.current.send(JSON.stringify({
+                    host: connectionDetails.host,
+                    port: connectionDetails.port,
+                    username: connectionDetails.username,
+                    password: connectionDetails.password
+                }));
                 
-                socketRef.current.onopen = async () => {
-                    console.log('WebSocket connected');
-                    term.current.writeln('\x1B[1;32mConnected to terminal server\x1B[0m');
-                    
-                    // Send connection details
-                    socketRef.current.send(JSON.stringify({
-                        host: connectionDetails.host,
-                        port: connectionDetails.port,
-                        username: connectionDetails.username,
-                        password: connectionDetails.password
-                    }));
-                };
-                
-                socketRef.current.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                    term.current.writeln('\x1B[1;31mConnection error. Retrying...\x1B[0m');
-                    setTimeout(connectWebSocket, 2000);
-                };
-                
-                socketRef.current.onclose = () => {
-                    console.log('WebSocket closed');
-                    term.current.writeln('\x1B[1;33mConnection closed. Reconnecting...\x1B[0m');
-                    setTimeout(connectWebSocket, 2000);
-                };
-                
-                socketRef.current.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        if (data.type === 'output') {
-                            term.current.write(data.output);
-                        } else if (data.type === 'error') {
-                            term.current.writeln(`\x1B[1;31m[ERROR]: ${data.message}\x1B[0m`);
-                        }
-                    } catch (e) {
-                        console.error('Error processing message:', e);
+                handleResize();
+            };
+            
+            socketRef.current.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                if (term.current) {
+                    term.current.writeln('\x1B[1;31mConnection error.\x1B[0m');
+                }
+            };
+            
+            socketRef.current.onclose = () => {
+                console.log('WebSocket closed');
+                if (term.current) {
+                    term.current.writeln('\x1B[1;33mConnection closed.\x1B[0m');
+                }
+            };
+            
+            socketRef.current.onmessage = (event) => {
+                if (!term.current) return;
+                // The backend might send raw strings or JSON
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'output') {
+                        term.current.write(data.output);
+                    } else if (data.type === 'error') {
+                        term.current.writeln(`\x1B[1;31m[ERROR]: ${data.message}\x1B[0m`);
                     }
-                };
-
-                // Handle terminal input
-                const onDataDisposable = term.current.onData(data => {
-                    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                        // After initial handshake (connection details sent in onopen),
-                        // subsequent data from xterm.js is raw input to be sent directly.
-                        socketRef.current.send(data);
-                    }
-                });
-
-                // Handle terminal resize
-                window.addEventListener('resize', handleResize);
-
-                const onResizeDisposable = term.current.onResize(size => {
-                    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                        const message = { action: 'resize', data: { cols: size.cols, rows: size.rows } };
-                        socketRef.current.send(JSON.stringify(message));
-                    }
-                });
-
-                // Cleanup on component unmount
-                return () => {
-                    window.removeEventListener('resize', handleResize);
-                    onDataDisposable.dispose();
-                    onResizeDisposable.dispose();
-                    if (socketRef.current) {
-                        socketRef.current.close();
-                    }
-                    if (term.current) {
-                        term.current.dispose();
-                        term.current = null;
-                    }
-                };
-            } catch (error) {
-                console.error('WebSocket connection failed:', error);
-                setTimeout(connectWebSocket, 2000);
-            }
+                } catch (e) {
+                    term.current.write(event.data); // Assume raw string output
+                }
+            };
         };
 
         connectWebSocket();
 
-    }, [serverId]);
+        const onDataDisposable = term.current.onData(data => {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.send(data);
+            }
+        });
+
+        const onResizeDisposable = term.current.onResize(size => {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                const message = { action: 'resize', data: { cols: size.cols, rows: size.rows } };
+                socketRef.current.send(JSON.stringify(message));
+            }
+        });
+
+        // Cleanup on component unmount or when details change
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            onDataDisposable.dispose();
+            onResizeDisposable.dispose();
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
+            if (term.current) {
+                term.current.dispose();
+                term.current = null; // Important: allow re-initialization
+            }
+        };
+    }, [connectionDetails, serverId]); // Depend on connectionDetails
 
     return (
         <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>

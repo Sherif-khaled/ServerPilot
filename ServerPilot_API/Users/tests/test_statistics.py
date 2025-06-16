@@ -8,7 +8,7 @@ def test_user_statistics():
     client = APIClient()
     admin = CustomUser.objects.create_superuser('admin', 'admin@example.com', 'adminpass')
     client.force_login(admin)
-    url = reverse('userstats')
+    url = reverse('users:userstats')
     response = client.get(url)
     assert response.status_code == 200
     assert 'total_users' in response.data
