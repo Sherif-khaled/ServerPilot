@@ -13,6 +13,7 @@ SSH_USER = os.getenv('SSH_USER', 'testuser')
 SSH_PASS = os.getenv('SSH_PASS', 'testpass123')
 SSH_PORT = int(os.getenv('SSH_PORT', '22'))
 
+@pytest.mark.skipif(os.getenv('CI') == 'true', reason="Skipping SSH connection test in CI environment")
 @pytest.mark.asyncio
 async def test_ssh_connection():
     """Test SSH connection to server"""
