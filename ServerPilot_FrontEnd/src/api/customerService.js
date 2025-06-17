@@ -20,6 +20,10 @@ export const deleteCustomer = (id) => {
   return apiClient.delete(`/customers/${id}/`);
 };
 
+export const updateCustomerStatus = (id, isActive) => {
+  return apiClient.patch(`/customers/${id}/`, { is_active: isActive });
+};
+
 export const getCustomerTypes = () => {
   return apiClient.get('/customers/types/');
 };
