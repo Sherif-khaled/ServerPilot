@@ -104,54 +104,44 @@ class BackupScheduleView(APIView):
         Expects {'enabled': True/False, 'hour': H, 'minute': M}
         """
         enabled = request.data.get('enabled')
-        hour = request.data.get('hour', 2) # Default to 2 AM
-        minute = request.data.get('minute', 0) # Default to 0 minutes
 
         if enabled is None:
-            return Response({'error': 'Enabled field is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': "'enabled' field is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Define the crontab schedule, for example, daily at 2:00 AM UTC
-            crontab, _ = CrontabSchedule.objects.get_or_create(
-                minute=minute,
-                hour=hour,
-                day_of_week='*',
-                day_of_month='*',
-                month_of_year='*',
-            )
-
-            # Get or create the periodic task
-            task, created = PeriodicTask.objects.get_or_create(
-                name=self.task_name,
-                defaults={
-                    'task': self.task_function,
-                    'crontab': crontab,
-                    'enabled': enabled,
-                    'args': json.dumps([]),
-                }
-            )
-
-            if not created:
-                # If task exists, update its state and schedule
-                task.crontab = crontab
-                task.enabled = enabled
+            if enabled:
+                hour = request.data.get('hour', 2)
+                minute = request.data.get('minute', 0)
+                crontab, _ = CrontabSchedule.objects.get_or_create(
+                    minute=minute, hour=hour, day_of_week='*', day_of_month='*', month_of_year='*'
+                )
+                task, created = PeriodicTask.objects.get_or_create(
+                    name=self.task_name,
+                    defaults={'task': self.task_function, 'crontab': crontab, 'enabled': True}
+                )
+                if not created:
+                    task.crontab = crontab
+                    task.enabled = True
+                    task.save()
+                return Response({'status': 'Backup schedule enabled successfully.'}, status=status.HTTP_200_OK)
+            else:
+                task = PeriodicTask.objects.get(name=self.task_name)
+                task.enabled = False
                 task.save()
-            
-            action = "enabled" if enabled else "disabled"
-            return Response({'status': f'Backup schedule {action} successfully.'}, status=status.HTTP_200_OK)
+                return Response({'status': 'Backup schedule disabled successfully.'}, status=status.HTTP_200_OK)
+
+        except PeriodicTask.DoesNotExist:
+            return Response({'status': 'Backup schedule is not configured and remains disabled.'}, status=status.HTTP_200_OK)
         except Exception as e:
-            # Log the exception e
-            return Response({'error': 'Failed to update schedule.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f'Failed to update schedule: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class DatabaseBackupView(APIView):
     """
     API View to trigger a database backup task.
     """
-    def post(self, request, *args, **kwargs):
-        """
-        Handles POST requests to trigger the database backup.
-        """
+    def _start_backup(self):
         try:
             task = backup_db.delay()
             return Response(
@@ -163,3 +153,15 @@ class DatabaseBackupView(APIView):
                 {'error': f'Failed to start backup task: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests to trigger the database backup.
+        """
+        return self._start_backup()
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles POST requests to trigger the database backup.
+        """
+        return self._start_backup()

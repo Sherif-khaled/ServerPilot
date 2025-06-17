@@ -56,8 +56,8 @@ class UserSessionMiddleware:
         return ip
 
     def get_location(self, ip):
-        if not ip:
-            return None
+        if not ip or ip == '127.0.0.1':
+            return 'Localhost'
         try:
             response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=2)
             response.raise_for_status()

@@ -74,13 +74,20 @@ jobs:
         python ServerPilot_API/Servers/ssh_terminal/ws_server.py &
         WEBSOCKET_PID=$!
         echo "WebSocket server started with PID $WEBSOCKET_PID"
-        sleep 3 # Give server time to start
+
+        echo "Starting Celery worker in the background..."
+        celery -A serverpilot_project worker -l INFO &
+        CELERY_PID=$!
+        echo "Celery worker started with PID $CELERY_PID"
+
+        sleep 3 # Give servers time to start
 
         echo "Running tests..."
         pytest ServerPilot_API/ -v
 
-        echo "Stopping WebSocket server..."
+        echo "Stopping services..."
         kill $WEBSOCKET_PID
+        kill $CELERY_PID
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3

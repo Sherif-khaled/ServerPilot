@@ -142,7 +142,15 @@ ServerPilot is a web-based server management tool built with Django. It provides
     npm start
     ```
 
-3.  Open your browser and navigate to `http://localhost:3000`.
+3.  **Start the Celery worker:**
+
+    In a new terminal, from the project root, run:
+    
+    ```bash
+    ./venv/bin/celery -A serverpilot_project worker -l info
+    ```
+
+4.  Open your browser and navigate to `http://localhost:3000`.
 
 ## Testing
 
