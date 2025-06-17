@@ -63,7 +63,6 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
     // Conditionally show the 'Users' link for admin users (is_staff)
     ...(user?.is_staff ? [{ text: 'Users', icon: <People />, path: '/users' }] : []),
     { text: 'Customers', icon: <ContactsIcon />, path: '/customers' },
-    { text: 'Logout', icon: <LogoutIcon />, action: handleLogout },
   ];
 
   return (
@@ -220,6 +219,11 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                   </Collapse>
                 </>
               )}
+              <Divider sx={{ my: 1 }} />
+              <ListItem button onClick={handleLogout}>
+                <ListItemIcon sx={{ minWidth: '40px' }}><LogoutIcon /></ListItemIcon>
+                <ListItemText primary="Logout" />
+              </ListItem>
             </List>
           </Box>
         </Drawer>
