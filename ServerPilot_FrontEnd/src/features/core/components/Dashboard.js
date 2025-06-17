@@ -16,24 +16,23 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
 
-  const [drawerOpen, setDrawerOpen] = React.useState(isSmUp); // Open by default on larger screens
+  // Drawer open state: always open on large screens, toggleable on mobile
+  // Sidebar toggleable on all screen sizes
+  const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [adminOpen, setAdminOpen] = React.useState(false);
   const navigate = useNavigate();
 
+  // When screen size changes, force open on desktop, close on mobile
   React.useEffect(() => {
-    // Adjust drawer state when screen size changes if needed, e.g., always open on smUp
-    // This example keeps it simple: initial state is based on isSmUp, then user can toggle.
-    // For a more robust solution, you might want to setDrawerOpen(isSmUp) here
-    // or control it more explicitly based on variant changes.
     if (isSmUp) {
-        setDrawerOpen(true); // Keep drawer open on larger screens
+      setDrawerOpen(true);
     } else {
-        setDrawerOpen(false); // Ensure drawer is closed by default on smaller screens if it was opened
+      setDrawerOpen(false);
     }
   }, [isSmUp]);
 
   const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
+    setDrawerOpen((prev) => !prev);
   };
 
   const handleAdminClick = () => {
@@ -72,8 +71,8 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
       <AppBar 
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: drawerOpen && isSmUp ? `calc(100% - ${drawerWidth}px)` : '100%',
+          ml: drawerOpen && isSmUp ? `${drawerWidth}px` : 0,
           zIndex: (theme) => theme.zIndex.drawer + 1, // Ensure AppBar is above the drawer
         }}
       >
@@ -81,9 +80,9 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           <IconButton 
             edge="start" 
             color="inherit" 
-            aria-label="menu" 
-            onClick={handleDrawerToggle} 
-            sx={{ mr: 2, display: { sm: 'none' } }} // Hide on sm and up when drawer is permanent
+            aria-label={drawerOpen ? "Hide sidebar" : "Show sidebar"}
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2 }}
           >
             <MenuIcon />
           </IconButton>
@@ -105,110 +104,130 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           </IconButton>
         </Toolbar>
       </AppBar>
-      <Drawer
-        variant={isSmUp ? 'permanent' : 'temporary'}
-        open={drawerOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
-        }}
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { 
-            width: drawerWidth, 
-            boxSizing: 'border-box',
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : '#F8F9FA',
-          },
-        }}
-      >
-        <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: [1] }}>
-            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
-                ServerPilot
-            </Typography>
-        </Toolbar>
-        <Divider />
-        <Box sx={{ overflow: 'auto' }} role="presentation">
-          <List>
-            {drawerNavItems.map((item) => {
-              const listItemContent = (
-                <>
-                  <ListItemIcon sx={{ minWidth: '40px' }}>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </>
-              );
+      {/* Overlay for mobile when drawer is open */}
+      {/* Overlay for mobile when drawer is open */}
+      {!isSmUp && drawerOpen && (
+        <Box
+          onClick={handleDrawerToggle}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            bgcolor: 'rgba(0,0,0,0.3)',
+            zIndex: (theme) => theme.zIndex.drawer - 1,
+            transition: 'background-color 0.3s',
+          }}
+        />
+      )}
+      {drawerOpen && (
+        <Drawer
+          variant={isSmUp ? 'permanent' : 'temporary'}
+          open={drawerOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile.
+          }}
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            [`& .MuiDrawer-paper`]: { 
+              width: drawerWidth, 
+              boxSizing: 'border-box',
+              backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : '#F8F9FA',
+            },
+          }}
+        >
+          <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: [1] }}>
+              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
+                  ServerPilot
+              </Typography>
+          </Toolbar>
+          <Divider />
+          <Box sx={{ overflow: 'auto' }} role="presentation">
+            <List>
+              {drawerNavItems.map((item) => {
+                const listItemContent = (
+                  <>
+                    <ListItemIcon sx={{ minWidth: '40px' }}>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </>
+                );
 
-              if (item.path) {
-                return (
-                  <ListItem key={item.text} button component={NavLink} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}
-                    sx={{
-                      '&.active': {
-                        backgroundColor: theme.palette.action.selected,
-                        '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                          color: theme.palette.primary.main,
-                        },
-                      },
-                    }}
-                  >
-                    {listItemContent}
-                  </ListItem>
-                );
-              } else if (item.action) {
-                return (
-                  <ListItem key={item.text} button onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
-                    {listItemContent}
-                  </ListItem>
-                );
-              }
-              return null;
-            })}
-            {user?.is_staff && (
-              <>
-                <ListItem button onClick={handleAdminClick}>
-                  <ListItemIcon sx={{ minWidth: '40px' }}>
-                    <AdminPanelSettingsIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Administration" />
-                  {adminOpen ? <ExpandLess /> : <ExpandMore />}
-                </ListItem>
-                <Collapse in={adminOpen} timeout="auto" unmountOnExit>
-                  <List component="div" disablePadding>
-                    {[
-                      { text: 'Audit Logs', path: '/audit-logs', icon: <PolicyIcon /> },
-                      { text: 'Password Policy', path: '/password-policy', icon: <PolicyIcon /> },
-                      { text: 'Database Management', path: '/database-management', icon: <StorageIcon /> },
-                      { text: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
-                    ].map((item) => (
-                      <ListItem
-                        key={item.text}
-                        button
-                        component={NavLink}
-                        to={item.path}
-                        onClick={isSmUp ? undefined : handleDrawerToggle}
-                        sx={{
-                          pl: 4,
-                          '&.active': {
-                            backgroundColor: theme.palette.action.selected,
-                            '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                              color: theme.palette.primary.main,
-                            },
+                if (item.path) {
+                  return (
+                    <ListItem key={item.text} button component={NavLink} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}
+                      sx={{
+                        '&.active': {
+                          backgroundColor: theme.palette.action.selected,
+                          '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                            color: theme.palette.primary.main,
                           },
-                        }}
-                      >
-                        <ListItemIcon sx={{ minWidth: '40px' }}>{item.icon}</ListItemIcon>
-                        <ListItemText primary={item.text} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Collapse>
-              </>
-            )}
-          </List>
-        </Box>
-      </Drawer>
+                        },
+                      }}
+                    >
+                      {listItemContent}
+                    </ListItem>
+                  );
+                } else if (item.action) {
+                  return (
+                    <ListItem key={item.text} button onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
+                      {listItemContent}
+                    </ListItem>
+                  );
+                }
+                return null;
+              })}
+              {user?.is_staff && (
+                <>
+                  <ListItem button onClick={handleAdminClick}>
+                    <ListItemIcon sx={{ minWidth: '40px' }}>
+                      <AdminPanelSettingsIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Administration" />
+                    {adminOpen ? <ExpandLess /> : <ExpandMore />}
+                  </ListItem>
+                  <Collapse in={adminOpen} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {[
+                        { text: 'Audit Logs', path: '/audit-logs', icon: <PolicyIcon /> },
+                        { text: 'Password Policy', path: '/password-policy', icon: <PolicyIcon /> },
+                        { text: 'Database Management', path: '/database-management', icon: <StorageIcon /> },
+                        { text: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
+                      ].map((item) => (
+                        <ListItem
+                          key={item.text}
+                          button
+                          component={NavLink}
+                          to={item.path}
+                          onClick={isSmUp ? undefined : handleDrawerToggle}
+                          sx={{
+                            pl: 4,
+                            '&.active': {
+                              backgroundColor: theme.palette.action.selected,
+                              '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                                color: theme.palette.primary.main,
+                              },
+                            },
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: '40px' }}>{item.icon}</ListItemIcon>
+                          <ListItemText primary={item.text} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Collapse>
+                </>
+              )}
+            </List>
+          </Box>
+        </Drawer>
+      )}
       {/* Main content area */}
       <Box
         component="main"
+        className={drawerOpen ? 'sidebar-open' : 'sidebar-closed'}
         sx={{
           backgroundColor: (theme) =>
             theme.palette.mode === 'light'
@@ -217,14 +236,21 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           flexGrow: 1,
           height: '100vh',
           overflow: 'auto',
+          transition: 'background-color 0.3s',
+          ...(drawerOpen && !isSmUp && {
+            filter: 'brightness(0.95)',
+          }),
         }}
       >
         <Toolbar />
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          {children}
+          {/*
+            Pass sidebar state as context for responsive resizing in child components (listviews, tables, etc.)
+            Example usage in child: useContext(SidebarContext) or check parent className
+          */}
+          {React.cloneElement(children, { sidebarOpen: drawerOpen })}
         </Container>
       </Box>
-      
     </Box>
   );
 }
