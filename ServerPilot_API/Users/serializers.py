@@ -73,7 +73,7 @@ class UserListSerializer(serializers.ModelSerializer):
     """
     Serializer for listing users in the admin panel, including status and last login.
     """
-    profile_photo = serializers.SerializerMethodField()
+    profile_photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
@@ -87,15 +87,13 @@ class UserListSerializer(serializers.ModelSerializer):
             'is_active',
             'is_staff',
             'last_login',
-            'profile_photo'
+            'profile_photo_url'
         )
 
-    def get_profile_photo(self, obj):
+    def get_profile_photo_url(self, obj):
+        request = self.context.get('request')
         if obj.profile_photo and hasattr(obj.profile_photo, 'url'):
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.profile_photo.url)
-            return obj.profile_photo.url
+            return request.build_absolute_uri(obj.profile_photo.url)
         return None
 
 
