@@ -211,9 +211,9 @@ export default function UserList() {
 
             {error && !deleteConfirmOpen && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-            <Grid container spacing={2} sx={{ mb: 3 }} alignItems="center" justifyContent="space-between">
+            <Grid container columnSpacing={2} sx={{ mb: 3 }} alignItems="center" justifyContent="space-between">
                 {/* Search Bar - Left side */}
-                <Grid item xs={12} sm={5} md={4}>
+                <Grid columns={12} sx={{ gridColumn: { xs: 'span 12', sm: 'span 5', md: 'span 4' } }}>
                     <TextField
                         fullWidth
                         variant="outlined"
@@ -232,7 +232,7 @@ export default function UserList() {
                 </Grid>
 
                 {/* Filters and Buttons - Right side */}
-                <Grid item xs={12} sm={7} md="auto">
+                <Grid columns={12} sx={{ gridColumn: { xs: 'span 12', sm: 'span 7', md: 'auto' } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 }, flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end'} }}>
                         <Select
                             value={roleFilter}
@@ -267,9 +267,9 @@ export default function UserList() {
                 </Grid>
             </Grid>
 
-            <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid container columnSpacing={3} sx={{ mb: 3 }}>
                 {statItems.map((item) => (
-                    <Grid item xs={12} sm={6} md={3} key={item.title}>
+                    <Grid columns={12} key={item.title} sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 3' } }}>
                         <Card elevation={1} sx={{ borderRadius: '8px' }}>
                             <CardContent sx={{ display: 'flex', alignItems: 'center', p: 2, '&:last-child': { pb: 2 } }}>
                                 <Avatar sx={{ bgcolor: item.color, color: 'common.white', mr: 2, width: 48, height: 48 }}>{item.icon}</Avatar>

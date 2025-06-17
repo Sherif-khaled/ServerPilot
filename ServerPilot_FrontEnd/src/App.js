@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { ThemeContext } from './ThemeContext';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import Dashboard from './features/core/components/Dashboard';
 import UserRegisterForm from './features/users/components/UserRegisterForm';
 import UserLoginForm from './features/users/components/UserLoginForm';
@@ -67,9 +67,7 @@ function App() {
   const { mode, toggleTheme } = useContext(ThemeContext);
 
   return (
-    <Router>
-      <AppRoutes toggleTheme={toggleTheme} currentThemeMode={mode} />
-    </Router>
+    <AppRoutes toggleTheme={toggleTheme} currentThemeMode={mode} />
   );
 }
 
