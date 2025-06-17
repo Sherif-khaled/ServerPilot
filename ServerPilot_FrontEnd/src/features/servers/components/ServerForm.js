@@ -1,8 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box, Button, TextField, Typography, Paper, CircularProgress, Alert,
-  FormControl, FormControlLabel, Checkbox, FormHelperText
-} from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Button, TextField, CircularProgress, Alert, FormControlLabel, Checkbox } from '@mui/material';
 import { createServer, getServerDetails, updateServer } from '../../../api/serverService';
 import { IMaskInput } from 'react-imask';
 import PropTypes from 'prop-types';
@@ -54,32 +51,34 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
   const [apiFormError, setApiFormError] = useState(''); // For general API errors
   const [errors, setErrors] = useState({}); // For field-specific validation errors
 
-  const fetchServerDetails = useCallback(async () => {
-    // customerId is now a prop, serverId is derived from serverData prop
-    if (!isEditMode || !customerId || !serverId) return;
-    setPageLoading(true);
-    setApiFormError('');
-    setErrors({});
-    try {
-      const response = await getServerDetails(customerId, serverId);
-      // Passwords and keys are write-only, so they won't be in the response. 
-      // Keep them blank in the form for editing unless user provides new ones.
-      setFormData({
-        server_name: response.data.server_name || '',
-        server_ip: response.data.server_ip || '',
-        ssh_port: response.data.ssh_port || 22,
-        login_using_root: response.data.login_using_root || false,
-        ssh_user: response.data.ssh_user || '', // May be null if login_using_root
-        ssh_password: '', // Always blank on load for security
-        ssh_root_password: '', // Always blank on load
-        ssh_key: '', // Always blank on load
-        is_active: response.data.is_active === undefined ? true : response.data.is_active,
-      });
-    } catch (err) {
-      console.error('Failed to fetch server details:', err);
-      setApiFormError('Failed to load server data. Please try again or go back.');
+  useEffect(() => {
+    const fetchServerDetails = async () => {
+      try {
+        const response = await getServerDetails(customerId, serverId);
+        // Passwords and keys are write-only, so they won't be in the response. 
+        // Keep them blank in the form for editing unless user provides new ones.
+        setFormData({
+          server_name: response.data.server_name || '',
+          server_ip: response.data.server_ip || '',
+          ssh_port: response.data.ssh_port || 22,
+          login_using_root: response.data.login_using_root || false,
+          ssh_user: response.data.ssh_user || '', // May be null if login_using_root
+          ssh_password: '', // Always blank on load for security
+          ssh_root_password: '', // Always blank on load
+          ssh_key: '', // Always blank on load
+          is_active: response.data.is_active === undefined ? true : response.data.is_active,
+        });
+      } catch (err) {
+        console.error('Failed to fetch server details:', err);
+        setApiFormError('Failed to load server data. Please try again or go back.');
+      }
+      setPageLoading(false);
+    };
+    if (isEditMode && serverId) {
+      fetchServerDetails();
     }
-    setPageLoading(false);
+    // No fetch needed for create mode
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId, serverId, isEditMode]);
 
   useEffect(() => {

@@ -17,7 +17,7 @@ export default function CustomerList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
   
-  const [editingCustomerId, setEditingCustomerId] = useState(null);
+
 
   const navigate = useNavigate();
   const { user } = useAuth();

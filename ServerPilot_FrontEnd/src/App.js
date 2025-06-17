@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { ThemeContext } from './ThemeContext';
-import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Dashboard from './features/core/components/Dashboard';
 import UserRegisterForm from './features/users/components/UserRegisterForm';
 import UserLoginForm from './features/users/components/UserLoginForm';

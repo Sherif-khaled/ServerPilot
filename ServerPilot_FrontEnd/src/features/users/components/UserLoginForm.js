@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axiosConfig';
 import { challengeMfa } from '../../../api/userService';
-import { Box, TextField, Button, Typography, Alert, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
+import { Box, TextField, Button, Alert, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';

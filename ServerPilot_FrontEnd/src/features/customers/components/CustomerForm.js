@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Button, TextField, Grid, CircularProgress, Alert,
-  FormControl, InputLabel, FormHelperText, Select, MenuItem,
-  Paper, Typography, Box
+  Button, TextField, MenuItem, Box, Typography, Select, InputLabel, FormControl, Paper, Alert, CircularProgress, FormHelperText
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -186,8 +184,6 @@ export default function CustomerForm() {
     }
     setLoading(false);
   };
-
-  const isCompanyType = selectedTypeName === 'company';
 
   return (
     <Paper sx={{ p: 3, m: 2 }}>

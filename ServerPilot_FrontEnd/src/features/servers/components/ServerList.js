@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
-  Box, Button, Typography, Paper, ListItemText,
+  Box, Button, Typography, ListItemText,
   ListItemIcon, IconButton, CircularProgress, Alert, Dialog,
-  DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, Chip,
+  DialogActions, DialogContent, DialogContentText, DialogTitle, Chip,
   Tooltip, Menu, MenuItem, Grid, Card, CardContent, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Collapse, TextField
 } from '@mui/material';
@@ -14,7 +14,7 @@ import LockResetIcon from '@mui/icons-material/LockReset';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DnsIcon from '@mui/icons-material/Dns';
 import PowerIcon from '@mui/icons-material/Power';
-import PowerOffIcon from '@mui/icons-material/PowerOff';
+
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
@@ -32,7 +32,7 @@ const COLORS = ['#0088FE', '#FF8042']; // Blue for Used, Orange for Available
 export default function ServerList({ customerId: propCustomerId }) {
   const { customerId: paramCustomerId } = useParams(); 
   const customerId = propCustomerId || paramCustomerId;
-  const navigate = useNavigate();
+
 
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);

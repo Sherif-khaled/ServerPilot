@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react'; // Added useContext if we use AuthContext later
+import React, { useState, useEffect } from 'react'; 
 import {
-    Box, TextField, Button, Typography, Avatar, Grid, Paper, Container, CircularProgress, IconButton, Snackbar, Alert as MuiAlert
+    Box, TextField, Button, Typography, Avatar, Paper, Container, CircularProgress, Snackbar, Alert as MuiAlert
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { getProfile, updateProfile } from '../../../api/userService';

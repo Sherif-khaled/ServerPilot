@@ -10,7 +10,7 @@ const SshTerminalPage = () => {
     const terminalRef = useRef(null); // Ref for the container div
     const term = useRef(null); // Ref for the Terminal instance
     const socketRef = useRef(null);
-    const [connectionStatus, setConnectionStatus] = useState('disconnected');
+    // const [connectionStatus, setConnectionStatus] = useState('disconnected');
 
     const [connectionDetails, setConnectionDetails] = useState(null);
 

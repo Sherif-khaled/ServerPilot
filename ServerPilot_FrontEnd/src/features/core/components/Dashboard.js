@@ -1,11 +1,11 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Container, Box, Switch, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, useMediaQuery } from '@mui/material';
+import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, useMediaQuery } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom'; // Removed Outlet
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
 import { Avatar, Collapse } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
 
