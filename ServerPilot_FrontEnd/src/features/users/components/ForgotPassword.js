@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, TextField, Button, Typography, Container, Alert } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -49,6 +49,12 @@ const ForgotPassword = () => {
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
+
+  useEffect(() => {
+    // Check if reCAPTCHA is enabled by checking for the site key in environment variables
+    setRecaptchaEnabled(!!process.env.REACT_APP_RECAPTCHA_SITE_KEY);
+  }, []);
 
   const handleRecaptchaChange = (token) => {
     setRecaptchaToken(token);
@@ -59,7 +65,7 @@ const ForgotPassword = () => {
     setError('');
     setMessage('');
 
-    if (!recaptchaToken) {
+    if (recaptchaEnabled && !recaptchaToken) {
       setError('Please complete the reCAPTCHA.');
       return;
     }
@@ -97,13 +103,20 @@ const ForgotPassword = () => {
             InputLabelProps={{ style: { color: '#fff' } }}
             sx={{ input: { color: 'white' } }}
           />
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-            <ReCAPTCHA
-              sitekey="your-site-key-here" // IMPORTANT: Replace with your actual site key
-              onChange={handleRecaptchaChange}
-            />
-          </Box>
-          <StyledButton type="submit" fullWidth variant="contained" disabled={!recaptchaToken}>
+          {recaptchaEnabled && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+              <ReCAPTCHA
+                sitekey={process.env.REACT_APP_RECAPTCHA_SITE_KEY}
+                onChange={handleRecaptchaChange}
+              />
+            </Box>
+          )}
+          <StyledButton 
+            type="submit" 
+            fullWidth 
+            variant="contained" 
+            disabled={recaptchaEnabled ? !recaptchaToken : false}
+          >
             Send Reset Link
           </StyledButton>
         </StyledForm>
