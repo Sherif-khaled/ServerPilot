@@ -3,7 +3,7 @@ import {
   Box, Button, Typography, Card, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip,
-  Grid, TextField, InputAdornment, CardContent, Switch, Chip
+  Grid, TextField, InputAdornment, CardContent, Switch, Chip, MenuItem
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -18,7 +18,7 @@ import {
   HighlightOffOutlined as HighlightOffOutlinedIcon // Inactive customers icon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getCustomers, deleteCustomer, updateCustomerStatus } from '../../../api/customerService';
+import { getCustomers, deleteCustomer, updateCustomerStatus, getCustomerTypes } from '../../../api/customerService';
 import { useAuth } from '../../../AuthContext';
 
 export default function CustomerList() {
@@ -29,9 +29,26 @@ export default function CustomerList() {
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [statusUpdateError, setStatusUpdateError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [customerTypes, setCustomerTypes] = useState([]);
   
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchCustomerTypes = async () => {
+        try {
+            const response = await getCustomerTypes();
+            setCustomerTypes(response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch customer types:', error);
+        }
+    };
+    fetchCustomerTypes();
+  }, []);
 
   const fetchCustomers = useCallback(async () => {
     if (!user) return;
@@ -53,19 +70,33 @@ export default function CustomerList() {
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
-        const searchTermLower = searchTerm.toLowerCase();
-        const name = customer.company_name || `${customer.first_name} ${customer.last_name}`;
-        const email = customer.email || '';
-        const company = customer.company_name || '';
-        const phone = customer.phone_number || '';
+      const searchTermLower = searchTerm.toLowerCase();
+      const matchesSearch = (
+        customer.company_name.toLowerCase().includes(searchTermLower) ||
+        customer.email.toLowerCase().includes(searchTermLower) ||
+        (customer.first_name && customer.first_name.toLowerCase().includes(searchTermLower)) ||
+        (customer.last_name && customer.last_name.toLowerCase().includes(searchTermLower)) ||
+        (customer.phone_number && customer.phone_number.includes(searchTerm))
+      );
 
-        return searchTerm === '' ||
-            name.toLowerCase().includes(searchTermLower) ||
-            email.toLowerCase().includes(searchTermLower) ||
-            company.toLowerCase().includes(searchTermLower) ||
-            phone.toLowerCase().includes(searchTermLower);
+      const matchesType = typeFilter === 'all' || customer.customer_type_name === typeFilter;
+      const matchesStatus = statusFilter === 'all' || String(customer.is_active) === statusFilter;
+      
+      const createdAt = new Date(customer.created_at);
+      const matchesYear = yearFilter === 'all' || createdAt.getFullYear() === parseInt(yearFilter);
+      const matchesMonth = monthFilter === 'all' || (createdAt.getMonth() + 1) === parseInt(monthFilter);
+
+      return matchesSearch && matchesType && matchesStatus && matchesYear && matchesMonth;
     });
-  }, [customers, searchTerm]);
+  }, [customers, searchTerm, typeFilter, statusFilter, yearFilter, monthFilter]);
+
+  const uniqueYears = useMemo(() => [...new Set(customers.map(c => new Date(c.created_at).getFullYear()))].sort((a, b) => b - a), [customers]);
+  const months = [
+    { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
+    { value: 4, label: 'April' }, { value: 5, label: 'May' }, { value: 6, label: 'June' },
+    { value: 7, label: 'July' }, { value: 8, label: 'August' }, { value: 9, label: 'September' },
+    { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' },
+  ];
 
   const handleEditCustomer = (customerId) => {
     navigate(`/customers/${customerId}/edit`);
@@ -176,20 +207,55 @@ export default function CustomerList() {
 
         <Card sx={{ boxShadow: 3 }}>
             <CardContent>
-                <TextField
-                    fullWidth
-                    label="Search Customers by name, email, company, or phone"
-                    variant="outlined"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label="Search Customers"
+                            variant="outlined"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField select fullWidth label="Customer Type" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                            <MenuItem value="all">All Types</MenuItem>
+                            {customerTypes.map(type => (
+                                <MenuItem key={type.id} value={type.name}>{type.name}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField select fullWidth label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                            <MenuItem value="all">All Statuses</MenuItem>
+                            <MenuItem value="true">Active</MenuItem>
+                            <MenuItem value="false">Inactive</MenuItem>
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField select fullWidth label="Year" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+                            <MenuItem value="all">All Years</MenuItem>
+                            {uniqueYears.map(year => (
+                                <MenuItem key={year} value={year}>{year}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <TextField select fullWidth label="Month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}>
+                            <MenuItem value="all">All Months</MenuItem>
+                            {months.map(month => (
+                                <MenuItem key={month.value} value={month.value}>{month.label}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                </Grid>
             </CardContent>
 
             {loading ? (
