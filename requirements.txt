@@ -1,4 +1,6 @@
 django>=5.0,<5.3
+djangorestframework
+django-encrypted-model-fields[cryptography]
 psutil>=5.9.0
 requests
 geoip2

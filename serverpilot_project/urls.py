@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/db/', include('db_management.urls')),
     path('api/security/', include('ServerPilot_API.security.urls')),
     path('api/stats/', include('stats.urls')),
+    path('api/configuration/', include('ServerPilot_API.configuration.urls')),
 ]
 
 if settings.DEBUG:

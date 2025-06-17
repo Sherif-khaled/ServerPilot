@@ -31,6 +31,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-s_5*isjws)ulo@l759e+utm)3=_csr_%f)w&6xh9h7cv)3-pd+')
 
+# Field Encryption Key
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
@@ -138,6 +141,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     'channels',
     'django_celery_beat',
+    
 
     # Local Apps
     'ServerPilot_API.Users',
@@ -145,6 +149,7 @@ INSTALLED_APPS = [
     'ServerPilot_API.Customers',
     'ServerPilot_API.audit_log',
     'ServerPilot_API.security',
+    'ServerPilot_API.configuration',
     'stats',
     'db_management',
 ]
