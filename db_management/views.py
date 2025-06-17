@@ -49,7 +49,7 @@ class DatabaseBackupDownloadView(APIView):
     """
     def get(self, request, filename, *args, **kwargs):
         # Sanitize filename to prevent directory traversal.
-        if not re.match(r'^backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
+        if not re.match(r'^serverpilot_db_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
             return Response({'error': 'Invalid filename format.'}, status=status.HTTP_400_BAD_REQUEST)
 
         backup_dir = os.path.join(settings.BASE_DIR, 'backups')
@@ -165,3 +165,38 @@ class DatabaseBackupView(APIView):
         Handles POST requests to trigger the database backup.
         """
         return self._start_backup()
+
+
+class DatabaseBackupDeleteView(APIView):
+    """
+    API View to delete a specific database backup file.
+    """
+    def delete(self, request, filename, *args, **kwargs):
+        # Sanitize filename to prevent directory traversal.
+        if not re.match(r'^serverpilot_db_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
+            return Response({'error': 'Invalid filename format.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        backup_dir = os.path.join(settings.BASE_DIR, 'backups')
+        file_path = os.path.join(backup_dir, filename)
+
+        # Security check: ensure the resolved path is within the backup directory.
+        if not os.path.abspath(file_path).startswith(os.path.abspath(backup_dir)):
+            return Response({'error': 'Access denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                return Response(
+                    {'message': f'Backup file {filename} deleted successfully.'},
+                    status=status.HTTP_200_OK
+                )
+            except OSError as e:
+                return Response(
+                    {'error': f'Error deleting file: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        else:
+            return Response(
+                {'error': 'The requested backup file does not exist.'},
+                status=status.HTTP_404_NOT_FOUND
+            )

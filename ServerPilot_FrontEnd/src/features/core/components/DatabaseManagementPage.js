@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Box, Typography, Button, Card, CardContent, CircularProgress, Snackbar, Alert, 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton,
-    Switch, FormControlLabel, TextField, Grid
+    Switch, FormControlLabel, TextField, Grid,
+    Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import { Refresh as RefreshIcon, Restore as RestoreIcon, Delete as DeleteIcon, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
 import apiClient from '../../../api/apiClient'; // Assuming apiClient is configured for your project
@@ -13,6 +14,9 @@ const DatabaseManagementPage = () => {
     const [listLoading, setListLoading] = useState(true);
     const [listError, setListError] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedBackup, setSelectedBackup] = useState(null);
 
     // State for schedule management
     const [schedule, setSchedule] = useState({ enabled: false, hour: '2', minute: '0' });
@@ -92,6 +96,29 @@ const DatabaseManagementPage = () => {
         } finally {
             setScheduleSaving(false);
         }
+    };
+
+    const handleDeleteClick = (backup) => {
+        setSelectedBackup(backup);
+        setOpenDialog(true);
+    };
+
+    const handleDialogClose = () => {
+        setOpenDialog(false);
+        setSelectedBackup(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!selectedBackup) return;
+        try {
+            await apiClient.delete(`/db/backups/delete/${selectedBackup.filename}/`);
+            setSnackbar({ open: true, message: 'Backup deleted successfully!', severity: 'success' });
+            fetchBackups(); // Refresh the list
+        } catch (error) {
+            console.error('Failed to delete backup:', error);
+            setSnackbar({ open: true, message: 'Failed to delete backup.', severity: 'error' });
+        }
+        handleDialogClose();
     };
 
     const handleCloseSnackbar = (event, reason) => {
@@ -235,7 +262,7 @@ const DatabaseManagementPage = () => {
                                                 <IconButton color="primary" onClick={() => alert('Restore functionality to be implemented.')}>
                                                     <RestoreIcon />
                                                 </IconButton>
-                                                <IconButton color="error" onClick={() => alert('Delete functionality to be implemented.')}>
+                                                <IconButton color="error" onClick={() => handleDeleteClick(backup)} >
                                                     <DeleteIcon />
                                                 </IconButton>
                                             </TableCell>
@@ -251,6 +278,21 @@ const DatabaseManagementPage = () => {
                     )}
                 </CardContent>
             </Card>
+
+            <Dialog open={openDialog} onClose={handleDialogClose}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete the backup file `{selectedBackup?.filename}`? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDialogClose}>Cancel</Button>
+                    <Button onClick={handleConfirmDelete} color="error" autoFocus>
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
                 <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
