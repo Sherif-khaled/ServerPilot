@@ -5,7 +5,7 @@ from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
+from django.utils import timezone as tz
 
 
 class CustomUser(AbstractUser):
@@ -17,8 +17,11 @@ class CustomUser(AbstractUser):
     mfa_enabled = models.BooleanField(default=False)
     profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True)
     theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='light')
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    timezone = models.CharField(max_length=50, default='UTC')
+    date_format = models.CharField(max_length=20, default='YYYY-MM-DD')
     recovery_codes_verified = models.BooleanField(default=False)
-    password_changed_at = models.DateTimeField(default=timezone.now)
+    password_changed_at = models.DateTimeField(default=tz.now)
 
     def set_password(self, raw_password):
         # If user has a usable password, save old password to history
@@ -35,7 +38,7 @@ class CustomUser(AbstractUser):
                     PasswordHistory.objects.filter(pk__in=list(ids_to_delete)).delete()
         
         super().set_password(raw_password)
-        self.password_changed_at = timezone.now()
+        self.password_changed_at = tz.now()
 
     @property
     def is_password_expired(self):
@@ -48,7 +51,7 @@ class CustomUser(AbstractUser):
             return False
 
         expiration_date = self.password_changed_at + timedelta(days=policy.password_expiration_days)
-        return timezone.now() > expiration_date
+        return tz.now() > expiration_date
 
 
 class UserSession(models.Model):

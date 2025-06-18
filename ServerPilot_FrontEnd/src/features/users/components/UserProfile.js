@@ -1,33 +1,55 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import {
-    Box, TextField, Button, Typography, Avatar, Paper, Container, CircularProgress, Snackbar, Alert as MuiAlert
+    Box, TextField, Button, Typography, Avatar, Paper, Container, CircularProgress, Snackbar, Alert as MuiAlert,
+    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import { getProfile, updateProfile } from '../../../api/userService';
-// import { AuthContext } from '../context/AuthContext'; // If you have AuthContext for token
 
 const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
+const allTimezones = Intl.supportedValuesOf('timeZone');
+
+const dateFormats = [
+    'YYYY-MM-DD',
+    'DD-MM-YYYY',
+    'MM-DD-YYYY',
+    'MM/DD/YYYY',
+    'DD/MM/YYYY'
+];
+
 export default function UserProfile() {
   const [profile, setProfile] = useState(null);
-  const [formData, setFormData] = useState({ first_name: '', last_name: '' });
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    timezone: 'UTC',
+    date_format: 'YYYY-MM-DD'
+  });
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [timezoneSearch, setTimezoneSearch] = useState('');
+
   useEffect(() => {
     const fetchProfile = async () => {
         try {
           setLoading(true);
-          // getProfile from userService relies on session cookie and CSRF header handled by axios defaults
-          const res = await getProfile(); 
+          const res = await getProfile();
           setProfile(res.data);
           setFormData({
             first_name: res.data.first_name || '',
             last_name: res.data.last_name || '',
+            phone_number: res.data.phone_number || '',
+            timezone: res.data.timezone || 'UTC',
+            date_format: res.data.date_format || 'YYYY-MM-DD',
           });
           setImagePreview(res.data.profile_photo || null);
         } catch (err) {
@@ -37,6 +59,7 @@ export default function UserProfile() {
     };
     fetchProfile();
   }, []);
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleFileChange = (e) => {
@@ -46,38 +69,49 @@ export default function UserProfile() {
       setImagePreview(URL.createObjectURL(file));
     }
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     const dataToSubmit = new FormData();
-    dataToSubmit.append('first_name', formData.first_name);
-    dataToSubmit.append('last_name', formData.last_name);
-    // Only append email if you intend for it to be updatable and the backend supports it.
-    // dataToSubmit.append('email', formData.email); 
+    Object.keys(formData).forEach(key => {
+        dataToSubmit.append(key, formData[key]);
+    });
+    
     if (profilePhotoFile) {
       dataToSubmit.append('profile_photo', profilePhotoFile);
     }
 
     try {
-      // updateProfile from userService relies on session cookie and CSRF header
       const res = await updateProfile(dataToSubmit);
-      setProfile(res.data); // Update profile state with response from server
-      setFormData({ first_name: res.data.first_name || '', last_name: res.data.last_name || ''});
-      setImagePreview(res.data.profile_photo || null); // Update preview with new photo URL from server
-      setProfilePhotoFile(null); // Reset file input state
+      setProfile(res.data);
+      setFormData({
+        first_name: res.data.first_name || '',
+        last_name: res.data.last_name || '',
+        phone_number: res.data.phone_number || '',
+        timezone: res.data.timezone || 'UTC',
+        date_format: res.data.date_format || 'YYYY-MM-DD',
+      });
+      setImagePreview(res.data.profile_photo || null);
+      setProfilePhotoFile(null);
       setSnackbar({ open: true, message: 'Profile updated successfully!', severity: 'success' });
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.response?.data?.email?.[0] || 'Update failed. Please try again.';
+      const errorMessage = err.response?.data?.detail || 'Update failed. Please try again.';
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     }
     setSaving(false);
   };
+
   const handleSnackbarClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
     }
     setSnackbar({ ...snackbar, open: false });
   };
+
+  const displayedTimezones = allTimezones.filter((tz) =>
+    tz.toLowerCase().includes(timezoneSearch.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -88,7 +122,6 @@ export default function UserProfile() {
   }
 
   if (!profile) {
-    // This case might be covered by loading, but as a fallback:
     return (
         <Container component="main" maxWidth="md" sx={{ mt: 8}}>
             <Typography variant="h6" color="error">Could not load profile data.</Typography>
@@ -141,6 +174,17 @@ export default function UserProfile() {
                 disabled
                 variant="filled"
                 helperText="Email cannot be changed."
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {profile.is_email_verified ? (
+                        <Chip icon={<CheckCircleIcon />} label="Verified" color="success" size="small" />
+                      ) : (
+                        <Chip icon={<ErrorIcon />} label="Not Verified" color="warning" size="small" />
+                      )}
+                    </InputAdornment>
+                  ),
+                }}
               />
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField
@@ -159,11 +203,67 @@ export default function UserProfile() {
                   fullWidth
                 />
               </Box>
+              <TextField
+                label="Phone Number"
+                name="phone_number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                fullWidth
+                helperText="To be used for MFA in the future."
+              />
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <FormControl fullWidth>
+                  <InputLabel id="timezone-select-label">Timezone</InputLabel>
+                  <Select
+                    labelId="timezone-select-label"
+                    name="timezone"
+                    value={formData.timezone}
+                    label="Timezone"
+                    onChange={handleChange}
+                    onClose={() => setTimezoneSearch('')}
+                    MenuProps={{ autoFocus: false }}
+                  >
+                    <ListSubheader>
+                      <TextField
+                        size="small"
+                        autoFocus
+                        placeholder="Search..."
+                        fullWidth
+                        value={timezoneSearch}
+                        onChange={(e) => setTimezoneSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Escape') {
+                            e.stopPropagation();
+                          }
+                        }}
+                      />
+                    </ListSubheader>
+                    {displayedTimezones.map(tz => (
+                      <MenuItem key={tz} value={tz}>{tz}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl fullWidth>
+                  <InputLabel id="dateformat-select-label">Date Format</InputLabel>
+                  <Select
+                    labelId="dateformat-select-label"
+                    name="date_format"
+                    value={formData.date_format}
+                    label="Date Format"
+                    onChange={handleChange}
+                  >
+                    {dateFormats.map(format => (
+                      <MenuItem key={format} value={format}>{format}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  color="primary" 
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
                   disabled={saving}
                   size="large"
                 >
