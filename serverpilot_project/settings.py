@@ -254,8 +254,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 
-# Email backend for development
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Custom email backend that reads settings from the database
+EMAIL_BACKEND = 'ServerPilot_API.security.backends.DatabaseEmailBackend'
+
+# A fallback from_email can be set here. However, the password reset view
+# will be updated to use the value from the database settings.
 DEFAULT_FROM_EMAIL = 'noreply@serverpilot.local'
 
 # Internationalization
@@ -310,6 +313,11 @@ LOGGING = {
         },
     },
     'loggers': {
+        'django.utils.autoreload': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',

@@ -52,6 +52,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action # Added for custom actions
+from ServerPilot_API.security.models import SecuritySettings
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
@@ -76,6 +77,13 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return RegisterSerializer
         return ProfileSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"An error occurred in UserViewSet list method: {e}", exc_info=True)
+            raise
 
 from .permissions import IsAdminOrSelf
 from ServerPilot_API.audit_log.services import log_action
@@ -311,20 +319,19 @@ class PasswordResetRequestView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
         
-        recaptcha_enabled_setting = Setting.objects.filter(name='recaptcha_enabled').first()
-        recaptcha_enabled = recaptcha_enabled_setting and recaptcha_enabled_setting.value.lower() == 'true'
+        security_settings = SecuritySettings.get_settings()
+        recaptcha_enabled = security_settings.recaptcha_enabled
 
         if recaptcha_enabled:
             recaptcha_response = request.data.get('recaptcha_token')
             if not recaptcha_response:
                 return Response({'detail': 'reCAPTCHA token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            secret_key_setting = Setting.objects.filter(name='recaptcha_secret_key').first()
-            if not secret_key_setting or not secret_key_setting.value:
+            if not security_settings.recaptcha_secret_key:
                 return Response({'detail': 'reCAPTCHA is not configured correctly on the server.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             data = {
-                'secret': secret_key_setting.value,
+                'secret': security_settings.recaptcha_secret_key,
                 'response': recaptcha_response
             }
             try:
@@ -341,22 +348,33 @@ class PasswordResetRequestView(generics.GenericAPIView):
         
         try:
             user = CustomUser.objects.get(email__iexact=email)
+
+            # The 'from' email is now sourced from the global Django settings,
+            # which are populated by the 'configuration' app.
+            from_email = settings.DEFAULT_FROM_EMAIL
+
+            # Generate token and link for the password reset.
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             reset_link = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
-            
+
+            # Send the password reset email.
             send_mail(
                 'Password Reset Request',
                 f'Click the link to reset your password: {reset_link}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email]
+                from_email,
+                [user.email],
+                fail_silently=False,
             )
             log_action(user, 'password_reset_request', request, f'Password reset email sent to {user.email}')
         except CustomUser.DoesNotExist:
+            # We don't want to reveal that an email address is not in our system,
+            # so we log it and continue as if everything was successful.
             logger.warning(f"Password reset requested for non-existent email: {email}")
             pass
-        
-        return Response({'detail': 'If an account with that email exists, a password reset link has been sent.'}, status=status.HTTP_200_OK)
+
+        # Always return a success response to prevent email enumeration attacks.
+        return Response({'detail': 'If an account with this email exists, a password reset link has been sent.'}, status=status.HTTP_200_OK)
 
 
 class PasswordResetConfirmView(generics.GenericAPIView):

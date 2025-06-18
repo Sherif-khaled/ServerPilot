@@ -43,6 +43,8 @@ class SecuritySettings(models.Model):
     recaptcha_enabled = models.BooleanField(default=False)
     session_expiration_hours = models.PositiveIntegerField(default=24, help_text="Number of hours before a user session expires.")
 
+
+
     def __str__(self):
         return "Security Settings"
 
