@@ -9,6 +9,7 @@ import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Avatar } from '@mui/material';
+import Footer from '../../core/components/Footer'; // Import the Footer component
 
 const Background = styled('div')({
   position: 'fixed',
@@ -205,9 +206,9 @@ export default function UserLoginForm({ onLoginSuccess }) {
   };
 
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Background />
-      <MainContainer>
+      <MainContainer sx={{ flexGrow: 1 }}>
         <FormContainer component="form" onSubmit={mfaRequired ? handleMfaSubmit : handleSubmit} noValidate>
           <IconWrapper>
             {profilePicUrl ? <Avatar src={profilePicUrl} /> : <PhotoCameraOutlinedIcon />}
@@ -293,6 +294,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
           )}
         </FormContainer>
       </MainContainer>
-    </>
+      <Footer transparent />
+    </Box>
   );
 }

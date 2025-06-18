@@ -5,6 +5,7 @@ import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for acti
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
 import { Avatar, Collapse } from '@mui/material';
+import Footer from './Footer'; // Import the new Footer component
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -239,6 +240,8 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           flexGrow: 1,
           height: '100vh',
           overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
           transition: 'background-color 0.3s',
           ...(drawerOpen && !isSmUp && {
             filter: 'brightness(0.95)',
@@ -246,13 +249,14 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
         }}
       >
         <Toolbar />
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
           {/*
             Pass sidebar state as context for responsive resizing in child components (listviews, tables, etc.)
             Example usage in child: useContext(SidebarContext) or check parent className
           */}
           {React.cloneElement(children, { sidebarOpen: drawerOpen })}
         </Container>
+        <Footer transparent />
       </Box>
     </Box>
   );

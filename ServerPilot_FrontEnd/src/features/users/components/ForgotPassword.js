@@ -3,6 +3,7 @@ import { Box, TextField, Button, Typography, Container, Alert } from '@mui/mater
 import { styled } from '@mui/material/styles';
 import ReCAPTCHA from 'react-google-recaptcha';
 import api from '../../../api/axiosConfig';
+import Footer from '../../core/components/Footer';
 
 const Background = styled('div')({
   position: 'fixed',
@@ -19,7 +20,6 @@ const FormContainer = styled(Container)({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  height: '100vh',
 });
 
 const StyledForm = styled('form')({
@@ -79,9 +79,9 @@ const ForgotPassword = () => {
   };
 
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Background />
-      <FormContainer>
+      <FormContainer sx={{ flexGrow: 1 }}>
         <StyledForm onSubmit={handleSubmit}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
             Forgot Password
@@ -121,7 +121,8 @@ const ForgotPassword = () => {
           </StyledButton>
         </StyledForm>
       </FormContainer>
-    </>
+      <Footer transparent />
+    </Box>
   );
 };
 

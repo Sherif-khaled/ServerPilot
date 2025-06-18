@@ -51,15 +51,25 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (error) {
       console.error('Login error:', error);
-      // Check if this is an MFA required response
-      if (error.response && error.response.status === 403 && 
-          error.response.data && error.response.data.mfa_required) {
-        return { 
-          success: false, 
-          mfa_required: true,
-          error: 'MFA verification required'
-        };
+      
+      if (error.response) {
+        // Handle MFA required response
+        if (error.response.status === 403 && error.response.data?.mfa_required) {
+          return { 
+            success: false, 
+            mfa_required: true,
+            error: 'MFA verification required'
+          };
+        }
+        // Handle other 403 Forbidden errors (permission denied)
+        if (error.response.status === 403) {
+          return {
+            success: false,
+            error: 'Permission Denied: You do not have the necessary permissions to access this application. Please contact an administrator for assistance.'
+          };
+        }
       }
+
       return { 
         success: false, 
         error: error.response?.data?.detail || 'Authentication failed' 
