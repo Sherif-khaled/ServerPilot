@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  Box, Button, Typography, Card, Table, TableBody, TableCell,
+  Box, Button, Typography, Card, Table, TableBody, TableCell, TableSortLabel,
   TableContainer, TableHead, TableRow, IconButton, CircularProgress,
   Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip,
-  Grid, TextField, InputAdornment, CardContent, Switch, Chip, MenuItem
+  Grid, TextField, InputAdornment, CardContent, Switch, Chip, MenuItem, TablePagination
 } from '@mui/material';
+import { visuallyHidden } from '@mui/utils';
 import { 
   Add as AddIcon, 
   Refresh as RefreshIcon, 
@@ -34,6 +35,42 @@ export default function CustomerList() {
   const [yearFilter, setYearFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [customerTypes, setCustomerTypes] = useState([]);
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('company_name');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const descendingComparator = (a, b, orderBy) => {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+    return 0;
+  };
+
+  const getComparator = (order, orderBy) => {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  };
+
+  const stableSort = (array, comparator) => {
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+      const order = comparator(a[0], b[0]);
+      if (order !== 0) return order;
+      return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+  };
   
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -68,8 +105,17 @@ export default function CustomerList() {
     fetchCustomers();
   }, [fetchCustomers]);
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const filteredCustomers = useMemo(() => {
-    return customers.filter(customer => {
+    const filtered = customers.filter(customer => {
       const searchTermLower = searchTerm.toLowerCase();
       const matchesSearch = (
         customer.company_name.toLowerCase().includes(searchTermLower) ||
@@ -88,7 +134,9 @@ export default function CustomerList() {
 
       return matchesSearch && matchesType && matchesStatus && matchesYear && matchesMonth;
     });
-  }, [customers, searchTerm, typeFilter, statusFilter, yearFilter, monthFilter]);
+
+    return stableSort(filtered, getComparator(order, orderBy));
+  }, [customers, searchTerm, typeFilter, statusFilter, yearFilter, monthFilter, order, orderBy]);
 
   const uniqueYears = useMemo(() => [...new Set(customers.map(c => new Date(c.created_at).getFullYear()))].sort((a, b) => b - a), [customers]);
   const months = [
@@ -301,18 +349,84 @@ export default function CustomerList() {
               ) : (
                   <TableContainer>
                       <Table stickyHeader aria-label="customers table">
-                          <TableHead>
+                          <TableHead sx={{ backgroundColor: 'action.hover' }}>
                               <TableRow>
-                                  <TableCell>Name</TableCell>
-                                  <TableCell>Email</TableCell>
-                                  <TableCell>Company</TableCell>
+                                  <TableCell 
+                                    sortDirection={orderBy === 'first_name' ? order : false}
+                                    onClick={(e) => handleRequestSort(e, 'first_name')}
+                                    sx={{ cursor: 'pointer' }}
+                                  >
+                                    <TableSortLabel
+                                      active={orderBy === 'first_name'}
+                                      direction={orderBy === 'first_name' ? order : 'asc'}
+                                    >
+                                      Name
+                                      {orderBy === 'first_name' ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                        </Box>
+                                      ) : null}
+                                    </TableSortLabel>
+                                  </TableCell>
+                                  <TableCell 
+                                    sortDirection={orderBy === 'email' ? order : false}
+                                    onClick={(e) => handleRequestSort(e, 'email')}
+                                    sx={{ cursor: 'pointer' }}
+                                  >
+                                    <TableSortLabel
+                                      active={orderBy === 'email'}
+                                      direction={orderBy === 'email' ? order : 'asc'}
+                                    >
+                                      Email
+                                      {orderBy === 'email' ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                        </Box>
+                                      ) : null}
+                                    </TableSortLabel>
+                                  </TableCell>
+                                  <TableCell 
+                                    sortDirection={orderBy === 'company_name' ? order : false}
+                                    onClick={(e) => handleRequestSort(e, 'company_name')}
+                                    sx={{ cursor: 'pointer' }}
+                                  >
+                                    <TableSortLabel
+                                      active={orderBy === 'company_name'}
+                                      direction={orderBy === 'company_name' ? order : 'asc'}
+                                    >
+                                      Company
+                                      {orderBy === 'company_name' ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                        </Box>
+                                      ) : null}
+                                    </TableSortLabel>
+                                  </TableCell>
                                   <TableCell>Phone</TableCell>
-                                  <TableCell>Status</TableCell>
+                                  <TableCell 
+                                    sortDirection={orderBy === 'is_active' ? order : false}
+                                    onClick={(e) => handleRequestSort(e, 'is_active')}
+                                    sx={{ cursor: 'pointer' }}
+                                  >
+                                    <TableSortLabel
+                                      active={orderBy === 'is_active'}
+                                      direction={orderBy === 'is_active' ? order : 'asc'}
+                                    >
+                                      Status
+                                      {orderBy === 'is_active' ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
+                                        </Box>
+                                      ) : null}
+                                    </TableSortLabel>
+                                  </TableCell>
                                   <TableCell align="right">Actions</TableCell>
                               </TableRow>
                           </TableHead>
                           <TableBody>
-                              {filteredCustomers.map((customer) => (
+                              {filteredCustomers
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((customer) => (
                                   <TableRow hover key={customer.id}>
                                       <TableCell>{customer.company_name || `${customer.first_name} ${customer.last_name}`}</TableCell>
                                       <TableCell>{customer.email}</TableCell>
@@ -354,6 +468,15 @@ export default function CustomerList() {
                               ))}
                           </TableBody>
                       </Table>
+                      <TablePagination
+                          rowsPerPageOptions={[5, 10, 25]}
+                          component="div"
+                          count={filteredCustomers.length}
+                          rowsPerPage={rowsPerPage}
+                          page={page}
+                          onPageChange={handleChangePage}
+                          onRowsPerPageChange={handleChangeRowsPerPage}
+                      />
                   </TableContainer>
               )}
           </Card>
