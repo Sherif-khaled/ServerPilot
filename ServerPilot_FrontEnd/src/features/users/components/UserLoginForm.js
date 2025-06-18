@@ -294,7 +294,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
           )}
         </FormContainer>
       </MainContainer>
-      <Footer transparent />
+      <Footer transparent authPage />
     </Box>
   );
 }

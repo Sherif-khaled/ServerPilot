@@ -121,7 +121,7 @@ const ForgotPassword = () => {
           </StyledButton>
         </StyledForm>
       </FormContainer>
-      <Footer transparent />
+      <Footer transparent authPage />
     </Box>
   );
 };

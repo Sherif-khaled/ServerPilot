@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Link, Container } from '@mui/material';
+import { Box, Typography, Link, Container, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const FooterContainer = styled(Box, {
@@ -13,7 +13,6 @@ const FooterContainer = styled(Box, {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(10px)',
         borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-        color: '#fff',
       }
     : {
         backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[800],
@@ -21,13 +20,25 @@ const FooterContainer = styled(Box, {
       }),
 }));
 
-const Footer = ({ transparent }) => {
+const Footer = ({ transparent, authPage }) => {
+  const theme = useTheme();
+
+  const getTextColor = () => {
+    if (transparent) {
+      if (authPage) {
+        return '#fff';
+      }
+      return theme.palette.mode === 'light' ? theme.palette.text.primary : '#fff';
+    }
+    return 'text.secondary';
+  };
+
   return (
     <FooterContainer transparent={transparent} component="footer">
       <Container maxWidth="lg">
-        <Typography variant="body2" sx={{ color: transparent ? 'inherit' : 'text.secondary' }}>
-          {'Copyright '}
-          <Link color="inherit" href="https://serverpilot.io/">
+        <Typography variant="body2" sx={{ color: getTextColor() }}>
+          {'Copyright © '}
+          <Link color="inherit" href="https://your-website.com/">
             ServerPilot
           </Link>{' '}
           {new Date().getFullYear()}

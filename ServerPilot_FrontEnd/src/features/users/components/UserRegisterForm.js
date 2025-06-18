@@ -35,7 +35,7 @@ export default function UserRegisterForm() {
           <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>Register</Button>
         </form>
       </Box>
-      <Footer transparent />
+      <Footer transparent authPage />
     </Box>
   );
 }
