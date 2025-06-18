@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert,
     Button, IconButton, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress,
-    Grid, TextField, Select, MenuItem, Avatar, Chip, Menu, InputAdornment, Card, CardContent
+    Grid, TextField, Select, MenuItem, Avatar, Chip, Menu, InputAdornment, Card, CardContent, TableSortLabel, Tooltip, TablePagination
 } from '@mui/material';
 
 import {
@@ -16,7 +16,7 @@ import {
 } from '@mui/icons-material';
 import {
     adminListUsers, adminDeleteUser,
-    adminSetUserPassword
+    adminSetUserPassword, adminPatchUser
 } from '../../../api/userService';
 import SetPasswordForm from './SetPasswordForm';
 
@@ -52,6 +52,11 @@ export default function UserList() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedUserForMenu, setSelectedUserForMenu] = useState(null);
+    const [order, setOrder] = useState('asc');
+    const [orderBy, setOrderBy] = useState('username');
+    const [updatingUserId, setUpdatingUserId] = useState(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
@@ -142,8 +147,44 @@ export default function UserList() {
         }
     };
 
+    const handleRequestSort = (event, property) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+    };
+
+    const handleInlineUpdate = async (userId, field, value) => {
+        setUpdatingUserId(userId);
+        setError('');
+        try {
+            await adminPatchUser(userId, { [field]: value });
+            setUsers(prevUsers =>
+                prevUsers.map(user =>
+                    user.id === userId ? { ...user, [field]: value } : user
+                )
+            );
+        } catch (err) {
+            setError(`Failed to update user: ${err.response?.data?.detail || err.message}`);
+            fetchUsers(); // Re-fetch to ensure data consistency
+        } finally {
+            setUpdatingUserId(null);
+        }
+    };
+
     const filteredUsers = useMemo(() => {
-        return users.filter(user => {
+        let sortableUsers = [...users];
+        sortableUsers.sort((a, b) => {
+            const isAsc = order === 'asc';
+            if (b[orderBy] < a[orderBy]) {
+                return isAsc ? 1 : -1;
+            }
+            if (b[orderBy] > a[orderBy]) {
+                return isAsc ? -1 : 1;
+            }
+            return 0;
+        });
+
+        return sortableUsers.filter(user => {
             const searchTermLower = searchTerm.toLowerCase();
             const matchesSearchTerm = searchTerm === '' ||
                 user.username.toLowerCase().includes(searchTermLower) ||
@@ -161,7 +202,11 @@ export default function UserList() {
             
             return matchesSearchTerm && matchesRole && matchesStatus;
         });
-    }, [users, searchTerm, roleFilter, statusFilter]);
+    }, [users, searchTerm, roleFilter, statusFilter, order, orderBy]);
+
+    const paginatedUsers = useMemo(() => {
+        return filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    }, [filteredUsers, page, rowsPerPage]);
 
     const totalUsers = users.length;
     const activeUsersCount = users.filter(u => u.is_active).length;
@@ -199,6 +244,15 @@ export default function UserList() {
     const handleSetPasswordFromMenu = () => {
         if (selectedUserForMenu) handleOpenSetPasswordModal(selectedUserForMenu);
         handleMenuClose();
+    };
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
     };
 
     return (
@@ -285,55 +339,122 @@ export default function UserList() {
                         <Table aria-label="user list">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>User</TableCell>
-                                    <TableCell>Email</TableCell>
-                                    <TableCell>Role</TableCell>
-                                    <TableCell>Status</TableCell>
+                                    <TableCell sortDirection={orderBy === 'username' ? order : false}>
+                                        <TableSortLabel
+                                            active={orderBy === 'username'}
+                                            direction={orderBy === 'username' ? order : 'asc'}
+                                            onClick={(e) => handleRequestSort(e, 'username')}
+                                        >
+                                            User
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell sortDirection={orderBy === 'email' ? order : false}>
+                                        <TableSortLabel
+                                            active={orderBy === 'email'}
+                                            direction={orderBy === 'email' ? order : 'asc'}
+                                            onClick={(e) => handleRequestSort(e, 'email')}
+                                        >
+                                            Email
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell sortDirection={orderBy === 'is_staff' ? order : false}>
+                                        <TableSortLabel
+                                            active={orderBy === 'is_staff'}
+                                            direction={orderBy === 'is_staff' ? order : 'asc'}
+                                            onClick={(e) => handleRequestSort(e, 'is_staff')}
+                                        >
+                                            Role
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell sortDirection={orderBy === 'is_active' ? order : false}>
+                                        <TableSortLabel
+                                            active={orderBy === 'is_active'}
+                                            direction={orderBy === 'is_active' ? order : 'asc'}
+                                            onClick={(e) => handleRequestSort(e, 'is_active')}
+                                        >
+                                            Status
+                                        </TableSortLabel>
+                                    </TableCell>
                                     <TableCell align="right">Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {filteredUsers.map((user) => (
-                                    <TableRow key={user.id} hover>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Avatar src={user.profile_photo_url} sx={{ mr: 2 }}>
-                                                    {user.username.charAt(0).toUpperCase()}
-                                                </Avatar>
-                                                <Box>
-                                                    <Typography variant="subtitle2">{`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username}</Typography>
-                                                    <Typography variant="body2" color="text.secondary">@{user.username}</Typography>
-                                                </Box>
+                                {paginatedUsers.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} align="center">
+                                            <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                                <SearchIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+                                                <Typography variant="subtitle1">
+                                                    No users found
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Try adjusting your search or filter criteria.
+                                                </Typography>
                                             </Box>
                                         </TableCell>
-                                        <TableCell>{user.email}</TableCell>
-                                        <TableCell>
-                                            <Chip 
-                                                icon={user.is_staff ? <AdminPanelSettingsIcon /> : <PeopleAltOutlinedIcon />} 
-                                                label={user.is_staff ? 'Admin' : 'User'} 
-                                                color={user.is_staff ? 'secondary' : 'default'} 
-                                                size="small" 
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip 
-                                                icon={user.is_active ? <CheckCircleOutlineIcon /> : <HighlightOffOutlinedIcon />} 
-                                                label={user.is_active ? 'Active' : 'Inactive'} 
-                                                color={user.is_active ? 'success' : 'error'} 
-                                                size="small" 
-                                            />
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            <IconButton onClick={(e) => handleMenuOpen(e, user)}>
-                                                <MoreVertIcon />
-                                            </IconButton>
-                                        </TableCell>
                                     </TableRow>
-                                ))}
+                                ) : (
+                                    paginatedUsers.map((user) => (
+                                        <TableRow key={user.id} hover>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <Avatar src={user.profile_photo_url} sx={{ mr: 2 }}>
+                                                        {user.username.charAt(0).toUpperCase()}
+                                                    </Avatar>
+                                                    <Box>
+                                                        <Typography variant="subtitle2">{`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username}</Typography>
+                                                        <Typography variant="body2" color="text.secondary">@{user.username}</Typography>
+                                                    </Box>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                <Select
+                                                    value={user.is_staff}
+                                                    onChange={(e) => handleInlineUpdate(user.id, 'is_staff', e.target.value)}
+                                                    disabled={updatingUserId === user.id}
+                                                    size="small"
+                                                    sx={{ minWidth: 100, '.MuiSelect-select': { display: 'flex', alignItems: 'center' } }}
+                                                >
+                                                    <MenuItem value={true}><AdminPanelSettingsIcon sx={{ mr: 1, fontSize: '1rem' }} /> Admin</MenuItem>
+                                                    <MenuItem value={false}><PeopleAltOutlinedIcon sx={{ mr: 1, fontSize: '1rem' }} /> User</MenuItem>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Select
+                                                    value={user.is_active}
+                                                    onChange={(e) => handleInlineUpdate(user.id, 'is_active', e.target.value)}
+                                                    disabled={updatingUserId === user.id}
+                                                    size="small"
+                                                    sx={{ minWidth: 110, '.MuiSelect-select': { display: 'flex', alignItems: 'center' } }}
+                                                >
+                                                    <MenuItem value={true}><CheckCircleOutlineIcon sx={{ mr: 1, fontSize: '1rem', color: 'success.main' }} /> Active</MenuItem>
+                                                    <MenuItem value={false}><HighlightOffOutlinedIcon sx={{ mr: 1, fontSize: '1rem', color: 'error.main' }} /> Inactive</MenuItem>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                <Tooltip title="Actions">
+                                                    <IconButton onClick={(e) => handleMenuOpen(e, user)}>
+                                                        <MoreVertIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </TableContainer>
                 )}
+                <TablePagination
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    component="div"
+                    count={filteredUsers.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                />
             </Card>
             <Menu
                 anchorEl={anchorEl}

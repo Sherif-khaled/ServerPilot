@@ -29,6 +29,7 @@ export const adminListUsers = () => apiClient.get(`${ADMIN_USERS_URL}/`);
 export const adminGetUser = (userId) => apiClient.get(`${ADMIN_USERS_URL}/${userId}/`);
 export const adminCreateUser = (userData) => apiClient.post(`${ADMIN_USERS_URL}/`, userData);
 export const adminUpdateUser = (userId, userData) => apiClient.put(`${ADMIN_USERS_URL}/${userId}/`, userData);
+export const adminPatchUser = (userId, userData) => apiClient.patch(`${ADMIN_USERS_URL}/${userId}/`, userData);
 export const adminDeleteUser = (userId) => apiClient.delete(`${ADMIN_USERS_URL}/${userId}/`);
 export const adminBulkDeleteUsers = (userIds) => apiClient.post(`${ADMIN_USERS_URL}/bulk-delete/`, { ids: userIds });
 export const adminSetUserPassword = (userId, newPassword) => apiClient.post(`${ADMIN_USERS_URL}/${userId}/set-password/`, { new_password: newPassword });
@@ -41,6 +42,8 @@ export const getUserStats = () => {
 export const getDashboardStats = () => {
     return apiClient.get('/stats/dashboard/');
 };
+
+export const checkUsernameExists = (username) => apiClient.get(`${USER_API_URL}/check-username/?username=${username}`);
 
 // --- Customer Management Endpoints ---
 export const getCustomers = () => apiClient.get(CUSTOMER_API_URL);

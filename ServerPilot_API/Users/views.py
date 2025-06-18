@@ -67,7 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action == 'create':
+        if self.action in ['create', 'check_username']:
             return [AllowAny()]
         return [IsAdminUser()]
 
@@ -84,6 +84,14 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"An error occurred in UserViewSet list method: {e}", exc_info=True)
             raise
+
+    @action(detail=False, methods=['get'], url_path='check-username')
+    def check_username(self, request):
+        username = request.query_params.get('username', None)
+        if username is not None:
+            exists = CustomUser.objects.filter(username__iexact=username).exists()
+            return Response({'exists': exists})
+        return Response({'error': 'Username parameter is required'}, status=400)
 
 from .permissions import IsAdminOrSelf
 from ServerPilot_API.audit_log.services import log_action

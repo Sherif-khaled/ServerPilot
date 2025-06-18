@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { checkUsernameExists } from '../../../api/userService';
 import {
-    Box, TextField, Button, Select, MenuItem, InputLabel, FormControl, FormHelperText, Snackbar, Alert
+    Box, TextField, Button, Select, MenuItem, InputLabel, FormControl, FormHelperText, Snackbar, Alert,
+    InputAdornment, IconButton, Radio, RadioGroup, FormControlLabel, FormLabel, Typography, Divider, CircularProgress
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 // Default initial state for the form
 const getDefaultFormData = () => ({
@@ -44,6 +47,14 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
     };
     const [formData, setFormData] = useState(getDefaultFormData());
     const [errors, setErrors] = useState({});
+    const [usernameError, setUsernameError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+
+    const handleClickShowPassword = () => setShowPassword((show) => !show);
+
+    const handleMouseDownPassword = (event) => {
+        event.preventDefault();
+    };
 
     useEffect(() => {
         if (isEditMode && initialUser) {
@@ -77,6 +88,23 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
         }
         if (name === 'password' && errors.password2) {
              setErrors(prev => ({ ...prev, password2: null }));
+        }
+    };
+
+    const handleBlur = async (event) => {
+        const { name, value } = event.target;
+        if (name === 'username' && value.trim() !== '') {
+            try {
+                const response = await checkUsernameExists(value);
+                if (response.data.exists) {
+                    setUsernameError('Username is already taken.');
+                } else {
+                    setUsernameError('');
+                }
+            } catch (error) {
+                console.error('Error checking username:', error);
+                setUsernameError('Error checking username.');
+            }
         }
     };
 
@@ -133,154 +161,89 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                 }
                 return false; // Prevent default form submission
             }} noValidate sx={{ mt: 0 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Box>
-                    <FormControl fullWidth error={!!errors.first_name}>
-                        <InputLabel htmlFor="first_name" shrink>First Name</InputLabel>
-                        <TextField
-                            id="first_name"
-                            name="first_name"
-                            value={formData.first_name}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            autoFocus
-                            placeholder="Enter first name"
-                            sx={{ mt: 3 }}
-                        />
-                        {errors.first_name && <FormHelperText>{errors.first_name}</FormHelperText>}
-                    </FormControl>
-                </Box>
-                <Box>
-                    <FormControl fullWidth error={!!errors.last_name}>
-                        <InputLabel htmlFor="last_name" shrink>Last Name</InputLabel>
-                        <TextField
-                            id="last_name"
-                            name="last_name"
-                            value={formData.last_name}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            placeholder="Enter last name"
-                            sx={{ mt: 3 }}
-                        />
-                        {errors.last_name && <FormHelperText>{errors.last_name}</FormHelperText>}
-                    </FormControl>
-                </Box>
-                <Box>
-                    <FormControl fullWidth error={!!errors.email}>
-                        <InputLabel htmlFor="email" shrink>Email Address</InputLabel>
-                        <TextField
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            placeholder="Enter email address"
-                            sx={{ mt: 3 }}
-                        />
-                        {errors.email && <FormHelperText>{errors.email}</FormHelperText>}
-                    </FormControl>
-                </Box>
-                <Box>
-                    <FormControl fullWidth error={!!errors.username}>
-                        <InputLabel htmlFor="username" shrink>Username</InputLabel>
-                        <TextField
-                            id="username"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            disabled={isEditMode} // Username usually not editable
-                            placeholder="Enter username"
-                            sx={{ mt: 3 }}
-                        />
-                        {errors.username && <FormHelperText>{errors.username}</FormHelperText>}
-                    </FormControl>
-                </Box>
-                {!isEditMode && (
-                    <>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Personal Info</Typography>
+                        <Divider sx={{ mb: 1 }} />
                         <Box>
-                            <FormControl fullWidth error={!!errors.password}>
-                                <InputLabel htmlFor="password" shrink>Password</InputLabel>
-                                <TextField
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    required
-                                    placeholder="Enter password"
-                                    sx={{ mt: 3 }}
-                                />
-                                {errors.password && <FormHelperText>{errors.password}</FormHelperText>}
+                            <FormControl fullWidth error={!!errors.first_name}>
+                                <TextField id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} fullWidth required autoFocus placeholder="Enter first name" />
+                                {errors.first_name && <FormHelperText>{errors.first_name}</FormHelperText>}
                             </FormControl>
                         </Box>
                         <Box>
-                            <FormControl fullWidth error={!!errors.password2}>
-                                <InputLabel htmlFor="password2" shrink>Confirm Password</InputLabel>
-                                <TextField
-                                    id="password2"
-                                    name="password2"
-                                    type="password"
-                                    value={formData.password2}
-                                    onChange={handleChange}
-                                    fullWidth
-                                    required
-                                    placeholder="Confirm password"
-                                    sx={{ mt: 3 }}
-                                />
-                                {errors.password2 && <FormHelperText>{errors.password2}</FormHelperText>}
+                            <FormControl fullWidth error={!!errors.last_name}>
+                                <TextField id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} fullWidth required placeholder="Enter last name" />
+                                {errors.last_name && <FormHelperText>{errors.last_name}</FormHelperText>}
                             </FormControl>
                         </Box>
-                    </>
-                )}
-                <Box>
-                    <FormControl fullWidth>
-                        <InputLabel id="is_active-label">Status</InputLabel>
-                        <Select
-                            labelId="is_active-label"
-                            id="is_active"
-                            name="is_active"
-                            value={formData.is_active}
-                            onChange={handleChange}
-                            label="Status"
-                        >
-                            <MenuItem value={true}>Active</MenuItem>
-                            <MenuItem value={false}>Inactive</MenuItem>
-                        </Select>
-                    </FormControl>
+                        <Box>
+                            <FormControl fullWidth error={!!errors.email}>
+                                <TextField id="email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth required placeholder="Enter email address" />
+                                {errors.email && <FormHelperText>{errors.email}</FormHelperText>}
+                            </FormControl>
+                        </Box>
+                        <Box>
+                            <FormControl component="fieldset">
+                                <FormLabel component="legend">Status</FormLabel>
+                                <RadioGroup row name="is_active" value={formData.is_active} onChange={handleChange} >
+                                    <FormControlLabel value={true} control={<Radio />} label="Active" />
+                                    <FormControlLabel value={false} control={<Radio />} label="Inactive" />
+                                </RadioGroup>
+                            </FormControl>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Login Info</Typography>
+                        <Divider sx={{ mb: 1 }} />
+                        <Box>
+                            <FormControl fullWidth error={!!errors.username}>
+                                <TextField id="username" name="username" value={formData.username} onChange={handleChange} onBlur={handleBlur} fullWidth required disabled={isEditMode} placeholder="Enter username" />
+                                {errors.username && <FormHelperText>{errors.username}</FormHelperText>}
+                                {usernameError && <FormHelperText error>{usernameError}</FormHelperText>}
+                            </FormControl>
+                        </Box>
+                        {!isEditMode && (
+                            <>
+                                <Box>
+                                    <FormControl fullWidth error={!!errors.password}>
+                                        <TextField fullWidth placeholder="Password" name="password" type={showPassword ? 'text' : 'password'} value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} margin="normal" InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword} onMouseDown={handleMouseDownPassword} edge="end" > {showPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ) }} />
+                                    </FormControl>
+                                </Box>
+                                <Box>
+                                    <FormControl fullWidth error={!!errors.password2}>
+                                        <TextField fullWidth placeholder="Confirm Password" name="password2" type={showPassword ? 'text' : 'password'} value={formData.password2} onChange={handleChange} error={!!errors.password2} helperText={errors.password2} margin="normal" InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword} onMouseDown={handleMouseDownPassword} edge="end" > {showPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ) }} />
+                                        {errors.password2 && <FormHelperText>{errors.password2}</FormHelperText>}
+                                    </FormControl>
+                                </Box>
+                            </>
+                        )}
+                    </Box>
                 </Box>
-                <Box>
+                <Box sx={{ mt: 2.5 }}>
                     <FormControl fullWidth>
-                        <InputLabel id="is_staff-label">Role</InputLabel>
-                        <Select
-                            labelId="is_staff-label"
-                            id="is_staff"
-                            name="is_staff"
-                            value={formData.is_staff}
-                            onChange={handleChange}
-                            label="Role"
-                        >
+                        <Select id="is_staff" name="is_staff" value={formData.is_staff} onChange={handleChange} displayEmpty>
+                            <MenuItem value="" disabled>Role</MenuItem>
                             <MenuItem value={true}>Admin</MenuItem>
                             <MenuItem value={false}>User</MenuItem>
                         </Select>
                     </FormControl>
                 </Box>
-
-
                 <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Button onClick={onCancel} variant="outlined" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
+                    <Button onClick={onCancel} variant="outlined" color="error" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
                         Cancel
                     </Button>
-                    <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        color="primary"
+                        disabled={loading}
+                        sx={{ width: '100%', px: 2.5 }}
+                        startIcon={loading ? <CircularProgress size="1rem" color="inherit" /> : null}
+                    >
                         {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create User')}
                     </Button>
-                </Box>
                 </Box>
             </Box>
             <Snackbar

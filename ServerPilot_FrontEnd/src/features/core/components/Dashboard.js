@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore, History as HistoryIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon } from '@mui/icons-material';
 import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -20,7 +20,9 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
   // Drawer open state: always open on large screens, toggleable on mobile
   // Sidebar toggleable on all screen sizes
   const [drawerOpen, setDrawerOpen] = React.useState(true);
-  const [adminOpen, setAdminOpen] = React.useState(false);
+  const [accountsOpen, setAccountsOpen] = React.useState(false);
+  const [systemSettingsOpen, setSystemSettingsOpen] = React.useState(false);
+  const [administrationOpen, setAdministrationOpen] = React.useState(false);
   const navigate = useNavigate();
 
   // When screen size changes, force open on desktop, close on mobile
@@ -36,9 +38,9 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
     setDrawerOpen((prev) => !prev);
   };
 
-  const handleAdminClick = () => {
-    setAdminOpen(!adminOpen);
-  };
+  const handleAccountsClick = () => setAccountsOpen(!accountsOpen);
+  const handleSystemSettingsClick = () => setSystemSettingsOpen(!systemSettingsOpen);
+  const handleAdministrationClick = () => setAdministrationOpen(!administrationOpen);
 
   const handleLogout = async () => {
     try {
@@ -57,14 +59,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
     }
   };
 
-  // Define drawerNavItems inside the component so it can access handleLogout and user role
-  const drawerNavItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Profile', icon: <AccountCircle />, path: '/profile' },
-    // Conditionally show the 'Users' link for admin users (is_staff)
-    ...(user?.is_staff ? [{ text: 'Users', icon: <People />, path: '/users' }] : []),
-    { text: 'Customers', icon: <ContactsIcon />, path: '/customers' },
-  ];
+
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -86,7 +81,14 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1, cursor: 'pointer' }} onClick={() => navigate('/profile')}>ServerPilot Dashboard</Typography>
+          <Box sx={{ flexGrow: 1, cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+            <Typography variant="h6" component="div">
+              Admin Dashboard
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              System Overview
+            </Typography>
+          </Box>
           <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
             {currentThemeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
@@ -147,83 +149,123 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           <Divider />
           <Box sx={{ overflow: 'auto' }} role="presentation">
             <List>
-              {drawerNavItems.map((item) => {
-                const listItemContent = (
+              {(() => {
+                const navLinkSx = {
+                  '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                    color: theme.palette.text.secondary,
+                    transition: 'color 0.2s',
+                  },
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                    '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                      color: theme.palette.text.primary,
+                    },
+                  },
+                  '&.active': {
+                    backgroundColor: theme.palette.action.selected,
+                    '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                      color: theme.palette.primary.main,
+                    },
+                  },
+                };
+
+                const nestedNavLinkSx = { ...navLinkSx, pl: 4 };
+
+                return (
                   <>
-                    <ListItemIcon sx={{ minWidth: '40px' }}>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.text} />
+                    {/* Dashboard */}
+                    <ListItem component={NavLink} to="/dashboard" onClick={isSmUp ? undefined : handleDrawerToggle} sx={navLinkSx}>
+                      <ListItemIcon sx={{ minWidth: '40px' }}><DashboardIcon /></ListItemIcon>
+                      <ListItemText primary="Dashboard" />
+                    </ListItem>
+
+                    <Divider sx={{ my: 1 }} />
+
+                    {/* Accounts Section */}
+                    <ListItemButton onClick={handleAccountsClick}>
+                      <ListItemIcon sx={{ minWidth: '40px' }}><SupervisorAccountIcon /></ListItemIcon>
+                      <ListItemText primary="Accounts" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase' }} />
+                      <ExpandMore sx={{ transform: accountsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                    </ListItemButton>
+                    <Collapse in={accountsOpen} timeout="auto" unmountOnExit>
+                      <List component="div" disablePadding>
+                        {/* Profile */}
+                        <ListItem component={NavLink} to="/profile" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                          <ListItemIcon sx={{ minWidth: '40px' }}><AccountCircle /></ListItemIcon>
+                          <ListItemText primary="Profile" />
+                        </ListItem>
+                        {/* Users (conditional) */}
+                        {user?.is_staff && (
+                          <ListItem component={NavLink} to="/users" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                            <ListItemIcon sx={{ minWidth: '40px' }}><People /></ListItemIcon>
+                            <ListItemText primary="Users" />
+                          </ListItem>
+                        )}
+                        {/* Customers */}
+                        <ListItem component={NavLink} to="/customers" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                          <ListItemIcon sx={{ minWidth: '40px' }}><ContactsIcon /></ListItemIcon>
+                          <ListItemText primary="Customers" />
+                        </ListItem>
+                      </List>
+                    </Collapse>
+
+                    {/* Admin sections (conditional) */}
+                    {user?.is_staff && (
+                      <>
+                        <Divider sx={{ my: 1 }} />
+                        {/* System Settings Section */}
+                        <ListItemButton onClick={handleSystemSettingsClick}>
+                          <ListItemIcon sx={{ minWidth: '40px' }}><TuneIcon /></ListItemIcon>
+                          <ListItemText primary="System Settings" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase' }} />
+                          <ExpandMore sx={{ transform: systemSettingsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                        </ListItemButton>
+                        <Collapse in={systemSettingsOpen} timeout="auto" unmountOnExit>
+                          <List component="div" disablePadding>
+                            {/* Settings */}
+                            <ListItem component={NavLink} to="/admin/settings" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                              <ListItemIcon sx={{ minWidth: '40px' }}><SettingsIcon /></ListItemIcon>
+                              <ListItemText primary="Settings" />
+                            </ListItem>
+                            {/* Password Policy */}
+                            <ListItem component={NavLink} to="/password-policy" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                              <ListItemIcon sx={{ minWidth: '40px' }}><PolicyIcon /></ListItemIcon>
+                              <ListItemText primary="Password Policy" />
+                            </ListItem>
+                          </List>
+                        </Collapse>
+
+                        {/* Administration Section */}
+                        <ListItemButton onClick={handleAdministrationClick}>
+                          <ListItemIcon sx={{ minWidth: '40px' }}><AdminPanelSettingsIcon /></ListItemIcon>
+                          <ListItemText primary="Administration" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase' }} />
+                          <ExpandMore sx={{ transform: administrationOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                        </ListItemButton>
+                        <Collapse in={administrationOpen} timeout="auto" unmountOnExit>
+                          <List component="div" disablePadding>
+                            {/* Audit Logs */}
+                            <ListItem component={NavLink} to="/audit-logs" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                              <ListItemIcon sx={{ minWidth: '40px' }}><HistoryIcon /></ListItemIcon>
+                              <ListItemText primary="Audit Logs" />
+                            </ListItem>
+                            {/* Database Management */}
+                            <ListItem component={NavLink} to="/database-management" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                              <ListItemIcon sx={{ minWidth: '40px' }}><StorageIcon /></ListItemIcon>
+                              <ListItemText primary="Database Management" />
+                            </ListItem>
+                          </List>
+                        </Collapse>
+                      </>
+                    )}
+
+                    {/* Logout */}
+                    <Divider sx={{ my: 1 }} />
+                    <ListItemButton onClick={handleLogout} sx={navLinkSx}>
+                      <ListItemIcon sx={{ minWidth: '40px' }}><LogoutIcon /></ListItemIcon>
+                      <ListItemText primary="Logout" />
+                    </ListItemButton>
                   </>
                 );
-
-                if (item.path) {
-                  return (
-                    <ListItem key={item.text} component={NavLink} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}
-                      sx={{
-                        '&.active': {
-                          backgroundColor: theme.palette.action.selected,
-                          '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                            color: theme.palette.primary.main,
-                          },
-                        },
-                      }}
-                    >
-                      {listItemContent}
-                    </ListItem>
-                  );
-                } else if (item.action) {
-                  return (
-                    <ListItemButton key={item.text} onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
-                      {listItemContent}
-                    </ListItemButton>
-                  );
-                }
-                return null;
-              })}
-              {user?.is_staff && (
-                <>
-                  <ListItemButton onClick={handleAdminClick}>
-                    <ListItemIcon sx={{ minWidth: '40px' }}>
-                      <AdminPanelSettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Administration" />
-                    {adminOpen ? <ExpandLess /> : <ExpandMore />}
-                  </ListItemButton>
-                  <Collapse in={adminOpen} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
-                      {[
-                        { text: 'Audit Logs', path: '/audit-logs', icon: <HistoryIcon /> },
-                        { text: 'Password Policy', path: '/password-policy', icon: <PolicyIcon /> },
-                        { text: 'Database Management', path: '/database-management', icon: <StorageIcon /> },
-                        { text: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },
-                      ].map((item) => (
-                        <ListItem
-                          key={item.text}
-                          component={NavLink}
-                          to={item.path}
-                          onClick={isSmUp ? undefined : handleDrawerToggle}
-                          sx={{
-                            pl: 4,
-                            '&.active': {
-                              backgroundColor: theme.palette.action.selected,
-                              '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                                color: theme.palette.primary.main,
-                              },
-                            },
-                          }}
-                        >
-                          <ListItemIcon sx={{ minWidth: '40px' }}>{item.icon}</ListItemIcon>
-                          <ListItemText primary={item.text} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Collapse>
-                </>
-              )}
-              <Divider sx={{ my: 1 }} />
-              <ListItemButton onClick={handleLogout}>
-                <ListItemIcon sx={{ minWidth: '40px' }}><LogoutIcon /></ListItemIcon>
-                <ListItemText primary="Logout" />
-              </ListItemButton>
+              })()}
             </List>
           </Box>
         </Drawer>
