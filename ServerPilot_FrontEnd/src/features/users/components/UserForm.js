@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Box, TextField, Button, Select, MenuItem, InputLabel, FormControl, FormHelperText
+    Box, TextField, Button, Select, MenuItem, InputLabel, FormControl, FormHelperText, Snackbar, Alert
 } from '@mui/material';
 
 // Default initial state for the form
@@ -16,6 +16,32 @@ const getDefaultFormData = () => ({
 });
 
 export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode = false, loading }) {
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleCloseNotification = () => {
+        setNotification(prev => ({ ...prev, open: false }));
+    };
+
+    const handleSubmitWithNotification = async (data) => {
+        try {
+            await onSubmit(data);
+            setNotification({
+                open: true,
+                message: isEditMode ? 'User updated successfully!' : 'User created successfully!',
+                severity: 'success'
+            });
+            // Reset form after successful submission if not in edit mode
+            if (!isEditMode) {
+                setFormData(getDefaultFormData());
+            }
+        } catch (error) {
+            setNotification({
+                open: true,
+                message: error.message || 'An error occurred. Please try again.',
+                severity: 'error'
+            });
+        }
+    };
     const [formData, setFormData] = useState(getDefaultFormData());
     const [errors, setErrors] = useState({});
 
@@ -92,8 +118,22 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
     };
 
     return (
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 0 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <>
+            <Box component="form" onSubmit={async (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent event bubbling
+                
+                if (validateForm()) {
+                    const dataToSubmit = { ...formData };
+                    delete dataToSubmit.password2;
+                    if (isEditMode && !formData.password) {
+                        delete dataToSubmit.password;
+                    }
+                    await handleSubmitWithNotification(dataToSubmit);
+                }
+                return false; // Prevent default form submission
+            }} noValidate sx={{ mt: 0 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 <Box>
                     <FormControl fullWidth error={!!errors.first_name}>
                         <InputLabel htmlFor="first_name" shrink>First Name</InputLabel>
@@ -231,38 +271,8 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                         </Select>
                     </FormControl>
                 </Box>
-                <Box>
-                    <FormControl fullWidth sx={{ mt: 1 }}>
-                        <InputLabel id="role-select-label">Role</InputLabel>
-                        <Select
-                            labelId="role-select-label"
-                            id="role-select"
-                            name="is_staff" // Controls is_staff
-                            value={formData.is_staff.toString()} // Select value must be string or number
-                            onChange={handleChange}
-                            label="Role"
-                        >
-                            <MenuItem value="false">User</MenuItem>
-                            <MenuItem value="true">Admin</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
-                <Box>
-                    <FormControl fullWidth sx={{ mt: 1 }}>
-                        <InputLabel id="status-select-label">Status</InputLabel>
-                        <Select
-                            labelId="status-select-label"
-                            id="status-select"
-                            name="is_active" // Controls is_active
-                            value={formData.is_active.toString()} // Select value must be string or number
-                            onChange={handleChange}
-                            label="Status"
-                        >
-                            <MenuItem value="true">Active</MenuItem>
-                            <MenuItem value="false">Inactive</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
+
+
                 <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <Button onClick={onCancel} variant="outlined" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
                         Cancel
@@ -271,7 +281,18 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                         {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create User')}
                     </Button>
                 </Box>
+                </Box>
             </Box>
-        </Box>
+            <Snackbar
+                open={notification.open}
+                autoHideDuration={6000}
+                onClose={handleCloseNotification}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+                    {notification.message}
+                </Alert>
+            </Snackbar>
+        </>
     );
 }

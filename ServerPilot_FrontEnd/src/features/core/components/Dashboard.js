@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore, History as HistoryIcon } from '@mui/icons-material';
 import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -190,7 +190,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                   <Collapse in={adminOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                       {[
-                        { text: 'Audit Logs', path: '/audit-logs', icon: <PolicyIcon /> },
+                        { text: 'Audit Logs', path: '/audit-logs', icon: <HistoryIcon /> },
                         { text: 'Password Policy', path: '/password-policy', icon: <PolicyIcon /> },
                         { text: 'Database Management', path: '/database-management', icon: <StorageIcon /> },
                         { text: 'Settings', path: '/admin/settings', icon: <SettingsIcon /> },

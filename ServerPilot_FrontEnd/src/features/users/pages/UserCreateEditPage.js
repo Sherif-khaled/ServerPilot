@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import UserForm from '../components/UserForm';
-import { Container, Typography, Paper, CircularProgress, Button } from '@mui/material';
+import { Container, Typography, Paper, CircularProgress, Button, Snackbar, Alert } from '@mui/material';
 
 import { adminGetUser, adminUpdateUser, adminCreateUser } from '../../../api/userService'; 
 
@@ -12,6 +12,14 @@ export default function UserCreateEditPage() {
     const [initialUser, setInitialUser] = useState(null);
     const [formLoading, setFormLoading] = useState(false); // For form submission
     const [pageLoading, setPageLoading] = useState(isEditMode); // For fetching initial data in edit mode
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleCloseNotification = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setNotification({ ...notification, open: false });
+    };
 
     useEffect(() => {
         if (isEditMode) {
@@ -35,18 +43,39 @@ export default function UserCreateEditPage() {
     const handleSubmit = async (formData) => {
         setFormLoading(true);
         try {
+            // Destructure to remove password2, which is only for frontend validation
+            const { password2, ...dataToSend } = formData;
+
             if (isEditMode) {
-                await adminUpdateUser(userId, formData);
-                alert('User updated successfully!');
+                // If password is not being changed (it's empty), don't send it in the payload
+                if (!dataToSend.password) {
+                    delete dataToSend.password;
+                }
+                await adminUpdateUser(userId, dataToSend);
+                setNotification({ open: true, message: 'User updated successfully!', severity: 'success' });
             } else {
-                await adminCreateUser(formData);
-                alert('User created successfully!');
+                await adminCreateUser(dataToSend);
+                setNotification({ open: true, message: 'User created successfully!', severity: 'success' });
             }
-            navigate('/admin/users'); // Navigate to the user list page after success
+            
+            // Navigate after a short delay to allow the user to see the message
+            setTimeout(() => {
+                navigate('/users');
+            }, 2000);
+
         } catch (error) {
             console.error("Failed to save user:", error);
-            // TODO: Show an error message to the user (e.g., using a snackbar or alert)
-            // alert('Failed to save user. Please try again.');
+            // Extract a more specific error message from the server response
+            const errorData = error.response?.data;
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+            if (typeof errorData === 'object' && errorData !== null) {
+                const firstErrorKey = Object.keys(errorData)[0];
+                const firstErrorMessage = errorData[firstErrorKey];
+                if (firstErrorKey && firstErrorMessage) {
+                    errorMessage = `${firstErrorKey}: ${Array.isArray(firstErrorMessage) ? firstErrorMessage.join(' ') : firstErrorMessage}`;
+                }
+            }
+            setNotification({ open: true, message: errorMessage, severity: 'error' });
         } finally {
             setFormLoading(false);
         }
@@ -82,14 +111,24 @@ export default function UserCreateEditPage() {
 
     return (
         <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}> {/* Responsive padding */}
+            <Snackbar 
+                open={notification.open} 
+                autoHideDuration={6000} 
+                onClose={handleCloseNotification}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+                    {notification.message}
+                </Alert>
+            </Snackbar>
+            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
                 <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
                     {isEditMode ? 'Edit User' : 'Create New User'}
                 </Typography>
                 <UserForm
                     onSubmit={handleSubmit}
                     onCancel={handleCancel}
-                    initialUser={initialUser} // Pass null if creating or if fetch failed for edit
+                    initialUser={initialUser}
                     isEditMode={isEditMode}
                     loading={formLoading}
                 />
