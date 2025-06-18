@@ -222,14 +222,11 @@ export default function ServerList({ customerId: propCustomerId }) {
           Add Server
         </Button>
       </Box>
-
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {successMessage && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
-
       {servers.length === 0 && !error && (
         <Typography sx={{mt: 2, textAlign: 'center'}}>No servers found for this customer.</Typography>
       )}
-
       <Menu
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
@@ -338,7 +335,6 @@ export default function ServerList({ customerId: propCustomerId }) {
           </TableBody>
         </Table>
       </TableContainer>
-
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
         <DialogTitle>Delete Server</DialogTitle>
         <DialogContent>
@@ -351,7 +347,6 @@ export default function ServerList({ customerId: propCustomerId }) {
           <Button onClick={handleDelete} color="error">Delete</Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={changePasswordDialogOpen} onClose={handleCloseChangePasswordDialog}>
         <DialogTitle>Change Server Password for {serverForPasswordChange?.server_name}</DialogTitle>
         <DialogContent>
@@ -380,7 +375,6 @@ export default function ServerList({ customerId: propCustomerId }) {
           <Button onClick={handleChangePassword}>Change Password</Button>
         </DialogActions>
       </Dialog>
-
       {/* Server Info Modal */}
       {infoModalOpen && (
         <Dialog open={infoModalOpen} onClose={handleCloseInfoModal} fullWidth maxWidth="md">
@@ -410,7 +404,7 @@ export default function ServerList({ customerId: propCustomerId }) {
               return (
                 <Grid container spacing={3} sx={{ mt: 1 }}>
                   {/* OS Info */}
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <Card>
                       <CardContent>
                         <Typography variant="h6" gutterBottom>System Overview</Typography>
@@ -418,10 +412,13 @@ export default function ServerList({ customerId: propCustomerId }) {
                       </CardContent>
                     </Card>
                   </Grid>
-
                   {/* CPU Usage Chart */}
                   {cpu_usage != null && (
-                    <Grid item xs={12} md={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        md: 6
+                      }}>
                       <Card>
                         <CardContent>
                           <Typography variant="h6" gutterBottom>CPU Usage</Typography>
@@ -453,10 +450,13 @@ export default function ServerList({ customerId: propCustomerId }) {
                       </Card>
                     </Grid>
                   )}
-
                   {/* Memory Chart and Info */}
                   {memory.total_gb != null && (
-                    <Grid item xs={12} md={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        md: 6
+                      }}>
                       <Card>
                         <CardContent>
                           <Typography variant="h6" gutterBottom>Memory Usage</Typography>
@@ -493,10 +493,9 @@ export default function ServerList({ customerId: propCustomerId }) {
                       </Card>
                     </Grid>
                   )}
-
                   {/* Disk Usage Chart */}
                   {disks.length > 0 && (
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <Card>
                         <CardContent>
                           <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
@@ -527,7 +526,6 @@ export default function ServerList({ customerId: propCustomerId }) {
           </DialogActions>
         </Dialog>
       )}
-
       {/* Add/Edit Server Modal */}
       <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>{editingServer ? 'Edit Server' : 'Add New Server'}</DialogTitle>

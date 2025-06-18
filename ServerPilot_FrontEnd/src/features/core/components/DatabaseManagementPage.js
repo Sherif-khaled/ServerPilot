@@ -163,7 +163,6 @@ const DatabaseManagementPage = () => {
                     </Box>
                 </CardContent>
             </Card>
-
             <Card sx={{ mb: 3 }}>
                 <CardContent>
                     <Typography variant="h6" gutterBottom>
@@ -173,13 +172,13 @@ const DatabaseManagementPage = () => {
                         <CircularProgress />
                     ) : (
                         <Grid container spacing={2} alignItems="center">
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <FormControlLabel
                                     control={<Switch checked={schedule.enabled} onChange={handleScheduleChange} name="enabled" />}
                                     label="Enable Daily Backups"
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={6}>
                                 <TextField
                                     label="Hour (UTC)"
                                     type="number"
@@ -191,7 +190,7 @@ const DatabaseManagementPage = () => {
                                     inputProps={{ min: 0, max: 23 }}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid size={6}>
                                 <TextField
                                     label="Minute (UTC)"
                                     type="number"
@@ -203,7 +202,7 @@ const DatabaseManagementPage = () => {
                                     inputProps={{ min: 0, max: 59 }}
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <Button 
                                     variant="contained" 
                                     onClick={handleSaveSchedule} 
@@ -216,7 +215,6 @@ const DatabaseManagementPage = () => {
                     )}
                 </CardContent>
             </Card>
-
             <Card>
                 <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -278,7 +276,6 @@ const DatabaseManagementPage = () => {
                     )}
                 </CardContent>
             </Card>
-
             <Dialog open={openDialog} onClose={handleDialogClose}>
                 <DialogTitle>Confirm Deletion</DialogTitle>
                 <DialogContent>
@@ -293,7 +290,6 @@ const DatabaseManagementPage = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
                 <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
                     {snackbar.message}

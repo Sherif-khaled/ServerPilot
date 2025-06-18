@@ -5,6 +5,7 @@ import {
     Button, IconButton, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress,
     Grid, TextField, Select, MenuItem, Avatar, Chip, Menu, InputAdornment, Card, CardContent
 } from '@mui/material';
+
 import {
     Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, VpnKey as VpnKeyIcon, MoreVert as MoreVertIcon,
     Search as SearchIcon, CloudUpload as CloudUploadIcon,
@@ -214,13 +215,17 @@ export default function UserList() {
                     Add User
                 </Button>
             </Box>
-
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
             {/* Stat Cards */}
             <Grid container spacing={3} sx={{ mb: 3 }}>
                 {statItems.map((item, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid
+                        key={index}
+                        size={{
+                            xs: 12,
+                            sm: 6,
+                            md: 3
+                        }}>
                         <Card sx={{ display: 'flex', alignItems: 'center', p: 2, boxShadow: 3 }}>
                             <Box sx={{ flexGrow: 1 }}>
                                 <Typography color="text.secondary" variant="subtitle2">{item.title}</Typography>
@@ -231,7 +236,6 @@ export default function UserList() {
                     </Grid>
                 ))}
             </Grid>
-
             <Card sx={{ boxShadow: 3 }}>
                 <CardContent>
                     <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -331,7 +335,6 @@ export default function UserList() {
                     </TableContainer>
                 )}
             </Card>
-
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
@@ -341,7 +344,6 @@ export default function UserList() {
                 <MenuItem onClick={handleSetPasswordFromMenu}><VpnKeyIcon sx={{ mr: 1 }} /> Set Password</MenuItem>
                 <MenuItem onClick={handleDeleteFromMenu} sx={{ color: 'error.main' }}><DeleteIcon sx={{ mr: 1 }} /> Delete</MenuItem>
             </Menu>
-
             <Dialog
                 open={deleteConfirmOpen}
                 onClose={handleCloseDeleteConfirm}
@@ -357,7 +359,6 @@ export default function UserList() {
                     <Button onClick={handleDeleteUser} color="error">Delete</Button>
                 </DialogActions>
             </Dialog>
-
             <Modal
                 open={setPasswordModalOpen}
                 onClose={handleCloseSetPasswordModal}

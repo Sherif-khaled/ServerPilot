@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
+import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
@@ -156,7 +156,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
 
                 if (item.path) {
                   return (
-                    <ListItem key={item.text} button component={NavLink} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}
+                    <ListItem key={item.text} component={NavLink} to={item.path} onClick={isSmUp ? undefined : handleDrawerToggle}
                       sx={{
                         '&.active': {
                           backgroundColor: theme.palette.action.selected,
@@ -171,22 +171,22 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                   );
                 } else if (item.action) {
                   return (
-                    <ListItem key={item.text} button onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
+                    <ListItemButton key={item.text} onClick={() => { item.action(); if (!isSmUp) handleDrawerToggle(); }}>
                       {listItemContent}
-                    </ListItem>
+                    </ListItemButton>
                   );
                 }
                 return null;
               })}
               {user?.is_staff && (
                 <>
-                  <ListItem button onClick={handleAdminClick}>
+                  <ListItemButton onClick={handleAdminClick}>
                     <ListItemIcon sx={{ minWidth: '40px' }}>
                       <AdminPanelSettingsIcon />
                     </ListItemIcon>
                     <ListItemText primary="Administration" />
                     {adminOpen ? <ExpandLess /> : <ExpandMore />}
-                  </ListItem>
+                  </ListItemButton>
                   <Collapse in={adminOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                       {[
@@ -197,7 +197,6 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                       ].map((item) => (
                         <ListItem
                           key={item.text}
-                          button
                           component={NavLink}
                           to={item.path}
                           onClick={isSmUp ? undefined : handleDrawerToggle}
@@ -220,10 +219,10 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                 </>
               )}
               <Divider sx={{ my: 1 }} />
-              <ListItem button onClick={handleLogout}>
+              <ListItemButton onClick={handleLogout}>
                 <ListItemIcon sx={{ minWidth: '40px' }}><LogoutIcon /></ListItemIcon>
                 <ListItemText primary="Logout" />
-              </ListItem>
+              </ListItemButton>
             </List>
           </Box>
         </Drawer>

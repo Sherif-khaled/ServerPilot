@@ -75,7 +75,11 @@ const PasswordPolicyPage = () => {
             {policy && (
                 <form onSubmit={handleSubmit}>
                     <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                            size={{
+                                xs: 12,
+                                sm: 6
+                            }}>
                             <TextField
                                 fullWidth
                                 type="number"
@@ -86,7 +90,11 @@ const PasswordPolicyPage = () => {
                                 helperText="Minimum number of characters required."
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                            size={{
+                                xs: 12,
+                                sm: 6
+                            }}>
                             <TextField
                                 fullWidth
                                 type="number"
@@ -97,7 +105,11 @@ const PasswordPolicyPage = () => {
                                 helperText="Days until password expires. 0 for no expiration."
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid
+                            size={{
+                                xs: 12,
+                                sm: 6
+                            }}>
                             <TextField
                                 fullWidth
                                 type="number"
@@ -108,25 +120,25 @@ const PasswordPolicyPage = () => {
                                 helperText="Number of old passwords to prevent reuse."
                             />
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                             <FormControlLabel
                                 control={<Switch checked={policy.require_uppercase} onChange={handleChange} name="require_uppercase" />}
                                 label="Require Uppercase Letter"
                             />
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                             <FormControlLabel
                                 control={<Switch checked={policy.require_lowercase} onChange={handleChange} name="require_lowercase" />}
                                 label="Require Lowercase Letter"
                             />
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                             <FormControlLabel
                                 control={<Switch checked={policy.require_number} onChange={handleChange} name="require_number" />}
                                 label="Require Number"
                             />
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                             <FormControlLabel
                                 control={<Switch checked={policy.require_symbol} onChange={handleChange} name="require_symbol" />}
                                 label="Require Symbol"
