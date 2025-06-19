@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, CircularProgress, Alert, FormControlLabel, Checkbox } from '@mui/material';
+import { Box, Button, TextField, CircularProgress, Alert, FormControlLabel, Checkbox, Paper } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { createServer, getServerDetails, updateServer } from '../../../api/serverService';
 import { IMaskInput } from 'react-imask';
 import PropTypes from 'prop-types';
@@ -44,6 +45,27 @@ const initialFormData = {
 export default function ServerForm({ customerId, serverData, onSaveSuccess, onClose }) {
   const isEditMode = Boolean(serverData && serverData.id);
   const serverId = isEditMode ? serverData.id : null;
+
+  // Styled root component for the background
+  const RootContainer = styled(Box)(({ theme }) => ({
+      minHeight: '100vh',
+      padding: theme.spacing(3),
+      background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
+      position: 'relative',
+      overflow: 'hidden',
+  }));
+
+  // Glassmorphism Card
+  const GlassCard = styled(Paper)(({ theme }) => ({
+      background: 'rgba(255, 255, 255, 0.08)',
+      backdropFilter: 'blur(12px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(180%)', // For Safari
+      borderRadius: '12px',
+      border: '1px solid rgba(255, 255, 255, 0.125)',
+      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+      padding: theme.spacing(3),
+      color: '#fff',
+  }));
 
   const [formData, setFormData] = useState(initialFormData);
   const [loading, setLoading] = useState(false); // For form submission
@@ -240,131 +262,144 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
   }
 
   return (
-    <Box>
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {apiFormError && <Alert severity="error">{apiFormError}</Alert>}
-          
-          <TextField
-            required
-            fullWidth
-            id="server_name"
-            label="Server Name"
-            name="server_name"
-            value={formData.server_name}
-            onChange={handleChange}
-            error={!!errors.server_name}
-            helperText={errors.server_name}
-          />
-
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+    <RootContainer>
+      <GlassCard>
+        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {apiFormError && <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{apiFormError}</Alert>}
+            
             <TextField
               required
               fullWidth
-              label="Server IP Address"
-              name="server_ip"
-              id="server_ip"
-              value={formData.server_ip}
+              id="server_name"
+              label="Server Name"
+              name="server_name"
+              value={formData.server_name}
               onChange={handleChange}
-              error={!!errors.server_ip}
-              helperText={errors.server_ip}
-              sx={{ flexGrow: 1 }}
-              InputProps={{
-                inputComponent: TextMaskAdapter,
-              }}
+              error={!!errors.server_name}
+              helperText={errors.server_name}
+              sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
             />
-            <TextField
-              required
-              id="ssh_port"
-              label="SSH Port"
-              name="ssh_port"
-              type="number"
-              value={formData.ssh_port}
-              onChange={handleChange}
-              error={!!errors.ssh_port}
-              helperText={errors.ssh_port}
-              InputProps={{ inputProps: { min: 1, max: 65535 } }}
-              sx={{ width: { xs: '100%', sm: '120px' } }}
-            />
-          </Box>
 
-          <FormControlLabel
-            control={<Checkbox checked={formData.login_using_root} onChange={handleChange} name="login_using_root" />}
-            label="Login as root user"
-          />
-
-          {!formData.login_using_root && (
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
               <TextField
+                required
                 fullWidth
-                id="ssh_user"
-                label="SSH Username (non-root)"
-                name="ssh_user"
-                value={formData.ssh_user}
+                label="Server IP Address"
+                name="server_ip"
+                id="server_ip"
+                value={formData.server_ip}
                 onChange={handleChange}
-                error={!!errors.ssh_user}
-                helperText={errors.ssh_user}
-                required={!formData.login_using_root}
+                error={!!errors.server_ip}
+                helperText={errors.server_ip}
+                sx={{ flexGrow: 1, input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                InputProps={{
+                  inputComponent: TextMaskAdapter,
+                }}
               />
               <TextField
-                fullWidth
-                id="ssh_password"
-                label="SSH Password (non-root)"
-                name="ssh_password"
-                type="password"
-                value={formData.ssh_password}
+                required
+                id="ssh_port"
+                label="SSH Port"
+                name="ssh_port"
+                type="number"
+                value={formData.ssh_port}
                 onChange={handleChange}
-                error={!!errors.ssh_password}
-                helperText={errors.ssh_password || 'Leave blank to keep current or if using SSH key.'}
-                autoComplete="new-password"
+                error={!!errors.ssh_port}
+                helperText={errors.ssh_port}
+                InputProps={{ inputProps: { min: 1, max: 65535 } }}
+                sx={{ width: { xs: '100%', sm: '120px' }, input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
               />
             </Box>
-          )}
 
-          {formData.login_using_root && (
+            <FormControlLabel
+              control={<Checkbox checked={formData.login_using_root} onChange={handleChange} name="login_using_root" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />}
+              label="Login as root user"
+            />
+
+            {!formData.login_using_root && (
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField
+                  fullWidth
+                  id="ssh_user"
+                  label="SSH Username (non-root)"
+                  name="ssh_user"
+                  value={formData.ssh_user}
+                  onChange={handleChange}
+                  error={!!errors.ssh_user}
+                  helperText={errors.ssh_user}
+                  required={!formData.login_using_root}
+                  sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                />
+                <TextField
+                  fullWidth
+                  id="ssh_password"
+                  label="SSH Password (non-root)"
+                  name="ssh_password"
+                  type="password"
+                  value={formData.ssh_password}
+                  onChange={handleChange}
+                  error={!!errors.ssh_password}
+                  helperText={errors.ssh_password || 'Leave blank to keep current or if using SSH key.'}
+                  autoComplete="new-password"
+                  sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                />
+              </Box>
+            )}
+
+            {formData.login_using_root && (
+              <TextField
+                fullWidth
+                id="ssh_root_password"
+                label="SSH Root Password"
+                name="ssh_root_password"
+                type="password"
+                value={formData.ssh_root_password}
+                onChange={handleChange}
+                error={!!errors.ssh_root_password}
+                helperText={errors.ssh_root_password || 'Leave blank to keep current or if using SSH key.'}
+                autoComplete="new-password"
+                sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+              />
+            )}
+            
             <TextField
               fullWidth
-              id="ssh_root_password"
-              label="SSH Root Password"
-              name="ssh_root_password"
-              type="password"
-              value={formData.ssh_root_password}
+              id="ssh_key"
+              label="SSH Private Key (Optional)"
+              name="ssh_key"
+              multiline
+              rows={4}
+              value={formData.ssh_key}
               onChange={handleChange}
-              error={!!errors.ssh_root_password}
-              helperText={errors.ssh_root_password || 'Leave blank to keep current or if using SSH key.'}
-              autoComplete="new-password"
+              error={!!errors.ssh_key}
+              helperText={errors.ssh_key || 'Paste your private SSH key here. Leave blank to keep current or if using password.'}
+              placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+              sx={{ textarea: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
             />
-          )}
-          
-          <TextField
-            fullWidth
-            id="ssh_key"
-            label="SSH Private Key (Optional)"
-            name="ssh_key"
-            multiline
-            rows={4}
-            value={formData.ssh_key}
-            onChange={handleChange}
-            error={!!errors.ssh_key}
-            helperText={errors.ssh_key || 'Paste your private SSH key here. Leave blank to keep current or if using password.'}
-            placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
-          />
-          
-          <FormControlLabel
-            control={<Checkbox checked={formData.is_active} onChange={handleChange} name="is_active" />}
-            label="Server is Active"
-          />
+            
+            <FormControlLabel
+              control={<Checkbox checked={formData.is_active} onChange={handleChange} name="is_active" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />}
+              label="Server is Active"
+            />
 
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-            <Button onClick={onClose} variant="outlined" disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained" disabled={loading}>
-              {loading ? <CircularProgress size={24} /> : (isEditMode ? 'Update Server' : 'Create Server')}
-            </Button>
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              <Button onClick={onClose} variant="outlined" disabled={loading} sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" disabled={loading} sx={{
+                  background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                  boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                  color: 'white',
+                  borderRadius: '25px',
+                  padding: '10px 25px',
+              }}>
+                {loading ? <CircularProgress size={24} /> : (isEditMode ? 'Update Server' : 'Create Server')}
+              </Button>
+            </Box>
           </Box>
         </Box>
-      </Box>
-    </Box>
+      </GlassCard>
+    </RootContainer>
   );
 }

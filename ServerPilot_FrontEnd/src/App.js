@@ -18,7 +18,7 @@ import ProtectedRoute from './features/core/components/ProtectedRoute'; // Impor
 import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
 
-import DatabaseManagementPage from './features/core/components/DatabaseManagementPage';
+import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
 import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
 import AdminSettingsPage from './features/administration/pages/AdminSettingsPage';
 import ForgotPassword from './features/users/components/ForgotPassword';
@@ -56,7 +56,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SettingsPage /></Dashboard>} />
         <Route path="/audit-logs" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AuditLogList /></Dashboard>} />
         <Route path="/password-policy" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><PasswordPolicyPage /></Dashboard>} />
-        <Route path="/database-management" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><DatabaseManagementPage /></Dashboard>} />
+        <Route path="/database-management" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode} overrideBackground><DatabaseManagementPage /></Dashboard>} />
         <Route path="/admin/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AdminSettingsPage /></Dashboard>} />
       </Route>
     </Routes>

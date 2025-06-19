@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, TextField, Button, Typography, Avatar, Paper, Container, CircularProgress, Snackbar, Alert as MuiAlert,
-    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader
+    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader, styled
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -21,6 +21,64 @@ const dateFormats = [
     'MM/DD/YYYY',
     'DD/MM/YYYY'
 ];
+
+const GlassPaper = styled(Paper)(({ theme }) => ({
+    background: 'rgba(38, 50, 56, 0.6)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '20px',
+    padding: theme.spacing(4),
+    color: '#fff',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+}));
+
+const textFieldStyles = {
+    '& label.Mui-focused': {
+        color: '#00bfff',
+    },
+    '& .MuiInputLabel-root': {
+        color: 'rgba(255, 255, 255, 0.7)',
+    },
+    '& .MuiOutlinedInput-root': {
+        color: '#fff',
+        '& fieldset': {
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+        },
+        '&:hover fieldset': {
+            borderColor: '#00bfff',
+        },
+        '&.Mui-focused fieldset': {
+            borderColor: '#00bfff',
+        },
+        '&.Mui-disabled': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            color: 'rgba(255, 255, 255, 0.5)',
+            '& fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.2) !important',
+            }
+        },
+    },
+    '& .MuiFilledInput-root': {
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        color: '#fff',
+        '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        },
+        '&.Mui-focused': {
+            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        },
+        '&.Mui-disabled': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            color: 'rgba(255, 255, 255, 0.5)',
+        },
+        '&:before, &:after': {
+            borderBottom: `2px solid #00bfff`,
+        },
+    },
+    '& .MuiFormHelperText-root': {
+        color: 'rgba(255, 255, 255, 0.6)',
+    },
+};
+
 
 export default function UserProfile() {
   const [profile, setProfile] = useState(null);
@@ -115,170 +173,214 @@ export default function UserProfile() {
 
   if (loading) {
     return (
-      <Container component="main" maxWidth="md" sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'rgba(38, 50, 56, 0.6)' }}>
+        <CircularProgress color="inherit" />
+      </Box>
     );
   }
 
   if (!profile) {
     return (
-        <Container component="main" maxWidth="md" sx={{ mt: 8}}>
-            <Typography variant="h6" color="error">Could not load profile data.</Typography>
-        </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'rgba(38, 50, 56, 0.6)' }}>
+        <Typography variant="h6" color="error">Could not load profile data.</Typography>
+      </Box>
     );
   }
 
   return (
-    <Container component="main" maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 } }}>
-        <Typography component="h1" variant="h4" align="center" gutterBottom>
-          User Profile
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, alignItems: 'flex-start' }}>
-            <Box sx={{ width: { xs: '100%', md: '33.33%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Avatar
-                src={imagePreview || profile.profile_photo}
-                sx={{ width: 150, height: 150, border: '2px solid lightgray' }}
-              />
-              <input
-                accept="image/*"
-                style={{ display: 'none' }}
-                id="profile-photo-upload"
-                type="file"
-                onChange={handleFileChange}
-              />
-              <label htmlFor="profile-photo-upload">
-                <Button variant="outlined" component="span" startIcon={<PhotoCamera />}>
-                  Change Photo
-                </Button>
-              </label>
-              {imagePreview && profilePhotoFile && (
-                <Typography variant="caption">New photo selected</Typography>
-              )}
-            </Box>
+    <Box sx={{ p: 4, background: 'rgba(38, 50, 56, 0.6)', minHeight: '100vh' }}>
+      <Container component="main" maxWidth="lg">
+        <GlassPaper>
+          <Typography component="h1" variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', color: '#fff' }}>
+            User Profile
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 5, alignItems: 'flex-start' }}>
+              <Box sx={{ width: { xs: '100%', md: '30%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <Avatar
+                  src={imagePreview || profile.profile_photo}
+                  sx={{
+                    width: 160,
+                    height: 160,
+                    border: '4px solid rgba(255, 255, 255, 0.2)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                  }}
+                />
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="profile-photo-upload"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+                <label htmlFor="profile-photo-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<PhotoCamera />}
+                    sx={{
+                      color: '#fff',
+                      borderColor: 'rgba(255, 255, 255, 0.5)',
+                    }}
+                  >
+                    Change Photo
+                  </Button>
+                </label>
+                {imagePreview && profilePhotoFile && (
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>New photo selected</Typography>
+                )}
+              </Box>
 
-            <Box sx={{ width: { xs: '100%', md: '66.66%' }, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Username"
-                value={profile.username || ''}
-                fullWidth
-                disabled
-                variant="filled"
-              />
-              <TextField
-                label="Email"
-                value={profile.email || ''}
-                fullWidth
-                disabled
-                variant="filled"
-                helperText="Email cannot be changed."
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      {profile.is_email_verified ? (
-                        <Chip icon={<CheckCircleIcon />} label="Verified" color="success" size="small" />
-                      ) : (
-                        <Chip icon={<ErrorIcon />} label="Not Verified" color="warning" size="small" />
-                      )}
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+              <Box sx={{ width: { xs: '100%', md: '70%' }, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <TextField
-                  label="First Name"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
+                  label="Username"
+                  value={profile.username || ''}
                   fullWidth
-                  required
+                  disabled
+                  variant="filled"
+                  sx={textFieldStyles}
                 />
                 <TextField
-                  label="Last Name"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
+                  label="Email"
+                  value={profile.email || ''}
                   fullWidth
+                  disabled
+                  variant="filled"
+                  helperText="Email cannot be changed."
+                  sx={textFieldStyles}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        {profile.is_email_verified ? (
+                          <Chip icon={<CheckCircleIcon />} label="Verified" color="success" size="small" sx={{ background: 'rgba(76, 175, 80, 0.3)', color: '#98fb98' }} />
+                        ) : (
+                          <Chip icon={<ErrorIcon />} label="Not Verified" color="warning" size="small" sx={{ background: 'rgba(255, 152, 0, 0.3)', color: '#ffcc80' }} />
+                        )}
+                      </InputAdornment>
+                    ),
+                  }}
                 />
-              </Box>
-              <TextField
-                label="Phone Number"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                fullWidth
-                helperText="To be used for MFA in the future."
-              />
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel id="timezone-select-label">Timezone</InputLabel>
-                  <Select
-                    labelId="timezone-select-label"
-                    name="timezone"
-                    value={formData.timezone}
-                    label="Timezone"
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                  <TextField
+                    label="First Name"
+                    name="first_name"
+                    value={formData.first_name}
                     onChange={handleChange}
-                    onClose={() => setTimezoneSearch('')}
-                    MenuProps={{ autoFocus: false }}
-                  >
-                    <ListSubheader>
-                      <TextField
-                        size="small"
-                        autoFocus
-                        placeholder="Search..."
-                        fullWidth
-                        value={timezoneSearch}
-                        onChange={(e) => setTimezoneSearch(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          if (e.key !== 'Escape') {
-                            e.stopPropagation();
+                    fullWidth
+                    required
+                    variant="outlined"
+                    sx={textFieldStyles}
+                  />
+                  <TextField
+                    label="Last Name"
+                    name="last_name"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    fullWidth
+                    variant="outlined"
+                    sx={textFieldStyles}
+                  />
+                </Box>
+                <TextField
+                  label="Phone Number"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                  fullWidth
+                  helperText="To be used for MFA in the future."
+                  variant="outlined"
+                  sx={textFieldStyles}
+                />
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                  <FormControl fullWidth sx={textFieldStyles} variant="outlined">
+                    <InputLabel id="timezone-select-label">Timezone</InputLabel>
+                    <Select
+                      labelId="timezone-select-label"
+                      name="timezone"
+                      value={formData.timezone}
+                      label="Timezone"
+                      onChange={handleChange}
+                      onClose={() => setTimezoneSearch('')}
+                      MenuProps={{
+                        autoFocus: false,
+                        PaperProps: {
+                          sx: {
+                            background: 'rgba(40, 40, 40, 0.9)',
+                            backdropFilter: 'blur(10px)',
+                            color: '#fff',
+                            border: `1px solid rgba(255, 255, 255, 0.2)`,
                           }
-                        }}
-                      />
-                    </ListSubheader>
-                    {displayedTimezones.map(tz => (
-                      <MenuItem key={tz} value={tz}>{tz}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel id="dateformat-select-label">Date Format</InputLabel>
-                  <Select
-                    labelId="dateformat-select-label"
-                    name="date_format"
-                    value={formData.date_format}
-                    label="Date Format"
-                    onChange={handleChange}
+                        }
+                      }}
+                    >
+                      <ListSubheader sx={{ background: 'rgba(40, 40, 40, 0.9)', color: '#fff' }}>
+                        <TextField
+                          size="small"
+                          autoFocus
+                          placeholder="Search..."
+                          fullWidth
+                          value={timezoneSearch}
+                          onChange={(e) => setTimezoneSearch(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.key !== 'Escape' && e.stopPropagation()}
+                          sx={textFieldStyles}
+                          variant="outlined"
+                        />
+                      </ListSubheader>
+                      {displayedTimezones.map(tz => (
+                        <MenuItem key={tz} value={tz}>{tz}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl fullWidth sx={textFieldStyles} variant="outlined">
+                    <InputLabel id="dateformat-select-label">Date Format</InputLabel>
+                    <Select
+                      labelId="dateformat-select-label"
+                      name="date_format"
+                      value={formData.date_format}
+                      label="Date Format"
+                      onChange={handleChange}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            background: 'rgba(40, 40, 40, 0.9)',
+                            backdropFilter: 'blur(10px)',
+                            color: '#fff',
+                            border: `1px solid rgba(255, 255, 255, 0.2)`,
+                          }
+                        }
+                      }}
+                    >
+                      {dateFormats.map(format => (
+                        <MenuItem key={format} value={format}>{format}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={saving}
+                    size="large"
+                    sx={{
+                      background: 'linear-gradient(45deg, #00bfff 30%, #0077be 90%)',
+                      boxShadow: '0 3px 5px 2px rgba(0, 191, 255, .3)',
+                    }}
                   >
-                    {dateFormats.map(format => (
-                      <MenuItem key={format} value={format}>{format}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  disabled={saving}
-                  size="large"
-                >
-                  {saving ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
-                </Button>
+                    {saving ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
+                  </Button>
+                </Box>
               </Box>
             </Box>
           </Box>
-        </Box>
-      </Paper>
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+        </GlassPaper>
+        <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+          <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </Box>
   );
 }

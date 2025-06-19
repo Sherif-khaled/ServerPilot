@@ -2,9 +2,31 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Button, TextField, MenuItem, Box, Typography, Select, InputLabel, FormControl, Paper, Alert, CircularProgress, FormHelperText
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createCustomer, getCustomerDetails, updateCustomer, getCustomerTypes } from '../../../api/customerService';
+
+// Styled root component for the background
+const RootContainer = styled(Box)(({ theme }) => ({
+    minHeight: '100vh',
+    padding: theme.spacing(3),
+    background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
+    position: 'relative',
+    overflow: 'hidden',
+}));
+
+// Glassmorphism Card
+const GlassCard = styled(Paper)(({ theme }) => ({
+    background: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(12px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(180%)', // For Safari
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.125)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    padding: theme.spacing(3),
+    color: '#fff',
+}));
 
 const initialFormData = {
   first_name: '',
@@ -186,102 +208,120 @@ export default function CustomerForm() {
   };
 
   return (
-    <Paper sx={{ p: 3, m: 2 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        {isEditMode ? 'Edit Customer' : 'Add New Customer'}
-      </Typography>
-      
-      {loading && !formData.email ? (
-        <CircularProgress />
-      ) : (
-      <form onSubmit={handleSubmit} noValidate>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {apiFormError && (
-            <Box>
-              <Alert severity="error">{apiFormError}</Alert>
-            </Box>
-          )}
-
-          {/* Basic Information Section */}
-          <Box>
-            <Paper elevation={2} sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>Basic Information</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                <FormControl fullWidth error={!!errors.customer_type}>
-                  <InputLabel id="customer-type-label">Customer Type</InputLabel>
-                  <Select
-                    labelId="customer-type-label"
-                    id="customer_type"
-                    name="customer_type"
-                    value={formData.customer_type}
-                    label="Customer Type"
-                    onChange={handleChange}
-                    required
-                  >
-                    <MenuItem value=""><em>Select a type</em></MenuItem>
-                    {customerTypes.map((type) => (
-                      <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>
-                    ))}
-                  </Select>
-                  {errors.customer_type && <FormHelperText>{errors.customer_type}</FormHelperText>}
-                </FormControl>
-
-                {selectedTypeName === 'company' ? (
-                  <>
-                    <TextField fullWidth id="company_name" name="company_name" label="Company Name" value={formData.company_name} onChange={handleChange} error={!!errors.company_name} helperText={errors.company_name} required />
-                    <TextField fullWidth id="delegated_person_name" name="delegated_person_name" label="Delegated Person" value={formData.delegated_person_name} onChange={handleChange} error={!!errors.delegated_person_name} helperText={errors.delegated_person_name} required />
-                  </>
-                ) : (
-                  <>
-                    <TextField fullWidth id="first_name" name="first_name" label="First Name" value={formData.first_name} onChange={handleChange} error={!!errors.first_name} helperText={errors.first_name} required />
-                    <TextField fullWidth id="last_name" name="last_name" label="Last Name" value={formData.last_name} onChange={handleChange} error={!!errors.last_name} helperText={errors.last_name} required />
-                  </>
-                )}
-
-                <TextField fullWidth id="email" name="email" label="Email" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} required />
-                <TextField fullWidth id="phone_number" name="phone_number" label="Phone Number" value={formData.phone_number} onChange={handleChange} error={!!errors.phone_number} helperText={errors.phone_number} />
-              </Box>
-            </Paper>
-          </Box>
-
-          {/* Address Section */}
-          <Box>
-            <Paper elevation={2} sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>Address</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                <TextField fullWidth id="address_line1" name="address_line1" label="Address" value={formData.address_line1} onChange={handleChange} />
-                <TextField fullWidth id="city" name="city" label="City" value={formData.city} onChange={handleChange} />
-                <TextField fullWidth id="country" name="country" label="Country" value={formData.country} onChange={handleChange} />
-              </Box>
-            </Paper>
-          </Box>
-
-          {/* Notes Section */}
-          <Box>
-            <Paper elevation={2} sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>Notes</Typography>
-              <Box sx={{ mt: 2 }}>
-                <TextField fullWidth id="notes" name="notes" label="Notes" multiline rows={8} value={formData.notes} onChange={handleChange} />
-              </Box>
-            </Paper>
-          </Box>
-        </Box>
+    <RootContainer>
+      <GlassCard>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+          {isEditMode ? 'Edit Customer' : 'Add New Customer'}
+        </Typography>
         
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, gap: 2 }}>
-            <Button onClick={() => navigate('/customers')} color="secondary">
-                Cancel
-            </Button>
-            <Button
-                type="submit"
-                variant="contained"
-                startIcon={<SaveIcon />}
-                disabled={loading}
-            >
-                {loading ? 'Saving...' : 'Save Customer'}
-            </Button>
-        </Box>
-      </form>
-      )}
-    </Paper>
+        {loading && !formData.email ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
+            <CircularProgress sx={{ color: '#FE6B8B' }} />
+          </Box>
+        ) : (
+        <form onSubmit={handleSubmit} noValidate>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {apiFormError && (
+              <Box>
+                <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{apiFormError}</Alert>
+              </Box>
+            )}
+
+            {/* Basic Information Section */}
+            <Box>
+              <GlassCard>
+                <Typography variant="h6" gutterBottom>Basic Information</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                  <FormControl fullWidth error={!!errors.customer_type}>
+                    <InputLabel id="customer-type-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Customer Type</InputLabel>
+                    <Select
+                      labelId="customer-type-label"
+                      id="customer_type"
+                      name="customer_type"
+                      value={formData.customer_type}
+                      label="Customer Type"
+                      onChange={handleChange}
+                      required
+                      sx={{
+                        color: 'white',
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.6)' },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#FE6B8B' },
+                        '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' }
+                      }}
+                    >
+                      <MenuItem value=""><em>Select a type</em></MenuItem>
+                      {customerTypes.map((type) => (
+                        <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>
+                      ))}
+                    </Select>
+                    {errors.customer_type && <FormHelperText>{errors.customer_type}</FormHelperText>}
+                  </FormControl>
+
+                  {selectedTypeName === 'company' ? (
+                    <>
+                      <TextField fullWidth id="company_name" name="company_name" label="Company Name" value={formData.company_name} onChange={handleChange} error={!!errors.company_name} helperText={errors.company_name} required />
+                      <TextField fullWidth id="delegated_person_name" name="delegated_person_name" label="Delegated Person" value={formData.delegated_person_name} onChange={handleChange} error={!!errors.delegated_person_name} helperText={errors.delegated_person_name} required />
+                    </>
+                  ) : (
+                    <>
+                      <TextField fullWidth id="first_name" name="first_name" label="First Name" value={formData.first_name} onChange={handleChange} error={!!errors.first_name} helperText={errors.first_name} required />
+                      <TextField fullWidth id="last_name" name="last_name" label="Last Name" value={formData.last_name} onChange={handleChange} error={!!errors.last_name} helperText={errors.last_name} required />
+                    </>
+                  )}
+
+                  <TextField fullWidth id="email" name="email" label="Email" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} required />
+                  <TextField fullWidth id="phone_number" name="phone_number" label="Phone Number" value={formData.phone_number} onChange={handleChange} error={!!errors.phone_number} helperText={errors.phone_number} />
+                </Box>
+              </GlassCard>
+            </Box>
+
+            {/* Address Section */}
+            <Box>
+              <GlassCard>
+                <Typography variant="h6" gutterBottom>Address</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                  <TextField fullWidth id="address_line1" name="address_line1" label="Address" value={formData.address_line1} onChange={handleChange} />
+                  <TextField fullWidth id="city" name="city" label="City" value={formData.city} onChange={handleChange} />
+                  <TextField fullWidth id="country" name="country" label="Country" value={formData.country} onChange={handleChange} />
+                </Box>
+              </GlassCard>
+            </Box>
+
+            {/* Notes Section */}
+            <Box>
+              <GlassCard>
+                <Typography variant="h6" gutterBottom>Notes</Typography>
+                <Box sx={{ mt: 2 }}>
+                  <TextField fullWidth id="notes" name="notes" label="Notes" multiline rows={8} value={formData.notes} onChange={handleChange} />
+                </Box>
+              </GlassCard>
+            </Box>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, gap: 2 }}>
+              <Button onClick={() => navigate('/customers')} sx={{ color: 'white' }}>
+                  Cancel
+              </Button>
+              <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  disabled={loading}
+                  sx={{
+                      background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                      boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                      color: 'white',
+                      borderRadius: '25px',
+                      padding: '10px 25px',
+                  }}
+              >
+                  {loading ? 'Saving...' : 'Save Customer'}
+              </Button>
+          </Box>
+        </form>
+        )}
+      </GlassCard>
+    </RootContainer>
   );
 }

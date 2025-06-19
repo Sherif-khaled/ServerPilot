@@ -1,18 +1,28 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandLess, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon } from '@mui/icons-material';
 import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
+import { styled } from '@mui/material/styles';
 import { Avatar, Collapse } from '@mui/material';
 import Footer from './Footer'; // Import the new Footer component
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
+const Background = styled('div')({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: 'transparent',
+  zIndex: -1,
+});
 
 const drawerWidth = 240;
 
-export default function Dashboard({ children, toggleTheme, currentThemeMode }) { // Added theme props
+export default function Dashboard({ children, toggleTheme, currentThemeMode, overrideBackground }) { // Added theme props
   const { user, logoutAuth } = useAuth(); // Get user and logoutAuth from context
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
@@ -63,12 +73,23 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar 
+      {!overrideBackground && <Background />}
+      <AppBar
         position="fixed"
         sx={{
           width: drawerOpen && isSmUp ? `calc(100% - ${drawerWidth}px)` : '100%',
           ml: drawerOpen && isSmUp ? `${drawerWidth}px` : 0,
-          zIndex: (theme) => theme.zIndex.drawer + 1, // Ensure AppBar is above the drawer
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          background: 'linear-gradient(45deg, rgba(15, 32, 39, 0.8), rgba(32, 58, 67, 0.8), rgba(44, 83, 100, 0.8))',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1), 0 8px 12px rgba(0, 0, 0, 0.05), inset 0 -2px 10px rgba(0, 0, 0, 0.1)',
+          borderRadius: '0 0 15px 15px',
+          transform: 'translateZ(0)',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.15), 0 8px 12px rgba(0, 0, 0, 0.1), inset 0 -2px 10px rgba(0, 0, 0, 0.15)',
+            transform: 'translateZ(5px)',
+          },
         }}
       >
         <Toolbar>
@@ -137,12 +158,14 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
             [`& .MuiDrawer-paper`]: { 
               width: drawerWidth, 
               boxSizing: 'border-box',
-              backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : '#F8F9FA',
+              background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
+              borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '4px 0px 15px rgba(0, 0, 0, 0.3)',
             },
           }}
         >
           <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: [1] }}>
-              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
+              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', color: '#fff' }}>
                   ServerPilot
               </Typography>
           </Toolbar>
@@ -152,17 +175,17 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
               {(() => {
                 const navLinkSx = {
                   '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                    color: theme.palette.text.secondary,
+                    color: 'rgba(255, 255, 255, 0.7)',
                     transition: 'color 0.2s',
                   },
                   '&:hover': {
-                    backgroundColor: theme.palette.action.hover,
+                    backgroundColor: 'rgba(136, 20, 20, 0.08)',
                     '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                      color: theme.palette.text.primary,
+                      color: '#fff',
                     },
                   },
                   '&.active': {
-                    backgroundColor: theme.palette.action.selected,
+                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
                     '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
                       color: theme.palette.primary.main,
                     },
@@ -184,7 +207,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                     {/* Accounts Section */}
                     <ListItemButton onClick={handleAccountsClick}>
                       <ListItemIcon sx={{ minWidth: '40px' }}><SupervisorAccountIcon /></ListItemIcon>
-                      <ListItemText primary="Accounts" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase' }} />
+                      <ListItemText primary="Accounts" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }} />
                       <ExpandMore sx={{ transform: accountsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                     </ListItemButton>
                     <Collapse in={accountsOpen} timeout="auto" unmountOnExit>
@@ -216,7 +239,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                         {/* System Settings Section */}
                         <ListItemButton onClick={handleSystemSettingsClick}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><TuneIcon /></ListItemIcon>
-                          <ListItemText primary="System Settings" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase' }} />
+                          <ListItemText primary="System Settings" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }} />
                           <ExpandMore sx={{ transform: systemSettingsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                         </ListItemButton>
                         <Collapse in={systemSettingsOpen} timeout="auto" unmountOnExit>
@@ -237,7 +260,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
                         {/* Administration Section */}
                         <ListItemButton onClick={handleAdministrationClick}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><AdminPanelSettingsIcon /></ListItemIcon>
-                          <ListItemText primary="Administration" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'text.secondary', textTransform: 'uppercase' }} />
+                          <ListItemText primary="Administration" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }} />
                           <ExpandMore sx={{ transform: administrationOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                         </ListItemButton>
                         <Collapse in={administrationOpen} timeout="auto" unmountOnExit>
@@ -275,10 +298,8 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
         component="main"
         className={drawerOpen ? 'sidebar-open' : 'sidebar-closed'}
         sx={{
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'light'
-              ? theme.palette.grey[100]
-              : theme.palette.grey[900],
+          backgroundColor: 'transparent',
+          backdropFilter: overrideBackground ? 'none' : 'blur(10px)',
           flexGrow: 1,
           height: '100vh',
           overflow: 'auto',
@@ -287,17 +308,18 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode }) {
           transition: 'background-color 0.3s',
           ...(drawerOpen && !isSmUp && {
             filter: 'brightness(0.95)',
-          }),
+            backdropFilter: overrideBackground ? 'none' : 'blur(15px)'
+          })
         }}
       >
         <Toolbar />
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-          {/*
-            Pass sidebar state as context for responsive resizing in child components (listviews, tables, etc.)
-            Example usage in child: useContext(SidebarContext) or check parent className
-          */}
-          {React.cloneElement(children, { sidebarOpen: drawerOpen })}
-        </Container>
+        {overrideBackground ? (
+          children
+        ) : (
+          <Container maxWidth="lg" sx={{ mt: 4, mb: 4, flexGrow: 1, backgroundColor: 'rgba(38, 50, 56, 0.6)', borderRadius: '8px', padding: '24px' }}>
+            {React.cloneElement(children, { sidebarOpen: drawerOpen })}
+          </Container>
+        )}
         <Footer transparent />
       </Box>
     </Box>

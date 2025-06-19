@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Tabs, Tab, Typography, Divider, Container, Paper } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Divider, Container, Paper, GlobalStyles, styled } from '@mui/material';
 
 import GeneralSettings from '../components/GeneralSettings';
 import PasswordSettings from '../components/PasswordSettings';
@@ -20,14 +20,22 @@ function TabPanel(props) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ pt: 3 }}> {/* Changed p:3 to pt:3 to give more space from tabs */}
-          {/* Removed Typography component wrapper as children are already components */}
+        <Box sx={{ pt: 3 }}>
           {children}
         </Box>
       )}
     </div>
   );
 }
+
+const GlassPaper = styled(Paper)(({ theme }) => ({
+    background: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '10px',
+    padding: theme.spacing(3),
+    color: '#fff',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+}));
 
 const SettingsPage = () => {
   const [value, setValue] = useState(0);
@@ -37,48 +45,55 @@ const SettingsPage = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ 
-        p: { xs: 2, md: 3 }, // Responsive padding
-        borderRadius: 2 // Softer corners
-      }} elevation={3}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
-          Settings
-        </Typography>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs value={value} onChange={handleChange} aria-label="settings tabs" variant="scrollable" scrollButtons="auto">
-            <Tab label="General" id="settings-tab-0" />
-            <Tab label="Password & Authentication" id="settings-tab-1" />
-            <Tab label="Sessions" id="settings-tab-2" />
-            <Tab label="Appearance" id="settings-tab-3" />
-          </Tabs>
-        </Box>
-        <TabPanel value={value} index={0}>
-          <GeneralSettings />
-        </TabPanel>
-        <TabPanel value={value} index={1}>
-          <PasswordSettings />
-          <Divider sx={{ my: 3 }} />
-          {/* SecurityKeysSettings and RecoveryCodesSettings will be rendered here */}
-          {/* For better visual hierarchy, each can be wrapped in a Box or have a sub-header */}
-          <Box sx={{ mt: 2 }}>
-            {/* <Typography variant="h6" component="h2" gutterBottom>Security Keys</Typography> */}
-            <SecurityKeysSettings />
+    <>
+      <GlobalStyles styles={(theme) => ({ body: { backgroundColor: theme.palette.background.default } })} />
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <GlassPaper>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3, fontWeight: 'bold', color: 'text.primary' }}>
+            Settings
+          </Typography>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs 
+              value={value} 
+              onChange={handleChange} 
+              aria-label="settings tabs" 
+              variant="scrollable" 
+              scrollButtons="auto"
+              sx={{
+                '& .MuiTab-root': { color: 'text.secondary', fontWeight: 'bold' },
+                '& .Mui-selected': { color: 'text.primary' },
+                '& .MuiTabs-indicator': { backgroundColor: 'primary.main' },
+              }}
+            >
+              <Tab label="General" id="settings-tab-0" />
+              <Tab label="Password & Authentication" id="settings-tab-1" />
+              <Tab label="Sessions" id="settings-tab-2" />
+              <Tab label="Appearance" id="settings-tab-3" />
+            </Tabs>
           </Box>
-          <Divider sx={{ my: 3 }} />
-          <Box sx={{ mt: 2 }}>
-            {/* <Typography variant="h6" component="h2" gutterBottom>Recovery Codes</Typography> */}
-            <RecoveryCodesSettings />
-          </Box>
-        </TabPanel>
-        <TabPanel value={value} index={2}>
-          <WebSessions />
-        </TabPanel>
-        <TabPanel value={value} index={3}>
-          <AppearanceSettings />
-        </TabPanel>
-      </Paper>
-    </Container>
+          <TabPanel value={value} index={0}>
+            <GeneralSettings />
+          </TabPanel>
+          <TabPanel value={value} index={1}>
+            <PasswordSettings />
+            <Divider sx={{ my: 3, borderColor: 'divider' }} />
+            <Box sx={{ mt: 2 }}>
+              <SecurityKeysSettings />
+            </Box>
+            <Divider sx={{ my: 3, borderColor: 'divider' }} />
+            <Box sx={{ mt: 2 }}>
+              <RecoveryCodesSettings />
+            </Box>
+          </TabPanel>
+          <TabPanel value={value} index={2}>
+            <WebSessions />
+          </TabPanel>
+          <TabPanel value={value} index={3}>
+            <AppearanceSettings />
+          </TabPanel>
+        </GlassPaper>
+      </Container>
+    </>
   );
 };
 

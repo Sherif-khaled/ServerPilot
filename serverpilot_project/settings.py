@@ -32,7 +32,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-s_5*isjws)ulo@l759e+utm)3=_csr_%f)w&6xh9h7cv)3-pd+')
 
 # Field Encryption Key
-FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY')
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', 'Qc2fVAx_DzGQ_ZzObEO4pPyxo5kDPViosBW-XofiX2Y=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'

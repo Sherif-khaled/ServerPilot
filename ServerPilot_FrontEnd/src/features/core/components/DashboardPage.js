@@ -9,91 +9,89 @@ import { useAuth } from '../../../AuthContext';
 import { getDashboardStats } from '../../../api/userService';
 import { useNavigate } from 'react-router-dom';
 
-const StatCard = ({ title, value, total, unit, uptimeComponents, icon, tooltip, onClick }) => {
-  const theme = useTheme();
-  let displayValue = `${value}${unit || ''}`;
-  if (uptimeComponents) {
-    const { years, months, days, hours, minutes } = uptimeComponents;
-    const parts = [];
-    if (years > 0) parts.push(`${years} year${years > 1 ? 's' : ''}`);
-    if (months > 0) parts.push(`${months} month${months > 1 ? 's' : ''}`);
-    if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
-    if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
-    if (minutes > 0 || parts.length === 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
-    displayValue = parts.join(', ');
-  }
-
-  const usagePercent = total > 0 ? (value / total) * 100 : 0;
-  const dynamicColor = total ? getColorForUsage(usagePercent) : null;
-
-  return (
-        <Tooltip title={tooltip || ''} arrow>
-      <Card
-        elevation={3}
-        onClick={onClick}
-        sx={{
-          height: '100%',
-          cursor: onClick ? 'pointer' : 'default',
-          '&:hover': {
-            boxShadow: onClick ? 6 : 3,
-          },
-        }}
-      >
-      <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            {icon && <Box sx={{ mr: 1.5, color: 'text.secondary' }}>{icon}</Box>}
-            <Typography gutterBottom sx={{ flexGrow: 1, color: theme.palette.mode === 'dark' ? 'grey.400' : 'text.secondary' }}>{title}</Typography>
-          </Box>
-        <Typography variant="h5" component="div">{displayValue}</Typography> 
-        {total && !uptimeComponents && (
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="body2">out of {total}{unit}</Typography>
-            <LinearProgress
-              variant="determinate"
-              value={usagePercent}
-              sx={{
-                mt: 0.5,
-                height: 8,
-                borderRadius: 5,
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: dynamicColor,
+const GlassmorphicCard = ({ children, onClick, tooltip }) => (
+    <Tooltip title={tooltip || ''} arrow>
+        <Card
+            onClick={onClick}
+            sx={{
+                background: 'rgba(38, 50, 56, 0.6);',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.125)',
+                borderRadius: '12px',
+                color: '#fff',
+                height: '100%',
+                boxShadow: 24,
+                cursor: onClick ? 'pointer' : 'default',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                '&:hover': {
+                    transform: 'translateY(-10px) scale(1.03)',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
                 },
-                backgroundColor: (theme) =>
-                  theme.palette.mode === 'light' ? '#e0e0e0' : 'grey.700',
-              }}
-            />
-          </Box>
-        )}
-      </CardContent>
-      </Card>
+            }}
+        >
+            {children}
+        </Card>
     </Tooltip>
-  );
+);
+
+const StatCard = ({ title, value, total, unit, uptimeComponents, icon, tooltip, onClick }) => {
+    let displayValue = `${value}${unit || ''}`;
+    if (uptimeComponents) {
+        const { years, months, days, hours, minutes } = uptimeComponents;
+        const parts = [];
+        if (years > 0) parts.push(`${years} year${years > 1 ? 's' : ''}`);
+        if (months > 0) parts.push(`${months} month${months > 1 ? 's' : ''}`);
+        if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+        if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+        if (minutes > 0 || parts.length === 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+        displayValue = parts.join(', ');
+    }
+
+    const usagePercent = total > 0 ? (value / total) * 100 : 0;
+    const dynamicColor = total ? getColorForUsage(usagePercent) : null;
+
+    return (
+        <GlassmorphicCard onClick={onClick} tooltip={tooltip}>
+            <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                    {icon && <Box sx={{ mr: 1.5, color: 'rgba(255, 255, 255, 0.8)' }}>{icon}</Box>}
+                    <Typography gutterBottom sx={{ flexGrow: 1, color: 'rgba(255, 255, 255, 0.8)' }}>{title}</Typography>
+                </Box>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>{displayValue}</Typography>
+                {total && !uptimeComponents && (
+                    <Box sx={{ mt: 1.5 }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>out of {total}{unit}</Typography>
+                        <LinearProgress
+                            variant="determinate"
+                            value={usagePercent}
+                            sx={{
+                                mt: 1,
+                                height: 10,
+                                borderRadius: 5,
+                                '& .MuiLinearProgress-bar': {
+                                    backgroundColor: dynamicColor,
+                                },
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            }}
+                        />
+                    </Box>
+                )}
+            </CardContent>
+        </GlassmorphicCard>
+    );
 };
 
 const StatChartCard = ({ title, children, tooltip, onClick }) => {
-  const theme = useTheme();
-  return (
-    <Tooltip title={tooltip || ''} arrow>
-    <Card
-      elevation={3}
-      onClick={onClick}
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        cursor: onClick ? 'pointer' : 'default',
-        '&:hover': {
-          boxShadow: onClick ? 6 : 3,
-        },
-      }}
-    >
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Typography gutterBottom sx={{ color: theme.palette.mode === 'dark' ? 'grey.400' : 'text.secondary' }}>{title}</Typography>
-        {children}
-      </CardContent>
-    </Card>
-  </Tooltip>
-  );
+    return (
+        <GlassmorphicCard onClick={onClick} tooltip={tooltip}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Typography gutterBottom sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>{title}</Typography>
+                <Box sx={{ flexGrow: 1, mt: 2 }}>
+                    {children}
+                </Box>
+            </CardContent>
+        </GlassmorphicCard>
+    );
 };
 
 const getColorForUsage = (percentage) => {
@@ -109,7 +107,7 @@ const RamUsageChart = ({ used, total }) => {
     { name: 'Used', value: parseFloat(used.toFixed(2)) },
     { name: 'Free', value: parseFloat(free.toFixed(2)) },
   ];
-  const COLORS = [getColorForUsage(usagePercent), '#DDDDDD'];
+  const COLORS = [getColorForUsage(usagePercent), 'rgba(255, 255, 255, 0.2)'];
 
   return (
     <ResponsiveContainer width="100%" height={250}>
@@ -118,8 +116,8 @@ const RamUsageChart = ({ used, total }) => {
           data={data}
           cx="50%"
           cy="50%"
-          innerRadius={60}
-          outerRadius={80}
+          innerRadius={70}
+          outerRadius={90}
           fill="#8884d8"
           paddingAngle={5}
           dataKey="value"
@@ -128,13 +126,20 @@ const RamUsageChart = ({ used, total }) => {
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <RechartsTooltip formatter={(value, name) => [`${value} GB`, name]} />
-        <Legend wrapperStyle={{ paddingTop: '20px' }} />
-        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-          <tspan x="50%" dy="-0.6em" fontSize="24" fontWeight="bold">
+        <RechartsTooltip
+          contentStyle={{
+            background: 'rgba(30, 30, 30, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            color: '#fff'
+          }}
+          formatter={(value, name) => [`${value} GB`, name]}
+        />
+        <Legend wrapperStyle={{ paddingTop: '20px', color: '#fff' }} />
+        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#fff">
+          <tspan x="50%" dy="-0.6em" fontSize="28" fontWeight="bold">
             {total > 0 ? `${((used / total) * 100).toFixed(0)}%` : '0%'}
           </tspan>
-          <tspan x="50%" dy="1.2em" fontSize="14" fill="grey">
+          <tspan x="50%" dy="1.2em" fontSize="14" fill="rgba(255, 255, 255, 0.7)">
             {`${used.toFixed(1)} of ${total.toFixed(1)} GB`}
           </tspan>
         </text>
@@ -148,7 +153,7 @@ const CpuUsageChart = ({ usage }) => {
     { name: 'Used', value: usage },
     { name: 'Idle', value: 100 - usage },
   ];
-  const COLORS = [getColorForUsage(usage), '#DDDDDD'];
+  const COLORS = [getColorForUsage(usage), 'rgba(255, 255, 255, 0.2)'];
 
   return (
     <ResponsiveContainer width="100%" height={250}>
@@ -157,7 +162,7 @@ const CpuUsageChart = ({ usage }) => {
           data={data}
           cx="50%"
           cy="50%"
-          innerRadius={60}
+          innerRadius={70}
           outerRadius={90}
           fill="#8884d8"
           paddingAngle={5}
@@ -169,12 +174,19 @@ const CpuUsageChart = ({ usage }) => {
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <RechartsTooltip formatter={(value) => [`${value.toFixed(2)}%`, 'Usage']} />
-         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
+        <RechartsTooltip
+          contentStyle={{
+            background: 'rgba(30, 30, 30, 0.8)',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            color: '#fff'
+          }}
+          formatter={(value) => [`${value.toFixed(2)}%`, 'Usage']}
+        />
+         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#fff">
           <tspan x="50%" dy="-0.6em" fontSize="28" fontWeight="bold">
             {`${usage.toFixed(0)}%`}
           </tspan>
-          <tspan x="50%" dy="1.2em" fontSize="14" fill="grey">
+          <tspan x="50%" dy="1.2em" fontSize="14" fill="rgba(255, 255, 255, 0.7)">
             Usage
           </tspan>
         </text>
@@ -246,30 +258,34 @@ const DashboardPage = () => {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)' }}><CircularProgress color="inherit" /></Box>;
   }
 
   if (!user?.is_staff) {
-    return <Typography variant="h5" sx={{ p: 3 }}>Welcome, {user.first_name || user.username}!</Typography>;
+    return (
+      <Box sx={{ p: 4, background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)', minHeight: '100vh', color: '#fff' }}>
+        <Typography variant="h5">Welcome, {user.first_name || user.username}!</Typography>
+      </Box>
+    );
   }
 
   const userMetricCards = cardOrder.filter(c => ['totalUsers', 'activeUsers', 'totalCustomers'].includes(c.id));
   const systemHealthCards = cardOrder.filter(c => ['averageUptime', 'totalBandwidth', 'storageUsage', 'cpuUsage', 'ramUsage'].includes(c.id));
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" gutterBottom>Admin Dashboard</Typography>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+    <Box sx={{ flexGrow: 1, p: 4, background: 'linear-gradient(45deg, #0d1117, #203a43, #0d1117)', minHeight: '100vh' }}>
+      <Typography variant="h2" gutterBottom sx={{ color: '#fff', textAlign: 'center', mb: 4 }}>Admin Dashboard</Typography>
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {stats && (
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={cardOrder.map(c => c.id)} strategy={rectSortingStrategy}>
             {/* User Metrics Section */}
-            <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 2, mb: 2, display: 'flex', alignItems: 'center' }}>
-              <PersonIcon sx={{ mr: 1 }} /> User Metrics
+            <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 2, mb: 3, display: 'flex', alignItems: 'center', color: '#fff' }}>
+              <PersonIcon sx={{ mr: 1.5, fontSize: '2rem' }} /> User Metrics
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5, mb: 4 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2, mb: 5 }}>
               {userMetricCards.map(card => (
-                <Box sx={{ width: { xs: '100%', sm: '50%', md: '33.333%' }, p: 1.5 }} key={card.id}>
+                <Box sx={{ width: { xs: '100%', sm: '50%', md: '33.333%' }, p: 2 }} key={card.id}>
                   <SortableCard id={card.id}>
                      <StatCard {...card} onClick={() => card.path && navigate(card.path)} />
                   </SortableCard>
@@ -278,16 +294,16 @@ const DashboardPage = () => {
             </Box>
 
             {/* System Health Section */}
-            <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center' }}>
-              <DnsIcon sx={{ mr: 1 }} /> System Health
+            <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, mb: 3, display: 'flex', alignItems: 'center', color: '#fff' }}>
+              <DnsIcon sx={{ mr: 1.5, fontSize: '2rem' }} /> System Health
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2 }}>
               {systemHealthCards.map(card => {
                 const isChart = card.id === 'cpuUsage' || card.id === 'ramUsage';
                 const width = isChart ? { xs: '100%', md: '50%' } : { xs: '100%', sm: '50%', md: '33.333%' };
                 
                 return (
-                  <Box sx={{ width, p: 1.5 }} key={card.id}>
+                  <Box sx={{ width, p: 2 }} key={card.id}>
                     <SortableCard id={card.id}>
                       {isChart ? (
                         <StatChartCard title={card.title} tooltip={card.tooltip} onClick={() => card.path && navigate(card.path)} >
