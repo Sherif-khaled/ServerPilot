@@ -364,9 +364,15 @@ export default function UserProfile() {
                     disabled={saving}
                     size="large"
                     sx={{
-                      background: 'linear-gradient(45deg, #00bfff 30%, #0077be 90%)',
-                      boxShadow: '0 3px 5px 2px rgba(0, 191, 255, .3)',
-                    }}
+                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                color: 'white',
+                                borderRadius: '25px',
+                                padding: '10px 25px',
+                                '&:disabled': {
+                                    background: 'rgba(255, 255, 255, 0.3)',
+                                }
+                        }}
                   >
                     {saving ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
                   </Button>

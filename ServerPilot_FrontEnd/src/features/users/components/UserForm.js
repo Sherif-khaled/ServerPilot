@@ -2,9 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { checkUsernameExists } from '../../../api/userService';
 import {
     Box, TextField, Button, Select, MenuItem, InputLabel, FormControl, FormHelperText, Snackbar, Alert,
-    InputAdornment, IconButton, Radio, RadioGroup, FormControlLabel, FormLabel, Typography, Divider, CircularProgress
+    InputAdornment, IconButton, Radio, RadioGroup, FormControlLabel, FormLabel, Typography, Divider, CircularProgress, Paper
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
+import { Visibility, VisibilityOff, Save as SaveIcon } from '@mui/icons-material';
+
+// Styled root component for the background
+const RootContainer = styled(Box)(({ theme }) => ({
+    minHeight: '100vh',
+    padding: theme.spacing(3),
+    background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
+    position: 'relative',
+    overflow: 'hidden',
+}));
+
+// Glassmorphism Card
+const GlassCard = styled(Paper)(({ theme }) => ({
+    background: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(12px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(180%)', // For Safari
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.125)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    padding: theme.spacing(3),
+    color: '#fff',
+}));
 
 // Default initial state for the form
 const getDefaultFormData = () => ({
@@ -49,6 +71,7 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
     const [errors, setErrors] = useState({});
     const [usernameError, setUsernameError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [apiFormError, setApiFormError] = useState('');
 
     const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -73,6 +96,7 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
             setFormData(getDefaultFormData());
         }
         setErrors({}); // Clear errors when mode or user changes
+        setApiFormError('');
     }, [initialUser, isEditMode]);
 
     const handleChange = (event) => {
@@ -89,6 +113,7 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
         if (name === 'password' && errors.password2) {
              setErrors(prev => ({ ...prev, password2: null }));
         }
+        if(apiFormError) setApiFormError('');
     };
 
     const handleBlur = async (event) => {
@@ -130,9 +155,12 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            return;
+        }
+        setApiFormError('');
 
         const dataToSubmit = { ...formData };
         delete dataToSubmit.password2; // Don't send password2 to backend
@@ -142,110 +170,217 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
             // Backend should interpret missing password as no change
             delete dataToSubmit.password;
         }
-        onSubmit(dataToSubmit);
+
+        try {
+            await handleSubmitWithNotification(dataToSubmit);
+        } catch (err) {
+            console.error('Failed to save user:', err);
+            const errorData = err.response?.data;
+            if (errorData) {
+                if (typeof errorData === 'string') {
+                    setApiFormError(errorData);
+                } else {
+                    const backendErrors = {};
+                    for (const key in errorData) {
+                        backendErrors[key] = errorData[key].join(' ');
+                    }
+                    setErrors(prev => ({ ...prev, ...backendErrors }));
+                    setApiFormError('Please correct the errors below.');
+                }
+            } else {
+                setApiFormError('An unexpected error occurred. Please try again.');
+            }
+        }
     };
 
     return (
-        <>
-            <Box component="form" onSubmit={async (e) => {
-                e.preventDefault();
-                e.stopPropagation(); // Prevent event bubbling
+        <RootContainer>
+            <GlassCard>
+                <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                    {isEditMode ? 'Edit User' : 'Add New User'}
+                </Typography>
                 
-                if (validateForm()) {
-                    const dataToSubmit = { ...formData };
-                    delete dataToSubmit.password2;
-                    if (isEditMode && !formData.password) {
-                        delete dataToSubmit.password;
-                    }
-                    await handleSubmitWithNotification(dataToSubmit);
-                }
-                return false; // Prevent default form submission
-            }} noValidate sx={{ mt: 0 }}>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Personal Info</Typography>
-                        <Divider sx={{ mb: 1 }} />
-                        <Box>
-                            <FormControl fullWidth error={!!errors.first_name}>
-                                <TextField id="first_name" name="first_name" value={formData.first_name} onChange={handleChange} fullWidth required autoFocus placeholder="Enter first name" />
-                                {errors.first_name && <FormHelperText>{errors.first_name}</FormHelperText>}
-                            </FormControl>
-                        </Box>
-                        <Box>
-                            <FormControl fullWidth error={!!errors.last_name}>
-                                <TextField id="last_name" name="last_name" value={formData.last_name} onChange={handleChange} fullWidth required placeholder="Enter last name" />
-                                {errors.last_name && <FormHelperText>{errors.last_name}</FormHelperText>}
-                            </FormControl>
-                        </Box>
-                        <Box>
-                            <FormControl fullWidth error={!!errors.email}>
-                                <TextField id="email" name="email" type="email" value={formData.email} onChange={handleChange} fullWidth required placeholder="Enter email address" />
-                                {errors.email && <FormHelperText>{errors.email}</FormHelperText>}
-                            </FormControl>
-                        </Box>
-                        <Box>
-                            <FormControl component="fieldset">
-                                <FormLabel component="legend">Status</FormLabel>
-                                <RadioGroup row name="is_active" value={formData.is_active} onChange={handleChange} >
-                                    <FormControlLabel value={true} control={<Radio />} label="Active" />
-                                    <FormControlLabel value={false} control={<Radio />} label="Inactive" />
-                                </RadioGroup>
-                            </FormControl>
-                        </Box>
+                {loading && !formData.email ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
+                        <CircularProgress sx={{ color: '#FE6B8B' }} />
                     </Box>
+                ) : (
+                    <form onSubmit={handleSubmit} noValidate>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {apiFormError && (
+                                <Box>
+                                    <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{apiFormError}</Alert>
+                                </Box>
+                            )}
 
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Login Info</Typography>
-                        <Divider sx={{ mb: 1 }} />
-                        <Box>
-                            <FormControl fullWidth error={!!errors.username}>
-                                <TextField id="username" name="username" value={formData.username} onChange={handleChange} onBlur={handleBlur} fullWidth required disabled={isEditMode} placeholder="Enter username" />
-                                {errors.username && <FormHelperText>{errors.username}</FormHelperText>}
-                                {usernameError && <FormHelperText error>{usernameError}</FormHelperText>}
+                            {/* Personal Information Section */}
+                            <Box>
+                                <GlassCard>
+                                    <Typography variant="h6" gutterBottom>Personal Information</Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                                        <TextField 
+                                            fullWidth 
+                                            id="first_name" 
+                                            name="first_name" 
+                                            label="First Name" 
+                                            value={formData.first_name} 
+                                            onChange={handleChange} 
+                                            error={!!errors.first_name} 
+                                            helperText={errors.first_name} 
+                                            required 
+                                            autoFocus
+                                        />
+                                        <TextField 
+                                            fullWidth 
+                                            id="last_name" 
+                                            name="last_name" 
+                                            label="Last Name" 
+                                            value={formData.last_name} 
+                                            onChange={handleChange} 
+                                            error={!!errors.last_name} 
+                                            helperText={errors.last_name} 
+                                            required 
+                                        />
+                                        <TextField 
+                                            fullWidth 
+                                            id="email" 
+                                            name="email" 
+                                            label="Email" 
+                                            type="email" 
+                                            value={formData.email} 
+                                            onChange={handleChange} 
+                                            error={!!errors.email} 
+                                            helperText={errors.email} 
+                                            required 
+                                        />
+                                        
+                                        <FormControl component="fieldset">
+                                            <FormLabel component="legend" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Status</FormLabel>
+                                            <RadioGroup row name="is_active" value={formData.is_active} onChange={handleChange}>
+                                                <FormControlLabel 
+                                                    value={true} 
+                                                    control={<Radio sx={{ color: 'rgba(255, 255, 255, 0.7)', '&.Mui-checked': { color: '#FE6B8B' } }} />} 
+                                                    label="Active" 
+                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                />
+                                                <FormControlLabel 
+                                                    value={false} 
+                                                    control={<Radio sx={{ color: 'rgba(255, 255, 255, 0.7)', '&.Mui-checked': { color: '#FE6B8B' } }} />} 
+                                                    label="Inactive" 
+                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                />
+                                            </RadioGroup>
+                                        </FormControl>
+                                    </Box>
+                                </GlassCard>
+                            </Box>
+
+                            {/* Login Information Section */}
+                            <Box>
+                                <GlassCard>
+                                    <Typography variant="h6" gutterBottom>Login Information</Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                                        <TextField 
+                                            fullWidth 
+                                            id="username" 
+                                            name="username" 
+                                            label="Username" 
+                                            value={formData.username} 
+                                            onChange={handleChange} 
+                                            onBlur={handleBlur} 
+                                            error={!!errors.username || !!usernameError} 
+                                            helperText={errors.username || usernameError} 
+                                            required 
+                                            disabled={isEditMode}
+                                        />
+                                        
+                                        {!isEditMode && (
+                                            <>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Password"
+                                                    name="password"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    value={formData.password}
+                                                    onChange={handleChange}
+                                                    error={!!errors.password}
+                                                    helperText={errors.password}
+                                                    required
+                                                    InputProps={{
+                                                        endAdornment: (
+                                                            <InputAdornment position="end">
+                                                                <IconButton
+                                                                    aria-label="toggle password visibility"
+                                                                    onClick={handleClickShowPassword}
+                                                                    onMouseDown={handleMouseDownPassword}
+                                                                    edge="end"
+                                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                                >
+                                                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                                                </IconButton>
+                                                            </InputAdornment>
+                                                        )
+                                                    }}
+                                                />
+                                                <TextField
+                                                    fullWidth
+                                                    label="Confirm Password"
+                                                    name="password2"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    value={formData.password2}
+                                                    onChange={handleChange}
+                                                    error={!!errors.password2}
+                                                    helperText={errors.password2}
+                                                    required
+                                                    InputProps={{
+                                                        endAdornment: (
+                                                            <InputAdornment position="end">
+                                                                <IconButton
+                                                                    aria-label="toggle password visibility"
+                                                                    onClick={handleClickShowPassword}
+                                                                    onMouseDown={handleMouseDownPassword}
+                                                                    edge="end"
+                                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                                >
+                                                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                                                </IconButton>
+                                                            </InputAdornment>
+                                                        )
+                                                    }}
+                                                />
+                                            </>
+                                        )}
+                                    </Box>
+                                </GlassCard>
+                            </Box>
+                        </Box>
+                        <Box sx={{ mt: 2.5 }}>
+                            <FormControl fullWidth>
+                                <Select id="is_staff" name="is_staff" value={formData.is_staff} onChange={handleChange} displayEmpty>
+                                    <MenuItem value="" disabled>Role</MenuItem>
+                                    <MenuItem value={true}>Admin</MenuItem>
+                                    <MenuItem value={false}>User</MenuItem>
+                                </Select>
                             </FormControl>
                         </Box>
-                        {!isEditMode && (
-                            <>
-                                <Box>
-                                    <FormControl fullWidth error={!!errors.password}>
-                                        <TextField fullWidth placeholder="Password" name="password" type={showPassword ? 'text' : 'password'} value={formData.password} onChange={handleChange} error={!!errors.password} helperText={errors.password} margin="normal" InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword} onMouseDown={handleMouseDownPassword} edge="end" > {showPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ) }} />
-                                    </FormControl>
-                                </Box>
-                                <Box>
-                                    <FormControl fullWidth error={!!errors.password2}>
-                                        <TextField fullWidth placeholder="Confirm Password" name="password2" type={showPassword ? 'text' : 'password'} value={formData.password2} onChange={handleChange} error={!!errors.password2} helperText={errors.password2} margin="normal" InputProps={{ endAdornment: ( <InputAdornment position="end"> <IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword} onMouseDown={handleMouseDownPassword} edge="end" > {showPassword ? <VisibilityOff /> : <Visibility />} </IconButton> </InputAdornment> ) }} />
-                                        {errors.password2 && <FormHelperText>{errors.password2}</FormHelperText>}
-                                    </FormControl>
-                                </Box>
-                            </>
-                        )}
-                    </Box>
-                </Box>
-                <Box sx={{ mt: 2.5 }}>
-                    <FormControl fullWidth>
-                        <Select id="is_staff" name="is_staff" value={formData.is_staff} onChange={handleChange} displayEmpty>
-                            <MenuItem value="" disabled>Role</MenuItem>
-                            <MenuItem value={true}>Admin</MenuItem>
-                            <MenuItem value={false}>User</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
-                <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Button onClick={onCancel} variant="outlined" color="error" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        color="primary"
-                        disabled={loading}
-                        sx={{ width: '100%', px: 2.5 }}
-                        startIcon={loading ? <CircularProgress size="1rem" color="inherit" /> : null}
-                    >
-                        {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create User')}
-                    </Button>
-                </Box>
-            </Box>
+                        <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                            <Button onClick={onCancel} variant="outlined" color="error" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                color="primary"
+                                disabled={loading}
+                                sx={{ width: '100%', px: 2.5 }}
+                                startIcon={loading ? <CircularProgress size="1rem" color="inherit" /> : null}
+                            >
+                                {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create User')}
+                            </Button>
+                        </Box>
+                    </form>
+                )}
+            </GlassCard>
             <Snackbar
                 open={notification.open}
                 autoHideDuration={6000}
@@ -256,6 +391,6 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     {notification.message}
                 </Alert>
             </Snackbar>
-        </>
+        </RootContainer>
     );
 }
