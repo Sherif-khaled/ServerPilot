@@ -1,396 +1,386 @@
-import React, { useState, useEffect } from 'react';
-import { checkUsernameExists } from '../../../api/userService';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Box, TextField, Button, Select, MenuItem, InputLabel, FormControl, FormHelperText, Snackbar, Alert,
-    InputAdornment, IconButton, Radio, RadioGroup, FormControlLabel, FormLabel, Typography, Divider, CircularProgress, Paper
+  Box,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  FormHelperText,
+  Snackbar,
+  Alert,
+  InputAdornment,
+  IconButton,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormLabel,
+  Typography,
+  CircularProgress,
+  LinearProgress,
+  Paper,
+  useMediaQuery,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { Visibility, VisibilityOff, Save as SaveIcon } from '@mui/icons-material';
+import { styled, useTheme } from '@mui/material/styles';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Save as SaveIcon } from '@mui/icons-material';
+import { checkUsernameExists } from '../../../api/userService';
 
-// Styled root component for the background
+/*********************  THEME HELPERS  ************************/ 
+// Glassmorphic helpers
+const glassBg = 'rgba(255,255,255,0.08)';
+const glassBorder = '1px solid rgba(255,255,255,0.125)';
+const blurProps = {
+  backdropFilter: 'blur(12px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+};
+
+/*********************  STYLED COMPONENTS  ************************/
 const RootContainer = styled(Box)(({ theme }) => ({
-    minHeight: '100vh',
     padding: theme.spacing(3),
     background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-    position: 'relative',
-    overflow: 'hidden',
+    backdropFilter: 'blur(8px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(8px) saturate(160%)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+    color: '#fff',
 }));
 
-// Glassmorphism Card
 const GlassCard = styled(Paper)(({ theme }) => ({
-    background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(12px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(180%)', // For Safari
+    background: 'rgba(255, 255, 255, 0.06)',
+    backdropFilter: 'blur(8px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(8px) saturate(160%)',
     borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.2)',
     padding: theme.spacing(3),
     color: '#fff',
 }));
 
-// Default initial state for the form
+// Common TextField sx with gradient focus ring
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+    '&.Mui-focused fieldset': { borderColor: 'transparent' },
+    '&.Mui-focused': {
+      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+      borderRadius: 1,
+    },
+    color: '#fff',
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
+
+/*********************  HELPERS  ************************/
 const getDefaultFormData = () => ({
-    username: '',
-    email: '',
-    first_name: '',
-    last_name: '',
-    password: '',
-    password2: '', // For password confirmation
-    is_active: true, // Default to active
-    is_staff: false, // Default to non-admin (user)
+  username: '',
+  email: '',
+  first_name: '',
+  last_name: '',
+  password: '',
+  password2: '',
+  is_active: true,
+  is_staff: false,
 });
 
+// Very naive password strength (0‑100)
+const calcStrength = (pw = '') => {
+  let score = 0;
+  if (pw.length > 5) score += 20;
+  if (pw.length > 8) score += 20;
+  if (/[a-z]/.test(pw)) score += 20;
+  if (/[A-Z]/.test(pw)) score += 20;
+  if (/\d/.test(pw)) score += 20;
+  return score;
+};
+
+/*********************  COMPONENT  ************************/
 export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode = false, loading }) {
-    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const theme = useTheme();
+  const isSm = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const handleCloseNotification = () => {
-        setNotification(prev => ({ ...prev, open: false }));
-    };
+  /* ──────────────── LOCAL STATE ──────────────── */
+  const [formData, setFormData] = useState(getDefaultFormData());
+  const [errors, setErrors] = useState({});
+  const [usernameError, setUsernameError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [apiFormError, setApiFormError] = useState('');
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
-    const handleSubmitWithNotification = async (data) => {
-        try {
-            await onSubmit(data);
-            setNotification({
-                open: true,
-                message: isEditMode ? 'User updated successfully!' : 'User created successfully!',
-                severity: 'success'
-            });
-            // Reset form after successful submission if not in edit mode
-            if (!isEditMode) {
-                setFormData(getDefaultFormData());
-            }
-        } catch (error) {
-            setNotification({
-                open: true,
-                message: error.message || 'An error occurred. Please try again.',
-                severity: 'error'
-            });
-        }
-    };
-    const [formData, setFormData] = useState(getDefaultFormData());
-    const [errors, setErrors] = useState({});
-    const [usernameError, setUsernameError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [apiFormError, setApiFormError] = useState('');
+  /* ──────────────── EFFECTS ──────────────── */
+  useEffect(() => {
+    if (isEditMode && initialUser) {
+      setFormData({
+        username: initialUser.username || '',
+        email: initialUser.email || '',
+        first_name: initialUser.first_name || '',
+        last_name: initialUser.last_name || '',
+        password: '',
+        password2: '',
+        is_active: !!initialUser.is_active,
+        is_staff: !!initialUser.is_staff,
+      });
+    } else {
+      setFormData(getDefaultFormData());
+    }
+    setErrors({});
+    setApiFormError('');
+  }, [initialUser, isEditMode]);
 
-    const handleClickShowPassword = () => setShowPassword((show) => !show);
+  /* ──────────────── HANDLERS ──────────────── */
+  const handleCloseNotification = () => setNotification(prev => ({ ...prev, open: false }));
 
-    const handleMouseDownPassword = (event) => {
-        event.preventDefault();
-    };
+  const handleChange = e => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]:
+        (name === 'is_active' || name === 'is_staff')
+          ? value === 'true'
+          : value,
+    }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+    if (apiFormError) setApiFormError('');
+  };
 
-    useEffect(() => {
-        if (isEditMode && initialUser) {
-            setFormData({
-                username: initialUser.username || '',
-                email: initialUser.email || '',
-                first_name: initialUser.first_name || '',
-                last_name: initialUser.last_name || '',
-                password: '', // Password fields are for setting new passwords, not displaying old ones
-                password2: '',
-                is_active: initialUser.is_active !== undefined ? initialUser.is_active : true,
-                is_staff: initialUser.is_staff !== undefined ? initialUser.is_staff : false,
-            });
-        } else {
-            // Reset to default for create mode or if initialUser is not provided
-            setFormData(getDefaultFormData());
-        }
-        setErrors({}); // Clear errors when mode or user changes
-        setApiFormError('');
-    }, [initialUser, isEditMode]);
+  const handleBlur = async e => {
+    const { name, value } = e.target;
+    if (name === 'username' && value.trim()) {
+      try {
+        const res = await checkUsernameExists(value);
+        setUsernameError(res.data.exists ? 'Username is already taken.' : '');
+      } catch {
+        setUsernameError('Error checking username.');
+      }
+    }
+  };
 
-    const handleChange = (event) => {
-        const { name, value, type, checked } = event.target;
-        setFormData(prev => ({
-            ...prev,
-            // For Select, value is directly the boolean if we cast it, otherwise it's string 'true'/'false'
-            [name]: type === 'checkbox' ? checked : (name === 'is_active' || name === 'is_staff' ? (value === 'true') : value),
-        }));
-        // Clear specific field error on change
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: null }));
-        }
-        if (name === 'password' && errors.password2) {
-             setErrors(prev => ({ ...prev, password2: null }));
-        }
-        if(apiFormError) setApiFormError('');
-    };
+  const validateForm = () => {
+    const newErr = {};
+    if (!formData.first_name.trim()) newErr.first_name = 'First name is required.';
+    if (!formData.last_name.trim()) newErr.last_name = 'Last name is required.';
+    if (!formData.email.trim()) newErr.email = 'Email is required.';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErr.email = 'Email invalid.';
+    if (!formData.username.trim()) newErr.username = 'Username required.';
 
-    const handleBlur = async (event) => {
-        const { name, value } = event.target;
-        if (name === 'username' && value.trim() !== '') {
-            try {
-                const response = await checkUsernameExists(value);
-                if (response.data.exists) {
-                    setUsernameError('Username is already taken.');
-                } else {
-                    setUsernameError('');
-                }
-            } catch (error) {
-                console.error('Error checking username:', error);
-                setUsernameError('Error checking username.');
-            }
-        }
-    };
+    if (!isEditMode) {
+      if (!formData.password) newErr.password = 'Password required.';
+      if (!formData.password2) newErr.password2 = 'Confirm password.';
+      if (formData.password && formData.password2 && formData.password !== formData.password2)
+        newErr.password2 = 'Passwords do not match.';
+    }
 
-    const validateForm = () => {
-        const newErrors = {};
-        if (!formData.first_name.trim()) newErrors.first_name = 'First name is required.';
-        if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required.';
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required.';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid.';
-        }
-        if (!formData.username.trim()) newErrors.username = 'Username is required.';
-        
-        if (!isEditMode) { // Password validation only for create mode
-            if (!formData.password) newErrors.password = 'Password is required.';
-            if (!formData.password2) newErrors.password2 = 'Confirm password is required.';
-            if (formData.password && formData.password2 && formData.password !== formData.password2) {
-                newErrors.password2 = 'Passwords do not match.';
-            }
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+    setErrors(newErr);
+    return !Object.keys(newErr).length;
+  };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (!validateForm()) {
-            return;
-        }
-        setApiFormError('');
+  const handleSubmitInternal = async e => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-        const dataToSubmit = { ...formData };
-        delete dataToSubmit.password2; // Don't send password2 to backend
+    const payload = { ...formData };
+    delete payload.password2;
+    if (isEditMode && !payload.password) delete payload.password;
 
-        if (isEditMode && !formData.password) {
-            // If password field is empty in edit mode, don't include it in submission
-            // Backend should interpret missing password as no change
-            delete dataToSubmit.password;
-        }
+    try {
+      await onSubmit(payload);
+      setNotification({
+        open: true,
+        severity: 'success',
+        message: isEditMode ? 'User updated successfully!' : 'User created successfully!',
+      });
+      if (!isEditMode) setFormData(getDefaultFormData());
+    } catch (err) {
+      setNotification({ open: true, severity: 'error', message: err.message || 'Error. Try again.' });
+    }
+  };
 
-        try {
-            await handleSubmitWithNotification(dataToSubmit);
-        } catch (err) {
-            console.error('Failed to save user:', err);
-            const errorData = err.response?.data;
-            if (errorData) {
-                if (typeof errorData === 'string') {
-                    setApiFormError(errorData);
-                } else {
-                    const backendErrors = {};
-                    for (const key in errorData) {
-                        backendErrors[key] = errorData[key].join(' ');
-                    }
-                    setErrors(prev => ({ ...prev, ...backendErrors }));
-                    setApiFormError('Please correct the errors below.');
-                }
-            } else {
-                setApiFormError('An unexpected error occurred. Please try again.');
-            }
-        }
-    };
+  /* ──────────────── MEMOS ──────────────── */
+  const passwordStrength = useMemo(() => calcStrength(formData.password), [formData.password]);
 
-    return (
-        <RootContainer>
-            <GlassCard>
-                <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-                    {isEditMode ? 'Edit User' : 'Add New User'}
+  /* ──────────────── RENDER ──────────────── */
+  return (
+    <RootContainer>
+
+
+      <GlassCard>
+        {loading && !formData.email ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
+            <CircularProgress sx={{ color: '#FE6B8B' }} />
+          </Box>
+        ) : (
+          <Box component="form" onSubmit={handleSubmitInternal} sx={{ mt: 1 }} noValidate>
+            {/* ───── Personal Info ───── */}
+            <Typography variant="subtitle1" sx={{ mb: 1, opacity: 0.8 }}>
+              Personal Information
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: isSm ? 'column' : 'row', gap: 2 }}>
+              <TextField fullWidth label="First Name" name="first_name" value={formData.first_name} onChange={handleChange} error={!!errors.first_name} helperText={errors.first_name} required sx={textFieldSx} autoFocus />
+              <TextField fullWidth label="Last Name" name="last_name" value={formData.last_name} onChange={handleChange} error={!!errors.last_name} helperText={errors.last_name} required sx={textFieldSx} />
+            </Box>
+            <TextField fullWidth label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={!!errors.email} helperText={errors.email} required sx={{ ...textFieldSx, mt: 2 }} />
+            <TextField
+              fullWidth
+              label="Username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!errors.username || !!usernameError}
+              helperText={errors.username || usernameError}
+              required
+              sx={{ ...textFieldSx, mt: 2 }}
+              disabled={isEditMode}
+            />
+
+            {/* ───── Security Info ───── */}
+            {!isEditMode && (
+              <>
+                <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, opacity: 0.8 }}>
+                  Security
                 </Typography>
-                
-                {loading && !formData.email ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-                        <CircularProgress sx={{ color: '#FE6B8B' }} />
-                    </Box>
-                ) : (
-                    <form onSubmit={handleSubmit} noValidate>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {apiFormError && (
-                                <Box>
-                                    <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{apiFormError}</Alert>
-                                </Box>
-                            )}
+                <Box sx={{ display: 'flex', flexDirection: isSm ? 'column' : 'row', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    required
+                    sx={textFieldSx}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Confirm Password"
+                    name="password2"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password2}
+                    onChange={handleChange}
+                    error={!!errors.password2}
+                    helperText={errors.password2}
+                    required
+                    sx={textFieldSx}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
 
-                            {/* Personal Information Section */}
-                            <Box>
-                                <GlassCard>
-                                    <Typography variant="h6" gutterBottom>Personal Information</Typography>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                                        <TextField 
-                                            fullWidth 
-                                            id="first_name" 
-                                            name="first_name" 
-                                            label="First Name" 
-                                            value={formData.first_name} 
-                                            onChange={handleChange} 
-                                            error={!!errors.first_name} 
-                                            helperText={errors.first_name} 
-                                            required 
-                                            autoFocus
-                                        />
-                                        <TextField 
-                                            fullWidth 
-                                            id="last_name" 
-                                            name="last_name" 
-                                            label="Last Name" 
-                                            value={formData.last_name} 
-                                            onChange={handleChange} 
-                                            error={!!errors.last_name} 
-                                            helperText={errors.last_name} 
-                                            required 
-                                        />
-                                        <TextField 
-                                            fullWidth 
-                                            id="email" 
-                                            name="email" 
-                                            label="Email" 
-                                            type="email" 
-                                            value={formData.email} 
-                                            onChange={handleChange} 
-                                            error={!!errors.email} 
-                                            helperText={errors.email} 
-                                            required 
-                                        />
-                                        
-                                        <FormControl component="fieldset">
-                                            <FormLabel component="legend" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Status</FormLabel>
-                                            <RadioGroup row name="is_active" value={formData.is_active} onChange={handleChange}>
-                                                <FormControlLabel 
-                                                    value={true} 
-                                                    control={<Radio sx={{ color: 'rgba(255, 255, 255, 0.7)', '&.Mui-checked': { color: '#FE6B8B' } }} />} 
-                                                    label="Active" 
-                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                                                />
-                                                <FormControlLabel 
-                                                    value={false} 
-                                                    control={<Radio sx={{ color: 'rgba(255, 255, 255, 0.7)', '&.Mui-checked': { color: '#FE6B8B' } }} />} 
-                                                    label="Inactive" 
-                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                                                />
-                                            </RadioGroup>
-                                        </FormControl>
-                                    </Box>
-                                </GlassCard>
-                            </Box>
-
-                            {/* Login Information Section */}
-                            <Box>
-                                <GlassCard>
-                                    <Typography variant="h6" gutterBottom>Login Information</Typography>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                                        <TextField 
-                                            fullWidth 
-                                            id="username" 
-                                            name="username" 
-                                            label="Username" 
-                                            value={formData.username} 
-                                            onChange={handleChange} 
-                                            onBlur={handleBlur} 
-                                            error={!!errors.username || !!usernameError} 
-                                            helperText={errors.username || usernameError} 
-                                            required 
-                                            disabled={isEditMode}
-                                        />
-                                        
-                                        {!isEditMode && (
-                                            <>
-                                                <TextField
-                                                    fullWidth
-                                                    label="Password"
-                                                    name="password"
-                                                    type={showPassword ? 'text' : 'password'}
-                                                    value={formData.password}
-                                                    onChange={handleChange}
-                                                    error={!!errors.password}
-                                                    helperText={errors.password}
-                                                    required
-                                                    InputProps={{
-                                                        endAdornment: (
-                                                            <InputAdornment position="end">
-                                                                <IconButton
-                                                                    aria-label="toggle password visibility"
-                                                                    onClick={handleClickShowPassword}
-                                                                    onMouseDown={handleMouseDownPassword}
-                                                                    edge="end"
-                                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                                                                >
-                                                                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                                                                </IconButton>
-                                                            </InputAdornment>
-                                                        )
-                                                    }}
-                                                />
-                                                <TextField
-                                                    fullWidth
-                                                    label="Confirm Password"
-                                                    name="password2"
-                                                    type={showPassword ? 'text' : 'password'}
-                                                    value={formData.password2}
-                                                    onChange={handleChange}
-                                                    error={!!errors.password2}
-                                                    helperText={errors.password2}
-                                                    required
-                                                    InputProps={{
-                                                        endAdornment: (
-                                                            <InputAdornment position="end">
-                                                                <IconButton
-                                                                    aria-label="toggle password visibility"
-                                                                    onClick={handleClickShowPassword}
-                                                                    onMouseDown={handleMouseDownPassword}
-                                                                    edge="end"
-                                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                                                                >
-                                                                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                                                                </IconButton>
-                                                            </InputAdornment>
-                                                        )
-                                                    }}
-                                                />
-                                            </>
-                                        )}
-                                    </Box>
-                                </GlassCard>
-                            </Box>
-                        </Box>
-                        <Box sx={{ mt: 2.5 }}>
-                            <FormControl fullWidth>
-                                <Select id="is_staff" name="is_staff" value={formData.is_staff} onChange={handleChange} displayEmpty>
-                                    <MenuItem value="" disabled>Role</MenuItem>
-                                    <MenuItem value={true}>Admin</MenuItem>
-                                    <MenuItem value={false}>User</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                            <Button onClick={onCancel} variant="outlined" color="error" disabled={loading} sx={{ width: '100%', px: 2.5 }}>
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                                disabled={loading}
-                                sx={{ width: '100%', px: 2.5 }}
-                                startIcon={loading ? <CircularProgress size="1rem" color="inherit" /> : null}
-                            >
-                                {loading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create User')}
-                            </Button>
-                        </Box>
-                    </form>
+                {/* Password strength */}
+                {formData.password && (
+                  <Box sx={{ mt: 1 }}>
+                    <LinearProgress variant="determinate" value={passwordStrength} sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.15)', '& .MuiLinearProgress-bar': { background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)' } }} />
+                    <FormHelperText>
+                      {passwordStrength < 40 ? 'Weak' : passwordStrength < 80 ? 'Medium' : 'Strong'} password
+                    </FormHelperText>
+                  </Box>
                 )}
-            </GlassCard>
-            <Snackbar
-                open={notification.open}
-                autoHideDuration={6000}
-                onClose={handleCloseNotification}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            >
-                <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
-                    {notification.message}
-                </Alert>
-            </Snackbar>
-        </RootContainer>
-    );
+              </>
+            )}
+
+            {/* ───── Status & Role ───── */}
+            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, opacity: 0.8 }}>
+              Account Settings
+            </Typography>
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                Status
+              </FormLabel>
+              <RadioGroup row name="is_active" value={formData.is_active} onChange={handleChange}>
+                <FormControlLabel value={true} control={<Radio sx={{ color: 'rgba(255,255,255,0.6)', '&.Mui-checked': { color: '#FE6B8B' } }} />} label="Active" />
+                <FormControlLabel value={false} control={<Radio sx={{ color: 'rgba(255,255,255,0.6)', '&.Mui-checked': { color: '#FE6B8B' } }} />} label="Inactive" />
+              </RadioGroup>
+            </FormControl>
+
+            {/* Role select with glass paper */}
+            <Box sx={{ mt: 2 }}>
+              <FormControl fullWidth sx={textFieldSx}>
+                <Select
+                  name="is_staff"
+                  value={String(formData.is_staff)}
+                  onChange={handleChange}
+                  displayEmpty
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        ...blurProps,
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: glassBorder,
+                        borderRadius: 2,
+                        color: '#fff',
+                        boxShadow: '0 8px 32px rgba(0,0,0,.37)',
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="" disabled>
+                    Role
+                  </MenuItem>
+                  <MenuItem value="true">Admin</MenuItem>
+                  <MenuItem value="false">User</MenuItem>
+                </Select>
+                <FormHelperText>Choose user role</FormHelperText>
+              </FormControl>
+            </Box>
+
+            {/* ───── Actions ───── */}
+            <Box sx={{ mt: 4, display: 'flex', flexDirection: isSm ? 'column' : 'row', gap: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading}
+                sx={{
+                  flex: 1,
+                  background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
+                  boxShadow: '0 3px 5px 2px rgba(255,105,135,.3)',
+                  borderRadius: 25,
+                  p: '10px 25px',
+                }}
+                startIcon={<SaveIcon />}
+              >
+                {loading ? 'Saving…' : isEditMode ? 'Save Changes' : 'Create User'}
+              </Button>
+              <Button
+                onClick={onCancel}
+                variant="outlined"
+                color="error"
+                disabled={loading}
+                sx={{ flex: 1, borderRadius: 25, p: '10px 25px' }}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </GlassCard>
+
+      <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleCloseNotification} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
+    </RootContainer>
+  );
 }

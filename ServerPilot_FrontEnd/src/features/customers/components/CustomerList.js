@@ -248,12 +248,11 @@ export default function CustomerList() {
           </Grid>
           <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
               <CardContent sx={{ p: 3 }}>
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                      <Grid item xs={12}>
+                      <box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                           <TextField
                               fullWidth
-                              label="Search Customers"
                               variant="outlined"
+                              placeholder="Search Customers..."
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               sx={{
@@ -274,9 +273,8 @@ export default function CustomerList() {
                                   ),
                               }}
                           />
-                      </Grid>
+                      </box>
                       {/* Filters with updated styling */}
-                  </Grid>
               </CardContent>
 
               {loading ? (
@@ -289,7 +287,7 @@ export default function CustomerList() {
                   </Typography>
               ) : (
                   <TableContainer component={Paper} sx={{ background: 'transparent' }}>
-                      <Table stickyHeader aria-label="customers table">
+                      <Table aria-label="customers table">
                           <TableHead>
                               <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
                                   {['Name', 'Email', 'Company', 'Phone', 'Status', 'Actions'].map((headCell, index) => (
@@ -300,57 +298,59 @@ export default function CustomerList() {
                               </TableRow>
                           </TableHead>
                           <TableBody>
-                              {filteredCustomers
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((customer) => (
-                                  <TableRow key={customer.id} sx={{
-                                      '&:hover': {
-                                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                                      },
-                                      '& .MuiTableCell-root': {
-                                          color: '#fff',
-                                          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                                      },
-                                      '&:hover .MuiTableCell-root': {
-                                          color: '#FE6B8B',
-                                      }
-                                  }}>
-                                      <TableCell>{customer.company_name || `${customer.first_name} ${customer.last_name}`}</TableCell>
-                                      <TableCell>{customer.email}</TableCell>
-                                      <TableCell>{customer.company_name || 'N/A'}</TableCell>
-                                      <TableCell>{customer.phone_number || 'N/A'}</TableCell>
-                                      <TableCell>
-                                          <Chip
-                                              label={customer.is_active ? 'Active' : 'Inactive'}
-                                              color={customer.is_active ? 'success' : 'error'}
-                                              size="small"
-                                              variant="outlined"
-                                              sx={{
-                                                  borderColor: customer.is_active ? 'rgba(102, 187, 106, 0.7)' : 'rgba(244, 67, 54, 0.7)',
-                                                  color: customer.is_active ? '#66bb6a' : '#f44336',
-                                                  '.MuiChip-icon': { color: 'inherit' }
-                                              }}
-                                          />
-                                      </TableCell>
-                                      <TableCell align="right">
-                                          <Tooltip title="Manage Servers">
-                                              <IconButton onClick={() => navigate(`/customers/${customer.id}/servers`)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                                  <DnsIcon />
-                                              </IconButton>
-                                          </Tooltip>
-                                          <Tooltip title="Edit Customer">
-                                              <IconButton onClick={() => handleEditCustomer(customer.id)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                                  <EditIcon />
-                                              </IconButton>
-                                          </Tooltip>
-                                          <Tooltip title="Delete Customer">
-                                              <IconButton onClick={() => openDeleteDialog(customer)} size="small" sx={{ color: '#f44336' }}>
-                                                  <DeleteIcon />
-                                              </IconButton>
-                                          </Tooltip>
-                                      </TableCell>
-                                  </TableRow>
-                              ))}
+                            {filteredCustomers
+                              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                              .map((customer) => (
+                                <TableRow
+                                  key={customer.id}
+                                  sx={{
+                                    '& .MuiTableCell-root': {
+                                      color: '#fff',
+                                      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                    },
+                                    '&:hover': {
+                                      background: 'rgba(254,107,139,0.08)', // subtle glassy pink
+                                      cursor: 'pointer',
+                                      transition: 'background 0.2s',
+                                    }
+                                  }}
+                                >
+                                  <TableCell>{customer.company_name || `${customer.first_name} ${customer.last_name}`}</TableCell>
+                                  <TableCell>{customer.email}</TableCell>
+                                  <TableCell>{customer.company_name || 'N/A'}</TableCell>
+                                  <TableCell>{customer.phone_number || 'N/A'}</TableCell>
+                                  <TableCell>
+                                      <Chip
+                                          label={customer.is_active ? 'Active' : 'Inactive'}
+                                          color={customer.is_active ? 'success' : 'error'}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{
+                                              borderColor: customer.is_active ? 'rgba(102, 187, 106, 0.7)' : 'rgba(244, 67, 54, 0.7)',
+                                              color: customer.is_active ? '#66bb6a' : '#f44336',
+                                              '.MuiChip-icon': { color: 'inherit' }
+                                          }}
+                                      />
+                                  </TableCell>
+                                  <TableCell align="right">
+                                      <Tooltip title="Manage Servers">
+                                          <IconButton onClick={() => navigate(`/customers/${customer.id}/servers`)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                              <DnsIcon />
+                                          </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Edit Customer">
+                                          <IconButton onClick={() => handleEditCustomer(customer.id)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                              <EditIcon />
+                                          </IconButton>
+                                      </Tooltip>
+                                      <Tooltip title="Delete Customer">
+                                          <IconButton onClick={() => openDeleteDialog(customer)} size="small" sx={{ color: '#f44336' }}>
+                                              <DeleteIcon />
+                                          </IconButton>
+                                      </Tooltip>
+                                  </TableCell>
+                                </TableRow>
+                            ))}
                           </TableBody>
                       </Table>
                       <TablePagination

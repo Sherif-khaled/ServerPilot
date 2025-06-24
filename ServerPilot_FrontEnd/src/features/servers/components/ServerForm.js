@@ -42,30 +42,46 @@ const initialFormData = {
   is_active: true,
 };
 
+    /*********************  STYLED COMPONENTS  ************************/
+const RootContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
+  backdropFilter: 'blur(8px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(8px) saturate(160%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
+  color: '#fff',
+}));
+
+const GlassCard = styled(Box)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.06)',
+  backdropFilter: 'blur(8px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(8px) saturate(160%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.2)',
+  padding: theme.spacing(3),
+  color: '#fff',
+}));
+
+// Common TextField styling
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
+    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
+    color: 'white'
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
+};
+/*********************  END OF STYLED COMPONENTS  ************************/
+
 export default function ServerForm({ customerId, serverData, onSaveSuccess, onClose }) {
   const isEditMode = Boolean(serverData && serverData.id);
   const serverId = isEditMode ? serverData.id : null;
-
-  // Styled root component for the background
-  const RootContainer = styled(Box)(({ theme }) => ({
-      minHeight: '100vh',
-      padding: theme.spacing(3),
-      background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-      position: 'relative',
-      overflow: 'hidden',
-  }));
-
-  // Glassmorphism Card
-  const GlassCard = styled(Paper)(({ theme }) => ({
-      background: 'rgba(255, 255, 255, 0.08)',
-      backdropFilter: 'blur(12px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(12px) saturate(180%)', // For Safari
-      borderRadius: '12px',
-      border: '1px solid rgba(255, 255, 255, 0.125)',
-      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-      padding: theme.spacing(3),
-      color: '#fff',
-  }));
 
   const [formData, setFormData] = useState(initialFormData);
   const [loading, setLoading] = useState(false); // For form submission
@@ -253,7 +269,13 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
   };
 
   if (pageLoading) {
-    return <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />;
+    return (
+      <RootContainer>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
+          <CircularProgress sx={{ color: '#FE6B8B' }} />
+        </Box>
+      </RootContainer>
+    );
   }
 
   if (!isEditMode && apiFormError && !pageLoading && !Object.keys(errors).length) {
@@ -278,7 +300,7 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
               onChange={handleChange}
               error={!!errors.server_name}
               helperText={errors.server_name}
-              sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+              sx={textFieldSx}
             />
 
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
@@ -292,7 +314,7 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                 onChange={handleChange}
                 error={!!errors.server_ip}
                 helperText={errors.server_ip}
-                sx={{ flexGrow: 1, input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                sx={{ flexGrow: 1, ...textFieldSx }}
                 InputProps={{
                   inputComponent: TextMaskAdapter,
                 }}
@@ -308,13 +330,37 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                 error={!!errors.ssh_port}
                 helperText={errors.ssh_port}
                 InputProps={{ inputProps: { min: 1, max: 65535 } }}
-                sx={{ width: { xs: '100%', sm: '120px' }, input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                sx={{ width: { xs: '100%', sm: '120px' }, ...textFieldSx }}
               />
             </Box>
 
             <FormControlLabel
-              control={<Checkbox checked={formData.login_using_root} onChange={handleChange} name="login_using_root" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />}
+              control={
+                <Checkbox 
+                  checked={formData.login_using_root} 
+                  onChange={handleChange} 
+                  name="login_using_root" 
+                  sx={{ 
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    '&.Mui-checked': {
+                      color: '#FE6B8B',
+                      '& .MuiSvgIcon-root': {
+                        border: '2px solid #FE6B8B',
+                        borderRadius: '3px',
+                      }
+                    },
+                    '&.Mui-checked:hover': {
+                      backgroundColor: 'rgba(254, 107, 139, 0.1)',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '3px',
+                    }
+                  }} 
+                />
+              }
               label="Login as root user"
+              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
             />
 
             {!formData.login_using_root && (
@@ -329,7 +375,7 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                   error={!!errors.ssh_user}
                   helperText={errors.ssh_user}
                   required={!formData.login_using_root}
-                  sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                  sx={textFieldSx}
                 />
                 <TextField
                   fullWidth
@@ -342,7 +388,7 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                   error={!!errors.ssh_password}
                   helperText={errors.ssh_password || 'Leave blank to keep current or if using SSH key.'}
                   autoComplete="new-password"
-                  sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                  sx={textFieldSx}
                 />
               </Box>
             )}
@@ -359,7 +405,7 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                 error={!!errors.ssh_root_password}
                 helperText={errors.ssh_root_password || 'Leave blank to keep current or if using SSH key.'}
                 autoComplete="new-password"
-                sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                sx={textFieldSx}
               />
             )}
             
@@ -375,25 +421,59 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
               error={!!errors.ssh_key}
               helperText={errors.ssh_key || 'Paste your private SSH key here. Leave blank to keep current or if using password.'}
               placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
-              sx={{ textarea: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' } }}
+              sx={textFieldSx}
             />
             
             <FormControlLabel
-              control={<Checkbox checked={formData.is_active} onChange={handleChange} name="is_active" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />}
+              control={
+                <Checkbox 
+                  checked={formData.is_active} 
+                  onChange={handleChange} 
+                  name="is_active" 
+                  sx={{ 
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    '&.Mui-checked': {
+                      color: '#FE6B8B',
+                      '& .MuiSvgIcon-root': {
+                        border: '2px solid #FE6B8B',
+                        borderRadius: '3px',
+                      }
+                    },
+                    '&.Mui-checked:hover': {
+                      backgroundColor: 'rgba(254, 107, 139, 0.1)',
+                    },
+                    '& .MuiSvgIcon-root': {
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '3px',
+                    }
+                  }} 
+                />
+              }
               label="Server is Active"
+              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
             />
 
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-              <Button onClick={onClose} variant="outlined" disabled={loading} sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="contained" disabled={loading} sx={{
-                  background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                  boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                  color: 'white',
-                  borderRadius: '25px',
-                  padding: '10px 25px',
-              }}>
+                <Button
+                  onClick={onClose}
+                  variant="outlined"
+                  color="error"
+                  disabled={loading}
+                  sx={{ flex: 1, borderRadius: 25, p: '10px 25px' }}
+                                                    >
+                     Cancel
+                </Button>
+              <Button 
+                type="submit" 
+                variant="contained" 
+                disabled={loading} 
+                sx={{
+                  flex: 1,
+                  background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
+                  boxShadow: '0 3px 5px 2px rgba(255,105,135,.3)',
+                  borderRadius: 25,
+                  p: '10px 25px',
+                }} >
                 {loading ? <CircularProgress size={24} /> : (isEditMode ? 'Update Server' : 'Create Server')}
               </Button>
             </Box>

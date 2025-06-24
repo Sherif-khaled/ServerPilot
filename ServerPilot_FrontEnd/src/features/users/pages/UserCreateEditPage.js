@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import UserForm from '../components/UserForm';
-import { Container, Typography, Paper, CircularProgress, Button, Snackbar, Alert } from '@mui/material';
+import { Container, Typography, Paper, CircularProgress, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
 import { adminGetUser, adminUpdateUser, adminCreateUser } from '../../../api/userService'; 
 
@@ -13,6 +13,8 @@ export default function UserCreateEditPage() {
     const [formLoading, setFormLoading] = useState(false); // For form submission
     const [pageLoading, setPageLoading] = useState(isEditMode); // For fetching initial data in edit mode
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+    
 
     const handleCloseNotification = (event, reason) => {
         if (reason === 'clickaway') {
@@ -85,11 +87,60 @@ export default function UserCreateEditPage() {
         navigate(-1); // Go back to the previous page, or specify a path like '/users'
     };
 
-    if (pageLoading) {
+    // Show modal dialog in both create and edit mode
+    if (!pageLoading && (!isEditMode || (isEditMode && initialUser))) {
         return (
-            <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-                <CircularProgress />
-            </Container>
+            <>
+                <Snackbar 
+                    open={notification.open} 
+                    autoHideDuration={6000} 
+                    onClose={handleCloseNotification}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                >
+                    <Alert 
+                        onClose={handleCloseNotification} 
+                        severity={notification.severity} 
+                        sx={{ width: '100%' }}
+                    >
+                        {notification.message}
+                    </Alert>
+                </Snackbar>
+                <Dialog
+                    open={true}
+                    onClose={handleCancel}
+                    maxWidth="lg"
+                    fullWidth
+                    PaperProps={{
+                        sx: {
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            backdropFilter: 'blur(12px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.125)',
+                            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                            color: '#fff',
+                            minWidth: { md: 900, lg: 900 },
+                            overflowY: 'hidden',
+                            '&::-webkit-scrollbar': { display: 'none' },
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none',
+                        }
+                    }}
+                >
+                    <DialogTitle>
+                        {isEditMode ? 'Edit User' : 'Add New User'}
+                    </DialogTitle>
+                    <DialogContent>
+                        <UserForm
+                            onSubmit={handleSubmit}
+                            onCancel={handleCancel}
+                            initialUser={initialUser}
+                            isEditMode={isEditMode}
+                            loading={formLoading}
+                        />
+                    </DialogContent>
+                </Dialog>
+            </>
         );
     }
 
@@ -101,7 +152,7 @@ export default function UserCreateEditPage() {
                     <Typography variant="h6" color="error" gutterBottom>
                         User not found or failed to load data.
                     </Typography>
-                    <Button variant="outlined" onClick={() => navigate('/users') /* Or navigate(-1) */}>
+                    <Button variant="outlined" onClick={() => navigate('/users')}>
                         Go Back
                     </Button>
                 </Paper>
@@ -109,30 +160,53 @@ export default function UserCreateEditPage() {
         );
     }
 
+    if (pageLoading) {
+        return (
+            <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+                <CircularProgress />
+            </Container>
+        );
+    }
+
     return (
-        <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-            <Snackbar 
-                open={notification.open} 
-                autoHideDuration={6000} 
-                onClose={handleCloseNotification}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            >
-                <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
-                    {notification.message}
-                </Alert>
-            </Snackbar>
-            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
-                <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 3 }}>
-                    {isEditMode ? 'Edit User' : 'Create New User'}
-                </Typography>
-                <UserForm
-                    onSubmit={handleSubmit}
-                    onCancel={handleCancel}
-                    initialUser={initialUser}
-                    isEditMode={isEditMode}
-                    loading={formLoading}
-                />
-            </Paper>
-        </Container>
+  <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+  <Snackbar 
+    open={notification.open} 
+    autoHideDuration={6000} 
+    onClose={handleCloseNotification}
+    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+  >
+    <Alert 
+      onClose={handleCloseNotification} 
+      severity={notification.severity} 
+      sx={{ width: '100%' }}
+    >
+      {notification.message}
+    </Alert>
+  </Snackbar>
+
+  <Paper
+    elevation={3}
+    sx={{
+      p: { xs: 2, sm: 3 },
+      background: 'rgba(255, 255, 255, 0.08)',
+      backdropFilter: 'blur(12px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(180%)', // Safari
+      borderRadius: '12px',
+      border: '1px solid rgba(255, 255, 255, 0.125)',
+      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+      color: '#fff',
+    }}
+  >
+
+    <UserForm
+      onSubmit={handleSubmit}
+      onCancel={handleCancel}
+      initialUser={initialUser}
+      isEditMode={isEditMode}
+      loading={formLoading}
+    />
+  </Paper>
+</Container>
     );
 }

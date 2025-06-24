@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert,
     Button, IconButton, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress,
-    Grid, TextField, MenuItem, Avatar, Chip, Menu, InputAdornment, Card, CardContent, Tooltip, TablePagination
+    Grid, TextField, MenuItem, Avatar, Chip, Menu, InputAdornment, Card, CardContent, Tooltip, TablePagination,
+    Snackbar
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import MuiAlert from '@mui/material/Alert';
 
 import {
     Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, VpnKey as VpnKeyIcon, MoreVert as MoreVertIcon,
@@ -17,9 +19,12 @@ import {
 } from '@mui/icons-material';
 import {
     adminListUsers, adminDeleteUser,
-    adminSetUserPassword
+    adminSetUserPassword,
+    adminUpdateUser, // <-- Add this import
+    adminCreateUser  // <-- Add this import if not already
 } from '../../../api/userService';
 import SetPasswordForm from './SetPasswordForm';
+import UserForm from './UserForm'; // Make sure this import exists
 
 // Styled root component for the background
 const RootContainer = styled(Box)(({ theme }) => ({
@@ -37,21 +42,29 @@ const GlassCard = styled(Card)(({ theme }) => ({
 }));
 
 const modalStyle = {
+
+    background: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(12px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.125)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    color: '#fff',
+    minWidth: { md: 900, lg: 900 },
+    overflowY: 'hidden',
+            '&::-webkit-scrollbar': { display: 'none' },
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '90%',
-    maxWidth: 600,
-    bgcolor: 'rgba(30, 40, 57, 0.9)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '12px',
-    boxShadow: 24,
+    width: '100%',           // Increased width
+    maxWidth: 1000,         // Increased maxWidth
     p: 4,
     color: '#fff',
     maxHeight: '90vh',
     overflowY: 'auto',
-    backdropFilter: 'blur(10px)',
 };
 
 export default function UserList() {
@@ -74,6 +87,10 @@ export default function UserList() {
     const [orderBy] = useState('username');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+    const [editUser, setEditUser] = useState(null); // NEW: Track user being edited
+    const [notification, setNotification] = useState({ open: false, severity: 'success', message: '' });
+    const [formError, setFormError] = useState({});
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
@@ -102,12 +119,69 @@ export default function UserList() {
         fetchUsers();
     }, [fetchUsers]);
 
+    useEffect(() => {
+        // This will trigger when users list changes after a successful operation
+        if (!loading && !addUserModalOpen && !error) {
+            // Check if we just completed an operation
+            const shouldShowNotification = sessionStorage.getItem('userOperationSuccess');
+            if (shouldShowNotification) {
+                setNotification({ 
+                    open: true, 
+                    severity: 'success', 
+                    message: shouldShowNotification 
+                });
+                sessionStorage.removeItem('userOperationSuccess');
+            }
+        }
+    }, [users, loading, addUserModalOpen, error]);
+
     const handleCreateUser = () => {
-        navigate('/users/new');
+        setEditUser(null); // Not editing, just adding
+        setAddUserModalOpen(true);
     };
 
     const handleEditUser = (userId) => {
-        navigate(`/users/edit/${userId}`);
+        const user = users.find(u => u.id === userId);
+        if (user) {
+            setEditUser(user);
+            setAddUserModalOpen(true);
+        }
+    };
+
+    const handleUserFormSubmit = async (formData) => {
+        setLoading(true);
+        setFormError({});
+        try {
+            if (editUser) {
+                await adminUpdateUser(editUser.id, formData);
+                setAddUserModalOpen(false);
+                setEditUser(null);
+                setTimeout(() => {
+                    setNotification({ open: true, severity: 'success', message: 'User updated successfully!' });
+                }, 300);
+            } else {
+                await adminCreateUser(formData);
+                setAddUserModalOpen(false);
+                setTimeout(() => {
+                    setNotification({ open: true, severity: 'success', message: 'User created successfully!' });
+                }, 300);
+            }
+            fetchUsers();
+        } catch (err) {
+            // If error is validation error from backend
+            if (err.response && err.response.data) {
+                setFormError(err.response.data);
+            } else {
+                setNotification({ open: true, severity: 'error', message: 'Failed to save user. ' + (err.message) });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCloseAddUserModal = () => {
+        setAddUserModalOpen(false);
+        setEditUser(null);
     };
 
     const handleOpenDeleteConfirm = (user) => {
@@ -127,8 +201,17 @@ export default function UserList() {
         try {
             await adminDeleteUser(currentUser.id);
             fetchUsers();
-            handleCloseDeleteConfirm();
+            setDeleteConfirmOpen(false);
+            setCurrentUser(null);
+            setTimeout(() => {
+                setNotification({ open: true, severity: 'success', message: 'User deleted successfully!' });
+            }, 300);
         } catch (err) {
+            setDeleteConfirmOpen(false);
+            setCurrentUser(null);
+            setTimeout(() => {
+                setNotification({ open: true, severity: 'error', message: 'Failed to delete user. ' + (err.response?.data?.detail || err.message) });
+            }, 300);
             setError('Failed to delete user. ' + (err.response?.data?.detail || err.message));
         } finally {
             setLoading(false);
@@ -250,6 +333,10 @@ export default function UserList() {
         setPage(0);
     };
 
+    const handleCloseNotification = () => {
+        setNotification(prev => ({ ...prev, open: false }));
+    };
+
     return (
         <RootContainer>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
@@ -295,7 +382,7 @@ export default function UserList() {
                     <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                         <TextField
                             fullWidth
-                            label="Search Users"
+                            placeholder="Search Users..."
                             variant="outlined"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -339,7 +426,7 @@ export default function UserList() {
                             </TableHead>
                             <TableBody>
                                 {paginatedUsers.length === 0 ? (
-                                    <TableRow>
+                                    <TableRow >
                                         <TableCell colSpan={5} align="center" sx={{ border: 0 }}>
                                             <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: 'rgba(255, 255, 255, 0.7)' }}>
                                                 <SearchIcon sx={{ fontSize: 60 }} />
@@ -350,12 +437,20 @@ export default function UserList() {
                                     </TableRow>
                                 ) : (
                                     paginatedUsers.map((user) => (
-                                        <TableRow key={user.id} sx={{
-                                            '& .MuiTableCell-root': {
-                                                color: '#fff',
-                                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                                            }
-                                        }}>
+                                        <TableRow
+                                            key={user.id}
+                                            sx={{
+                                                '& .MuiTableCell-root': {
+                                                    color: '#fff',
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                                },
+                                                '&:hover': {
+                                                    background: 'rgba(254,107,139,0.08)', // subtle glassy pink
+                                                    cursor: 'pointer',
+                                                    transition: 'background 0.2s',
+                                                }
+                                            }}
+                                        >
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                     <Avatar src={user.profile_photo_url} sx={{ mr: 2, border: '2px solid #fff' }}>
@@ -423,19 +518,35 @@ export default function UserList() {
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
-                PaperProps={{
-                    sx: {
-                        background: 'rgba(40, 50, 70, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        color: '#fff',
-                        '& .MuiMenuItem-root': {
-                            '&:hover': {
-                                background: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        }
-                    }
-                }}
+                slotProps={{
+            paper: {
+              sx: {
+                background: 'rgba(40, 50, 70, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                color: '#fff',
+                minWidth: '180px',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                marginTop: '4px',
+                '& .MuiMenuItem-root': {
+                  padding: '12px 16px',
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '4px',
+                    margin: '2px 8px',
+                    width: 'calc(100% - 16px)',
+                  }
+                },
+                '& .MuiListItemIcon-root': {
+                  minWidth: '36px',
+                }
+              }
+            }
+          }}
+          disableScrollLock={false}
+          disablePortal={false}
+          keepMounted={false}
             >
                 <MenuItem onClick={handleEditFromMenu}><EditIcon sx={{ mr: 1 }} /> Edit</MenuItem>
                 <MenuItem onClick={handleSetPasswordFromMenu}><VpnKeyIcon sx={{ mr: 1 }} /> Set Password</MenuItem>
@@ -471,6 +582,36 @@ export default function UserList() {
                     />
                 </Box>
             </Modal>
+
+            {/* Add User Modal */}
+            <Modal
+                open={addUserModalOpen}
+                onClose={handleCloseAddUserModal}
+            >
+                <Box sx={modalStyle}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                        {editUser ? 'Edit User' : 'Add New User'}
+                    </Typography>
+                    <UserForm
+                        onSubmit={handleUserFormSubmit}
+                        onCancel={handleCloseAddUserModal}
+                        isEditMode={!!editUser}
+                        initialUser={editUser}
+                        loading={loading}
+                        error={formError} // Pass error prop
+                    />
+                </Box>
+            </Modal>
+            <Snackbar
+                open={notification.open}
+                autoHideDuration={6000}
+                onClose={handleCloseNotification}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <MuiAlert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+                    {notification.message}
+                </MuiAlert>
+            </Snackbar>
         </RootContainer>
     );
 }
