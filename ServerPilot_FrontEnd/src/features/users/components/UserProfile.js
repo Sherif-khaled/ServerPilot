@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, TextField, Button, Typography, Avatar, Paper, Container, CircularProgress, Snackbar, Alert as MuiAlert,
-    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader, styled
+    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader, styled, Dialog, DialogTitle,
+    DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -22,63 +23,40 @@ const dateFormats = [
     'DD/MM/YYYY'
 ];
 
-const GlassPaper = styled(Paper)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(12px)',
-    borderRadius: '20px',
-    padding: theme.spacing(4),
-    color: '#fff',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
+const RootContainer = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(4),
+  background: 'rgba(38, 50, 56, 0.6)',
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2),
+  },
 }));
 
-const textFieldStyles = {
-    '& label.Mui-focused': {
-        color: '#00bfff',
-    },
-    '& .MuiInputLabel-root': {
-        color: 'rgba(255, 255, 255, 0.7)',
-    },
-    '& .MuiOutlinedInput-root': {
-        color: '#fff',
-        '& fieldset': {
-            borderColor: 'rgba(255, 255, 255, 0.3)',
-        },
-        '&:hover fieldset': {
-            borderColor: '#00bfff',
-        },
-        '&.Mui-focused fieldset': {
-            borderColor: '#00bfff',
-        },
-        '&.Mui-disabled': {
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            color: 'rgba(255, 255, 255, 0.5)',
-            '& fieldset': {
-                borderColor: 'rgba(255, 255, 255, 0.2) !important',
-            }
-        },
-    },
-    '& .MuiFilledInput-root': {
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        color: '#fff',
-        '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        },
-        '&.Mui-focused': {
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        },
-        '&.Mui-disabled': {
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            color: 'rgba(255, 255, 255, 0.5)',
-        },
-        '&:before, &:after': {
-            borderBottom: `2px solid #00bfff`,
-        },
-    },
-    '& .MuiFormHelperText-root': {
-        color: 'rgba(255, 255, 255, 0.6)',
-    },
-};
+const GlassCard = styled(Paper)(({ theme }) => ({
+  background: 'rgba(38, 50, 56, 0.6)',
+  backdropFilter: 'blur(20px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.125)',
+  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+  padding: theme.spacing(4)
+}));
 
+ // Common TextField sx with gradient focus ring
+    const textFieldSx = {
+    '& .MuiOutlinedInput-root': {
+        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+        '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+        '&.Mui-focused fieldset': { borderColor: 'transparent' },
+        '&.Mui-focused': {
+        boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+        borderRadius: 1,
+        },
+        color: '#fff',
+    },
+    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+    '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+    };
 
 export default function UserProfile() {
   const [profile, setProfile] = useState(null);
@@ -95,6 +73,7 @@ export default function UserProfile() {
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [timezoneSearch, setTimezoneSearch] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -128,18 +107,21 @@ export default function UserProfile() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    setConfirmOpen(false);
     setSaving(true);
     const dataToSubmit = new FormData();
     Object.keys(formData).forEach(key => {
         dataToSubmit.append(key, formData[key]);
     });
-    
     if (profilePhotoFile) {
       dataToSubmit.append('profile_photo', profilePhotoFile);
     }
-
     try {
       const res = await updateProfile(dataToSubmit);
       setProfile(res.data);
@@ -188,13 +170,13 @@ export default function UserProfile() {
   }
 
   return (
-    <Box sx={{ p: 4, background: 'rgba(38, 50, 56, 0.6)', minHeight: '100vh' }}>
+    <RootContainer>
       <Container component="main" maxWidth="lg">
-        <GlassPaper>
+        <GlassCard>
           <Typography component="h1" variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', color: '#fff' }}>
             User Profile
           </Typography>
-          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+          <Box component="form" onSubmit={handleFormSubmit} noValidate sx={{ mt: 3 }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 5, alignItems: 'flex-start' }}>
               <Box sx={{ width: { xs: '100%', md: '30%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                 <Avatar
@@ -238,7 +220,7 @@ export default function UserProfile() {
                   fullWidth
                   disabled
                   variant="filled"
-                  sx={textFieldStyles}
+                  sx={textFieldSx}
                 />
                 <TextField
                   label="Email"
@@ -247,7 +229,7 @@ export default function UserProfile() {
                   disabled
                   variant="filled"
                   helperText="Email cannot be changed."
-                  sx={textFieldStyles}
+                  sx={textFieldSx}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -269,7 +251,7 @@ export default function UserProfile() {
                     fullWidth
                     required
                     variant="outlined"
-                    sx={textFieldStyles}
+                    sx={textFieldSx}
                   />
                   <TextField
                     label="Last Name"
@@ -278,7 +260,7 @@ export default function UserProfile() {
                     onChange={handleChange}
                     fullWidth
                     variant="outlined"
-                    sx={textFieldStyles}
+                    sx={textFieldSx}
                   />
                 </Box>
                 <TextField
@@ -289,10 +271,10 @@ export default function UserProfile() {
                   fullWidth
                   helperText="To be used for MFA in the future."
                   variant="outlined"
-                  sx={textFieldStyles}
+                  sx={textFieldSx}
                 />
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                  <FormControl fullWidth sx={textFieldStyles} variant="outlined">
+                  <FormControl fullWidth sx={textFieldSx} variant="outlined">
                     <InputLabel id="timezone-select-label">Timezone</InputLabel>
                     <Select
                       labelId="timezone-select-label"
@@ -301,6 +283,7 @@ export default function UserProfile() {
                       label="Timezone"
                       onChange={handleChange}
                       onClose={() => setTimezoneSearch('')}
+                      sx={textFieldSx}
                       MenuProps={{
                         autoFocus: false,
                         PaperProps: {
@@ -323,7 +306,7 @@ export default function UserProfile() {
                           onChange={(e) => setTimezoneSearch(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                           onKeyDown={(e) => e.key !== 'Escape' && e.stopPropagation()}
-                          sx={textFieldStyles}
+                          sx={textFieldSx}
                           variant="outlined"
                         />
                       </ListSubheader>
@@ -332,7 +315,7 @@ export default function UserProfile() {
                       ))}
                     </Select>
                   </FormControl>
-                  <FormControl fullWidth sx={textFieldStyles} variant="outlined">
+                  <FormControl fullWidth sx={textFieldSx} variant="outlined">
                     <InputLabel id="dateformat-select-label">Date Format</InputLabel>
                     <Select
                       labelId="dateformat-select-label"
@@ -364,15 +347,15 @@ export default function UserProfile() {
                     disabled={saving}
                     size="large"
                     sx={{
-                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                color: 'white',
-                                borderRadius: '25px',
-                                padding: '10px 25px',
-                                '&:disabled': {
-                                    background: 'rgba(255, 255, 255, 0.3)',
-                                }
-                        }}
+                      background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                      boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                      color: 'white',
+                      borderRadius: '25px',
+                      padding: '10px 25px',
+                      '&:disabled': {
+                        background: 'rgba(255, 255, 255, 0.3)',
+                      }
+                    }}
                   >
                     {saving ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
                   </Button>
@@ -380,13 +363,32 @@ export default function UserProfile() {
               </Box>
             </Box>
           </Box>
-        </GlassPaper>
+        </GlassCard>
         <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
           <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
             {snackbar.message}
           </Alert>
         </Snackbar>
+        <Dialog
+          open={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+        >
+          <DialogTitle>Confirm Profile Update</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to save these changes to your profile?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmOpen(false)} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm} color="primary" variant="contained" autoFocus>
+              Yes, Save
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
-    </Box>
+    </RootContainer>
   );
 }
