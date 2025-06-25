@@ -98,6 +98,36 @@ const calcStrength = (pw = '') => {
   return score;
 };
 
+// Password strength logic and generator (copy from SetPasswordForm.js)
+const getPasswordStrength = (password) => {
+  let score = 0;
+  if (password.length > 7) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  return score;
+};
+const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
+const strengthColors = ['error', 'warning', 'info', 'success'];
+
+function generateStrongPassword(length = 14) {
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const all = upper + lower + numbers + symbols;
+  let password = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    numbers[Math.floor(Math.random() * numbers.length)],
+    symbols[Math.floor(Math.random() * symbols.length)],
+  ];
+  for (let i = password.length; i < length; i++) {
+    password.push(all[Math.floor(Math.random() * all.length)]);
+  }
+  return password.sort(() => Math.random() - 0.5).join('');
+}
+
 /*********************  COMPONENT  ************************/
 export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode = false, loading }) {
   const theme = useTheme();
@@ -108,6 +138,7 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
   const [errors, setErrors] = useState({});
   const [usernameError, setUsernameError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [apiFormError, setApiFormError] = useState('');
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
@@ -248,7 +279,7 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     fullWidth
                     label="Password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={handleChange}
                     error={!!errors.password}
@@ -258,9 +289,39 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                          <IconButton
+                            onClick={() => setShowPassword((show) => !show)}
+                            edge="end"
+                            sx={{ color: 'rgba(255,255,255,0.7)' }}
+                            tabIndex={-1}
+                          >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
+                          <Button
+                            onClick={() => {
+                              const pwd = generateStrongPassword();
+                              setFormData((prev) => ({
+                                ...prev,
+                                password: pwd,
+                                password2: pwd,
+                              }));
+                            }}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              minWidth: 0,
+                              p: '2px 8px',
+                              borderRadius: 2,
+                              fontSize: '0.75rem',
+                              background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
+                              color: '#fff',
+                              boxShadow: '0 1px 2px 1px rgba(255,105,135,.2)',
+                              textTransform: 'none',
+                            }}
+                            disabled={loading}
+                          >
+                            Generate
+                          </Button>
                         </InputAdornment>
                       ),
                     }}
@@ -269,7 +330,7 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     fullWidth
                     label="Confirm Password"
                     name="password2"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showConfirm ? 'text' : 'password'}
                     value={formData.password2}
                     onChange={handleChange}
                     error={!!errors.password2}
@@ -279,22 +340,31 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          <IconButton
+                            onClick={() => setShowConfirm((show) => !show)}
+                            edge="end"
+                            sx={{ color: 'rgba(255,255,255,0.7)' }}
+                            tabIndex={-1}
+                          >
+                            {showConfirm ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
                         </InputAdornment>
                       ),
                     }}
                   />
                 </Box>
-
                 {/* Password strength */}
                 {formData.password && (
                   <Box sx={{ mt: 1 }}>
-                    <LinearProgress variant="determinate" value={passwordStrength} sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.15)', '& .MuiLinearProgress-bar': { background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)' } }} />
-                    <FormHelperText>
-                      {passwordStrength < 40 ? 'Weak' : passwordStrength < 80 ? 'Medium' : 'Strong'} password
-                    </FormHelperText>
+                    <LinearProgress
+                      variant="determinate"
+                      value={(getPasswordStrength(formData.password) / 4) * 100}
+                      color={strengthColors[getPasswordStrength(formData.password) - 1] || 'error'}
+                      sx={{ height: 8, borderRadius: 5 }}
+                    />
+                    <Typography variant="caption" color={strengthColors[getPasswordStrength(formData.password) - 1] || 'error'}>
+                      {strengthLabels[getPasswordStrength(formData.password) - 1] || 'Weak'}
+                    </Typography>
                   </Box>
                 )}
               </>
