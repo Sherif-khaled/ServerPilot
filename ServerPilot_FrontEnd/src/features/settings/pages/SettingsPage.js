@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Tabs, Tab, Typography, Divider, Container, Paper, GlobalStyles, styled } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Divider, GlobalStyles, styled, Container, Paper } from '@mui/material';
 
 import GeneralSettings from '../components/GeneralSettings';
 import PasswordSettings from '../components/PasswordSettings';
@@ -7,6 +7,25 @@ import AppearanceSettings from '../components/AppearanceSettings';
 import SecurityKeysSettings from '../components/SecurityKeysSettings';
 import RecoveryCodesSettings from '../components/RecoveryCodesSettings';
 import WebSessions from '../components/WebSessions';
+
+const RootContainer = styled(Box)(({ theme }) => ({
+  width: '100%',
+  maxWidth: '100%',
+  background: 'rgba(38, 50, 56, 0.6)',
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2),
+  },
+}));
+
+const GlassCard = styled(Box)(({ theme }) => ({
+  background: 'rgba(38, 50, 56, 0.6)',
+  backdropFilter: 'blur(20px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.125)',
+  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+  padding: theme.spacing(4)
+}));
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -28,15 +47,6 @@ function TabPanel(props) {
   );
 }
 
-const GlassPaper = styled(Paper)(({ theme }) => ({
-    background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '10px',
-    padding: theme.spacing(3),
-    color: '#fff',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-}));
-
 const SettingsPage = () => {
   const [value, setValue] = useState(0);
 
@@ -47,8 +57,8 @@ const SettingsPage = () => {
   return (
     <>
       <GlobalStyles styles={(theme) => ({ body: { backgroundColor: theme.palette.background.default } })} />
-      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        <GlassPaper>
+      <RootContainer maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <GlassCard>
           <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3, fontWeight: 'bold', color: 'text.primary' }}>
             Settings
           </Typography>
@@ -61,8 +71,8 @@ const SettingsPage = () => {
               scrollButtons="auto"
               sx={{
                 '& .MuiTab-root': { color: 'text.secondary', fontWeight: 'bold' },
-                '& .Mui-selected': { color: 'text.primary' },
-                '& .MuiTabs-indicator': { backgroundColor: 'primary.main' },
+                '& .Mui-selected': { color: '#FE6B8B' }, // Changed active tab color
+                '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' }, // Changed indicator color
               }}
             >
               <Tab label="General" id="settings-tab-0" />
@@ -91,8 +101,8 @@ const SettingsPage = () => {
           <TabPanel value={value} index={3}>
             <AppearanceSettings />
           </TabPanel>
-        </GlassPaper>
-      </Container>
+        </GlassCard>
+      </RootContainer>
     </>
   );
 };

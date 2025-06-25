@@ -10,6 +10,22 @@ const MfaSettings = () => {
   const [qrCodeUri, setQrCodeUri] = useState(null);
   const [otp, setOtp] = useState('');
 
+  const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+  '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+  '&.Mui-focused fieldset': { borderColor: 'transparent' },
+  '&.Mui-focused': {
+  boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+  borderRadius: 1,
+        },
+  color: '#fff',
+    },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
+
   const fetchMfaStatus = async () => {
     try {
       const { data } = await getProfile();
@@ -124,7 +140,20 @@ const MfaSettings = () => {
       ) : (
         <Box>
           {!qrCodeUri ? (
-            <Button variant="contained" onClick={handleEnableMfa}>
+            <Button 
+              variant="contained" 
+              onClick={handleEnableMfa}
+              sx={{
+            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+            color: 'white',
+            borderRadius: '25px',
+            padding: '10px 25px',
+              '&:disabled': {
+              background: 'rgba(255, 255, 255, 0.3)',
+              },
+              mt: 3,
+          }}>
               Enable MFA
             </Button>
           ) : (
@@ -139,9 +168,22 @@ const MfaSettings = () => {
                 onChange={(e) => setOtp(e.target.value)}
                 required
                 fullWidth
-                sx={{ mb: 2 }}
+                sx={{ mb: 2, ...textFieldSx }}
               />
-              <Button type="submit" variant="contained">
+              <Button 
+                type="submit" 
+                variant="contained"
+                sx={{
+            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+            color: 'white',
+            borderRadius: '25px',
+            padding: '10px 25px',
+              '&:disabled': {
+              background: 'rgba(255, 255, 255, 0.3)',
+              },
+              mt: 3,
+          }}>
                 Verify & Enable
               </Button>
             </Box>

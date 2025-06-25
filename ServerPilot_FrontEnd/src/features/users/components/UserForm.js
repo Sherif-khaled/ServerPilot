@@ -25,6 +25,9 @@ import { styled, useTheme } from '@mui/material/styles';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { checkUsernameExists } from '../../../api/userService';
+import ShowPasswordIconButton from '../../../common/ShowPasswordIconButton';
+import GeneratePasswordButton from '../../../common/GeneratePasswordButton';
+import PasswordStrengthMeter from '../../../common/PasswordStrengthMeter';
 
 /*********************  THEME HELPERS  ************************/ 
 // Glassmorphic helpers
@@ -107,26 +110,6 @@ const getPasswordStrength = (password) => {
   if (/[^A-Za-z0-9]/.test(password)) score++;
   return score;
 };
-const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
-const strengthColors = ['error', 'warning', 'info', 'success'];
-
-function generateStrongPassword(length = 14) {
-  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lower = 'abcdefghijklmnopqrstuvwxyz';
-  const numbers = '0123456789';
-  const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-  const all = upper + lower + numbers + symbols;
-  let password = [
-    upper[Math.floor(Math.random() * upper.length)],
-    lower[Math.floor(Math.random() * lower.length)],
-    numbers[Math.floor(Math.random() * numbers.length)],
-    symbols[Math.floor(Math.random() * symbols.length)],
-  ];
-  for (let i = password.length; i < length; i++) {
-    password.push(all[Math.floor(Math.random() * all.length)]);
-  }
-  return password.sort(() => Math.random() - 0.5).join('');
-}
 
 /*********************  COMPONENT  ************************/
 export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode = false, loading }) {
@@ -289,39 +272,20 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton
+                          <ShowPasswordIconButton
+                            visible={showPassword}
                             onClick={() => setShowPassword((show) => !show)}
-                            edge="end"
-                            sx={{ color: 'rgba(255,255,255,0.7)' }}
-                            tabIndex={-1}
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                          <Button
-                            onClick={() => {
-                              const pwd = generateStrongPassword();
+                          />
+                          <GeneratePasswordButton
+                            onGenerate={(pwd) => {
                               setFormData((prev) => ({
                                 ...prev,
                                 password: pwd,
                                 password2: pwd,
                               }));
                             }}
-                            size="small"
-                            sx={{
-                              ml: 1,
-                              minWidth: 0,
-                              p: '2px 8px',
-                              borderRadius: 2,
-                              fontSize: '0.75rem',
-                              background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
-                              color: '#fff',
-                              boxShadow: '0 1px 2px 1px rgba(255,105,135,.2)',
-                              textTransform: 'none',
-                            }}
                             disabled={loading}
-                          >
-                            Generate
-                          </Button>
+                          />
                         </InputAdornment>
                       ),
                     }}
@@ -340,33 +304,17 @@ export default function UserForm({ onSubmit, onCancel, initialUser, isEditMode =
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton
+                          <ShowPasswordIconButton
+                            visible={showConfirm}
                             onClick={() => setShowConfirm((show) => !show)}
-                            edge="end"
-                            sx={{ color: 'rgba(255,255,255,0.7)' }}
-                            tabIndex={-1}
-                          >
-                            {showConfirm ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
+                          />
                         </InputAdornment>
                       ),
                     }}
                   />
                 </Box>
-                {/* Password strength */}
-                {formData.password && (
-                  <Box sx={{ mt: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(getPasswordStrength(formData.password) / 4) * 100}
-                      color={strengthColors[getPasswordStrength(formData.password) - 1] || 'error'}
-                      sx={{ height: 8, borderRadius: 5 }}
-                    />
-                    <Typography variant="caption" color={strengthColors[getPasswordStrength(formData.password) - 1] || 'error'}>
-                      {strengthLabels[getPasswordStrength(formData.password) - 1] || 'Weak'}
-                    </Typography>
-                  </Box>
-                )}
+                {/* Password strength meter using the common template */}
+                <PasswordStrengthMeter password={formData.password} />
               </>
             )}
 

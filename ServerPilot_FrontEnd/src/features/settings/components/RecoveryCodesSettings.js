@@ -16,6 +16,22 @@ import { generateRecoveryCodes, confirmRecoveryCodes } from '../../../services/w
 import { getProfile } from '../../../api/userService';
 import { Checkbox, FormControlLabel } from '@mui/material';
 
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+  '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+  '&.Mui-focused fieldset': { borderColor: 'transparent' },
+  '&.Mui-focused': {
+  boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+  borderRadius: 1,
+        },
+  color: '#fff',
+    },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
+
 const RecoveryCodesSettings = () => {
     const [codes, setCodes] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -87,7 +103,23 @@ const RecoveryCodesSettings = () => {
     };
 
     return (
-        <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
+        <Paper
+            elevation={0}
+            sx={{
+                p: 3,
+                mt: 4,
+                background: 'rgba(255, 255, 255, 0.13)',
+                backdropFilter: 'blur(18px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
+                border: '1.5px solid rgba(255,255,255,0.25)',
+                borderRadius: 4,
+                boxShadow: `
+                    0 8px 32px 0 rgba(31, 38, 135, 0.37),
+                    0 1.5px 6px 0 rgba(0,0,0,0.12),
+                    0 0.5px 1.5px 0 rgba(0,0,0,0.10)
+                `,
+            }}
+        >
             <Typography variant="h6" gutterBottom>
                 Recovery Codes
             </Typography>
@@ -99,6 +131,17 @@ const RecoveryCodesSettings = () => {
                 variant="contained"
                 onClick={handleGenerateCodes}
                 disabled={loading}
+                sx={{
+                    background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                    boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                    color: 'white',
+                    borderRadius: '25px',
+                    padding: '10px 25px',
+                    '&:disabled': {
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    },
+                    mt: 3,
+                }}
                 startIcon={loading ? <CircularProgress size={20} /> : null}
             >
                 {codes.length > 0 ? 'Regenerate Codes' : 'Generate Codes'}
@@ -137,7 +180,24 @@ const RecoveryCodesSettings = () => {
                             After copying or downloading your codes, check the box below and confirm to finish setup.
                         </Typography>
                         <FormControlLabel
-                            control={<Checkbox checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />}
+                            control={<Checkbox checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} 
+                            sx={{ 
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                '&.Mui-checked': {
+                                color: '#FE6B8B',
+                                '& .MuiSvgIcon-root': {
+                                    border: '2px solid #FE6B8B',
+                                    borderRadius: '3px',
+                                }
+                                },
+                                '&.Mui-checked:hover': {
+                                backgroundColor: 'rgba(254, 107, 139, 0.1)',
+                                },
+                                '& .MuiSvgIcon-root': {
+                                border: '2px solid rgba(255, 255, 255, 0.3)',
+                                borderRadius: '3px',
+                                }
+                            }}  />}
                             label="I have saved these codes in a secure place."
                         />
                         <Button 
@@ -145,7 +205,17 @@ const RecoveryCodesSettings = () => {
                             color="primary" 
                             onClick={handleConfirmCodes} 
                             disabled={!confirmed || loading}
-                            sx={{ mt: 1 }}
+                            sx={{
+                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                color: 'white',
+                                borderRadius: '25px',
+                                padding: '10px 25px',
+                                '&:disabled': {
+                                background: 'rgba(255, 255, 255, 0.3)',
+                                },
+                                mt: 3,
+                            }}
                         >
                             {loading ? <CircularProgress size={24} /> : 'Confirm & Finish'}
                         </Button>

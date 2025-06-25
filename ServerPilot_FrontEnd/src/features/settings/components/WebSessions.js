@@ -18,9 +18,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Tooltip,
+  Snackbar,
 } from '@mui/material';
 import { Computer as ComputerIcon, TabletMac as TabletMacIcon, PhoneIphone as PhoneIphoneIcon } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MuiAlert from '@mui/material/Alert';
 
 // Helper to guess device type from user agent
 const getDeviceIcon = (userAgent) => {
@@ -41,6 +44,14 @@ const WebSessions = () => {
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [revokeLoading, setRevokeLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  // Snackbar close handler
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbarOpen(false);
+  };
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -67,15 +78,18 @@ const WebSessions = () => {
 
   const handleConfirmRevoke = async () => {
     if (selectedSessionId) {
+      setRevokeLoading(true);
       try {
         await revokeUserSession(selectedSessionId);
         fetchSessions(); // Refresh the list
+        setSnackbarOpen(true); // Show snackbar on success
       } catch (err) {
         setError('Failed to revoke session. Please try again.');
         console.error(err);
       } finally {
         setOpenDialog(false);
         setSelectedSessionId(null);
+        setRevokeLoading(false);
       }
     }
   };
@@ -111,13 +125,24 @@ const WebSessions = () => {
             <ListItem
               secondaryAction={
                 !session.is_current_session && (
-                  <IconButton edge="end" aria-label="revoke" onClick={() => handleRevokeClick(session.id)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  <Tooltip title="Revoke this session">
+                    <IconButton edge="end" aria-label="revoke" onClick={() => handleRevokeClick(session.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
                 )
               }
+
             >
-              <ListItemIcon>{getDeviceIcon(session.user_agent)}</ListItemIcon>
+              <ListItemIcon>
+                <Tooltip title={session.is_current_session ? "Current session" : "Device type"}>
+                  {session.is_current_session ? (
+                    <ComputerIcon color="success" />
+                  ) : (
+                    getDeviceIcon(session.user_agent)
+                  )}
+                </Tooltip>
+              </ListItemIcon>
               <ListItemText
                 primary={
                   <Typography component="span" sx={{ fontWeight: 'bold' }}>
@@ -138,6 +163,9 @@ const WebSessions = () => {
                       {session.user_agent}
                     </Typography>
                     <Typography component="span" variant="caption" color="text.secondary" display="block">
+                      Started: {session.created_at ? format(new Date(session.created_at), 'PPP p') : 'Unknown'}
+                    </Typography>
+                    <Typography component="span" variant="caption" color="text.secondary" display="block">
                       Last active: {format(new Date(session.last_activity), 'PPP p')}
                     </Typography>
                   </>
@@ -150,23 +178,48 @@ const WebSessions = () => {
       </List>
       <Dialog
         open={openDialog}
-        onClose={handleCloseDialog}
+        onClose={revokeLoading ? undefined : handleCloseDialog}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{"Confirm Session Revocation"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
+        <MuiAlert
+          severity="warning"
+          icon={false}
+          sx={{ alignItems: 'center', borderRadius: 0, mb: 1 }}
+          elevation={0}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            Confirm Session Revocation
+          </Typography>
+          <Typography variant="body2">
             Are you sure you want to revoke this session? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
+          </Typography>
+        </MuiAlert>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleConfirmRevoke} color="error" autoFocus>
-            Revoke
+          <Button onClick={handleCloseDialog} disabled={revokeLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmRevoke}
+            color="error"
+            autoFocus
+            disabled={revokeLoading}
+            startIcon={revokeLoading ? <CircularProgress size={18} /> : null}
+          >
+            {revokeLoading ? 'Revoking...' : 'Revoke'}
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert onClose={handleSnackbarClose} severity="success" elevation={6} variant="filled" sx={{ width: '100%' }}>
+          Session revoked successfully
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };

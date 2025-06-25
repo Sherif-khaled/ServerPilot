@@ -42,21 +42,21 @@ const GlassCard = styled(Paper)(({ theme }) => ({
 }));
 
  // Common TextField sx with gradient focus ring
-    const textFieldSx = {
-    '& .MuiOutlinedInput-root': {
-        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-        '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-        '&.Mui-focused fieldset': { borderColor: 'transparent' },
-        '&.Mui-focused': {
-        boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-        borderRadius: 1,
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+  '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+  '&.Mui-focused fieldset': { borderColor: 'transparent' },
+  '&.Mui-focused': {
+  boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+  borderRadius: 1,
         },
-        color: '#fff',
+  color: '#fff',
     },
-    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-    '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-    '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-    };
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
 
 export default function UserProfile() {
   const [profile, setProfile] = useState(null);

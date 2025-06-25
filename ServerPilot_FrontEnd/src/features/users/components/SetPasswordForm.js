@@ -7,6 +7,9 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import PasswordStrengthMeter from '../../../common/PasswordStrengthMeter';
+import GeneratePasswordButton from '../../../common/GeneratePasswordButton';
+import ShowPasswordIconButton from '../../../common/ShowPasswordIconButton';
 
 
 export default function SetPasswordForm({ onSubmit, onCancel, username, error, loading }) {
@@ -57,53 +60,20 @@ export default function SetPasswordForm({ onSubmit, onCancel, username, error, l
 
     /*********************  END OF STYLED COMPONENTS  ************************/
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        if (newPassword !== confirmPassword) {
-            setFormError('Passwords do not match.');
-            return;
-        }
-        if (!newPassword) {
-            setFormError('Password cannot be empty.');
-            return;
-        }
-        setFormError('');
-        onSubmit(newPassword);
-    };
-
-    // Helper function:
-    function getPasswordStrength(password) {
-      let score = 0;
-      if (password.length > 7) score++;
-      if (/[A-Z]/.test(password)) score++;
-      if (/[0-9]/.test(password)) score++;
-      if (/[^A-Za-z0-9]/.test(password)) score++;
-      return score;
+const handleSubmit = (event) => {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) {
+        setFormError('Passwords do not match.');
+        return;
     }
-
-    // Helper function to generate a strong password
-    function generateStrongPassword(length = 14) {
-      const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      const lower = 'abcdefghijklmnopqrstuvwxyz';
-      const numbers = '0123456789';
-      const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-      const all = upper + lower + numbers + symbols;
-      let password = [
-        upper[Math.floor(Math.random() * upper.length)],
-        lower[Math.floor(Math.random() * lower.length)],
-        numbers[Math.floor(Math.random() * numbers.length)],
-        symbols[Math.floor(Math.random() * symbols.length)],
-      ];
-      for (let i = password.length; i < length; i++) {
-        password.push(all[Math.floor(Math.random() * all.length)]);
-      }
-      // Shuffle password
-      return password.sort(() => Math.random() - 0.5).join('');
+    if (!newPassword) {
+        setFormError('Password cannot be empty.');
+        return;
     }
+    setFormError('');
+    onSubmit(newPassword);
+};
 
-    const strength = getPasswordStrength(newPassword);
-    const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
-    const strengthColors = ['error', 'warning', 'info', 'success'];
 
     return (
         <RootContainer>
@@ -126,53 +96,23 @@ export default function SetPasswordForm({ onSubmit, onCancel, username, error, l
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <IconButton
-                                        aria-label="toggle password visibility"
-                                        onClick={() => setShowPassword((show) => !show)}
-                                        edge="end"
-                                        tabIndex={-1}
-                                    >
-                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                    <Button
-                                      onClick={() => {
-                                        const pwd = generateStrongPassword();
+                                    <ShowPasswordIconButton
+                                      visible={showPassword}
+                                      onClick={() => setShowPassword((show) => !show)}
+                                    />
+                                    <GeneratePasswordButton
+                                      onGenerate={(pwd) => {
                                         setNewPassword(pwd);
                                         setConfirmPassword(pwd);
                                       }}
-                                      size="small"
-                                      sx={{
-                                        ml: 1,
-                                        minWidth: 0,
-                                        p: '2px 8px',
-                                        borderRadius: 2,
-                                        fontSize: '0.75rem',
-                                        background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
-                                        color: '#fff',
-                                        boxShadow: '0 1px 2px 1px rgba(255,105,135,.2)',
-                                        textTransform: 'none',
-                                      }}
                                       disabled={loading}
-                                    >
-                                      Generate
-                                    </Button>
+                                    />
                                 </InputAdornment>
                             ),
                         }}
                     />
-                    {newPassword && (
-                      <Box sx={{ mt: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={(strength / 4) * 100}
-                          color={strengthColors[strength - 1] || 'error'}
-                          sx={{ height: 8, borderRadius: 5 }}
-                        />
-                        <Typography variant="caption" color={strengthColors[strength - 1] || 'error'}>
-                          {strengthLabels[strength - 1] || 'Weak'}
-                        </Typography>
-                      </Box>
-                    )}
+                    <PasswordStrengthMeter password={newPassword} />
+  
                     <TextField
                         margin="normal"
                         required
@@ -188,14 +128,10 @@ export default function SetPasswordForm({ onSubmit, onCancel, username, error, l
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <IconButton
-                                        aria-label="toggle confirm password visibility"
-                                        onClick={() => setShowConfirm((show) => !show)}
-                                        edge="end"
-                                        tabIndex={-1}
-                                    >
-                                        {showConfirm ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
+                                    <ShowPasswordIconButton
+                                      visible={showConfirm}
+                                      onClick={() => setShowConfirm((show) => !show)}
+                                    />
                                 </InputAdornment>
                             ),
                         }}
@@ -219,8 +155,7 @@ export default function SetPasswordForm({ onSubmit, onCancel, username, error, l
                               loading ||
                               !newPassword ||
                               !confirmPassword ||
-                              newPassword !== confirmPassword ||
-                              getPasswordStrength(newPassword) < 2
+                              newPassword !== confirmPassword
                             } 
                             sx={{
                                 flex: 1,
