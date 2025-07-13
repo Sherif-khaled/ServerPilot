@@ -14,7 +14,23 @@ const GlassPaper = styled(Paper)(({ theme }) => ({
     color: '#fff',
 }));
 
-const AdminSecurityPage = () => {
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+    '&.Mui-focused fieldset': { borderColor: 'transparent' },
+    '&.Mui-focused': {
+      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+      borderRadius: 1,
+    },
+    color: '#fff',
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
+
+const AdminSecurity = () => {
   const [settings, setSettings] = useState({
     recaptcha_site_key: '',
     recaptcha_secret_key: '',
@@ -97,7 +113,19 @@ const AdminSecurityPage = () => {
         <Box sx={{ border: '1px solid', borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 1, p: 2, mt: 2 }}>
           <Box>
             <FormControlLabel
-              control={<Switch checked={settings.recaptcha_enabled} onChange={handleChange} name="recaptcha_enabled" />}
+              control={<Switch 
+                checked={settings.recaptcha_enabled} 
+                onChange={handleChange} 
+                name="recaptcha_enabled"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                      color: '#FE6B8B',
+                    },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                      backgroundColor: '#FE6B8B',
+                    },
+                  }} 
+                />}
               label="Enable reCAPTCHA"
             />
           </Box>
@@ -110,7 +138,7 @@ const AdminSecurityPage = () => {
               onChange={handleChange}
               disabled={!settings.recaptcha_enabled}
               helperText="The site key used in your frontend code."
-              sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' }, '.MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.5)' } }}
+              sx={textFieldSx}
             />
             <TextField
               fullWidth
@@ -121,7 +149,7 @@ const AdminSecurityPage = () => {
               onChange={handleChange}
               disabled={!settings.recaptcha_enabled}
               helperText="The secret key used for communication between your site and Google."
-              sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' }, '.MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.5)' } }}
+              sx={textFieldSx}
             />
           </Box>
         </Box>
@@ -136,10 +164,23 @@ const AdminSecurityPage = () => {
           value={settings.session_expiration_hours}
           onChange={handleChange}
           helperText="The number of hours before an inactive session expires."
-          sx={{ mt: 2, input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' }, '.MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.5)' } }}
+          sx={textFieldSx}
         />
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button type="submit" variant="contained" sx={{ background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)', color: 'white' }}>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            sx={{
+              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+              boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+              color: 'white',
+              borderRadius: '25px',
+              padding: '10px 25px',
+              '&:disabled': {
+                background: 'rgba(255, 255, 255, 0.3)',
+              },
+              mt: 3,
+            }}>
             Save Settings
           </Button>
         </Box>
@@ -148,4 +189,4 @@ const AdminSecurityPage = () => {
   );
 };
 
-export default AdminSecurityPage;
+export default AdminSecurity;

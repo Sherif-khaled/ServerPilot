@@ -59,14 +59,43 @@ export const ThemeProvider = ({ children }) => {
                 }
               }
             : {
-                // Default light mode palette
+                // Enhanced light mode palette
                 primary: {
-                  main: '#1976d2',
+                  main: '#1976d2', // Material Blue 700
+                  contrastText: '#fff',
+                },
+                secondary: {
+                  main: '#9c27b0', // Material Purple 500
+                  contrastText: '#fff',
                 },
                 background: {
-                  default: '#f4f6f8',
-                  paper: '#ffffff',
+                  default: '#f4f6f8', // Soft gray background
+                  paper: '#ffffff',   // Cards, dropdowns, menus
                 },
+                text: {
+                  primary: '#1a1a1a',   // Main text, almost black
+                  secondary: '#4f5b62', // Subtext, dark gray
+                  disabled: '#b0b8c1',  // Placeholder, disabled
+                },
+                error: {
+                  main: '#d32f2f', // Material Red 700
+                },
+                success: {
+                  main: '#388e3c', // Material Green 700
+                },
+                warning: {
+                  main: '#fbc02d', // Material Yellow 700
+                },
+                info: {
+                  main: '#0288d1', // Material Blue 700
+                },
+                divider: '#e0e0e0', // Light gray divider
+                action: {
+                  hover: '#f0f0f0', // Subtle hover background
+                  selected: '#e3f2fd', // Selected item background
+                  disabled: '#f5f5f5', // Disabled background
+                  disabledOpacity: 0.38,
+                }
               }),
         },
       }),
