@@ -15,11 +15,12 @@ import { styled } from '@mui/material/styles';
 import { getPasswordPolicy, updatePasswordPolicy } from '../../../api/securityService';
 
 const RootContainer = styled(Box)(({ theme }) => ({
-    minHeight: '100vh',
-    padding: theme.spacing(3),
-    background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-    position: 'relative',
-    overflow: 'hidden',
+    width: '100%',
+    maxWidth: '100%',
+    background: 'rgba(38, 50, 56, 0.6)',
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(2),
+    },
 }));
 
 const GlassPaper = styled(Paper)(({ theme }) => ({
@@ -32,6 +33,22 @@ const GlassPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(3),
     color: '#fff',
 }));
+
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+    '&.Mui-focused fieldset': { borderColor: 'transparent' },
+    '&.Mui-focused': {
+      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+      borderRadius: 1,
+    },
+    color: '#fff',
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
 
 const PasswordPolicyPage = () => {
     const [policy, setPolicy] = useState(null);
@@ -105,7 +122,7 @@ const PasswordPolicyPage = () => {
                                     value={policy.min_length}
                                     onChange={handleChange}
                                     helperText="Minimum number of characters required."
-                                    sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' }, '.MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.5)' } }}
+                                    sx={textFieldSx}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6}>
@@ -117,7 +134,7 @@ const PasswordPolicyPage = () => {
                                     value={policy.password_expiration_days}
                                     onChange={handleChange}
                                     helperText="Days until password expires. 0 for no expiration."
-                                    sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' }, '.MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.5)' } }}
+                                    sx={textFieldSx}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6}>
@@ -129,36 +146,93 @@ const PasswordPolicyPage = () => {
                                     value={policy.password_history_limit}
                                     onChange={handleChange}
                                     helperText="Number of old passwords to prevent reuse."
-                                    sx={{ input: { color: 'white' }, label: { color: 'rgba(255, 255, 255, 0.7)' }, '.MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.5)' } }}
+                                    sx={textFieldSx}
                                 />
                             </Grid>
                             <Grid item xs={12}>
                                 <FormControlLabel
-                                    control={<Switch checked={policy.require_uppercase} onChange={handleChange} name="require_uppercase" />}
+                                    control={<Switch 
+                                        checked={policy.require_uppercase} 
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: '#FE6B8B',
+                                                },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: '#FE6B8B',
+                                                },
+                                            }}  
+                                        name="require_uppercase" />}
                                     label="Require Uppercase Letter"
                                 />
                             </Grid>
                             <Grid item xs={12}>
                                 <FormControlLabel
-                                    control={<Switch checked={policy.require_lowercase} onChange={handleChange} name="require_lowercase" />}
+                                    control={<Switch 
+                                        checked={policy.require_lowercase} 
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: '#FE6B8B',
+                                                },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: '#FE6B8B',
+                                                },
+                                            }}  
+                                        name="require_lowercase" />}
                                     label="Require Lowercase Letter"
                                 />
                             </Grid>
                             <Grid item xs={12}>
                                 <FormControlLabel
-                                    control={<Switch checked={policy.require_number} onChange={handleChange} name="require_number" />}
+                                    control={<Switch 
+                                        checked={policy.require_number} 
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: '#FE6B8B',
+                                                },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: '#FE6B8B',
+                                                },
+                                            }}  
+                                        name="require_number" />}
                                     label="Require Number"
                                 />
                             </Grid>
                             <Grid item xs={12}>
                                 <FormControlLabel
-                                    control={<Switch checked={policy.require_symbol} onChange={handleChange} name="require_symbol" />}
+                                    control={<Switch 
+                                        checked={policy.require_symbol} 
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: '#FE6B8B',
+                                                },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: '#FE6B8B',
+                                                },
+                                            }}  
+                                        name="require_symbol" />}
                                     label="Require Symbol"
                                 />
                             </Grid>
                         </Grid>
                         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                            <Button type="submit" variant="contained" disabled={loading} sx={{ background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)', color: 'white' }}>
+                            <Button type="submit" 
+                                    variant="contained" 
+                                    disabled={loading} 
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                        color: 'white',
+                                        borderRadius: '25px',
+                                        padding: '10px 25px',
+                                        '&:disabled': {
+                                            background: 'rgba(255, 255, 255, 0.3)',
+                                        },
+                                        }}
+                                    >
                                 {loading ? <CircularProgress size={24} /> : 'Save Policy'}
                             </Button>
                         </Box>
