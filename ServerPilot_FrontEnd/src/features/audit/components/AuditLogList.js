@@ -39,6 +39,41 @@ const getLogLevelColor = (level) => {
     }
 };
 
+const RootContainer = styled(Box)(({ theme }) => ({
+  width: '100%',
+  maxWidth: '100%',
+  background: 'rgba(38, 50, 56, 0.6)',
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2),
+  },
+}));
+
+const GlassCard = styled(Box)(({ theme }) => ({
+  background: 'rgba(38, 50, 56, 0.6)',
+  backdropFilter: 'blur(20px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.125)',
+  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+  padding: theme.spacing(4)
+}));
+
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+    '&.Mui-focused fieldset': { borderColor: 'transparent' },
+    '&.Mui-focused': {
+      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+      borderRadius: 1,
+    },
+    color: '#fff',
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
+
 const AuditLogList = () => {
     // State for Audit Logs
     const [logs, setLogs] = useState([]);
@@ -195,214 +230,240 @@ const AuditLogList = () => {
     };
 
     return (
-        <Box sx={{ p: 3, background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)', minHeight: '100vh', color: '#fff' }}>
-            <Paper sx={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)', borderRadius: '12px', p: 3, color: '#fff' }}>
-                <Box sx={{ borderBottom: 1, borderColor: 'rgba(255, 255, 255, 0.2)', mb: 2 }}>
-                    <Tabs value={currentTab} onChange={handleTabChange} aria-label="log tabs" sx={{ '& .MuiTab-root': { color: 'rgba(255, 255, 255, 0.7)' }, '& .Mui-selected': { color: '#fff' }, '& .MuiTabs-indicator': { backgroundColor: '#fff' } }}>
-                        <Tab icon={<DescriptionIcon />} iconPosition="start" label="Audit Logs" />
-                        <Tab icon={<ComputerIcon />} iconPosition="start" label="System Logs" />
-                    </Tabs>
-                </Box>
-
-                {currentTab === 0 && (
-                    <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <DescriptionIcon sx={{ mr: 1, fontSize: '2rem' }} />
-                            <Typography variant="h4" gutterBottom component="div" sx={{ mb: 0 }}>
-                                Audit Logs
-                            </Typography>
-                        </Box>
-
-                        <Paper sx={{ p: 2, mb: 2, background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <FormControl sx={{ minWidth: 200 }}>
-                                    <InputLabel id="user-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>User</InputLabel>
-                                    <Select
-                                        labelId="user-filter-label"
-                                        name="user"
-                                        value={filters.user}
-                                        label="User"
-                                        onChange={handleFilterChange}
-                                        sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
-                                    >
-                                        <MenuItem value=""><em>All Users</em></MenuItem>
-                                        {users.map((user) => (
-                                            <MenuItem key={user.id} value={user.username}>{user.username}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                                <TextField
-                                    name="start_date"
-                                    label="Start Date"
-                                    type="date"
-                                    value={filters.start_date}
-                                    onChange={handleFilterChange}
-                                    InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                                    sx={{ '.MuiOutlinedInput-root': { color: 'white', fieldset: { borderColor: 'rgba(255, 255, 255, 0.3)' } } }}
-                                />
-                                <TextField
-                                    name="end_date"
-                                    label="End Date"
-                                    type="date"
-                                    value={filters.end_date}
-                                    onChange={handleFilterChange}
-                                    InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                                    sx={{ '.MuiOutlinedInput-root': { color: 'white', fieldset: { borderColor: 'rgba(255, 255, 255, 0.3)' } } }}
-                                />
-                                <Button variant="contained" onClick={handleApplyFilters} sx={{ background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)' }}>Apply Filters</Button>
-                                <Button variant="outlined" onClick={handleClearFilters} sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
-                            </Box>
-                        </Paper>
-
-                        {loading ? (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={{ color: '#FE6B8B' }} /></div>
-                        ) : error ? (
-                            <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>
-                        ) : (
-                            <>
-                                <TableContainer component={Paper} sx={{ background: 'transparent' }}>
-                                    <Table sx={{ minWidth: 650 }} aria-label="audit logs table">
-                                        <TableHead>
-                                            <TableRow sx={{ '& .MuiTableCell-root': { color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                                <TableCell>User</TableCell>
-                                                <TableCell>Action</TableCell>
-                                                <TableCell>Timestamp</TableCell>
-                                                <TableCell>IP Address</TableCell>
-                                                <TableCell>Details</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {logs.length > 0 ? logs.map((log) => (
-                                                <StyledTableRow key={log.id}>
-                                                    <TableCell>{log.user ? log.user.username : 'System'}</TableCell>
-                                                    <TableCell>{log.action}</TableCell>
-                                                    <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
-                                                    <TableCell>{log.ip_address || 'N/A'}</TableCell>
-                                                    <TableCell>{typeof log.details === 'object' ? JSON.stringify(log.details) : log.details}</TableCell>
-                                                </StyledTableRow>
-                                            )) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} align="center">No logs found.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                                <TablePagination
-                                    sx={{ color: 'rgba(255, 255, 255, 0.7)', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
-                                    rowsPerPageOptions={[15, 25, 50, 100]}
-                                    component="div"
-                                    count={count}
-                                    rowsPerPage={rowsPerPage}
-                                    page={page}
-                                    onPageChange={handleChangePage}
-                                    onRowsPerPageChange={handleChangeRowsPerPage}
-                                />
-                            </>
-                        )}
-                    </>
-                )}
-
-                {currentTab === 1 && (
-                    <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <ComputerIcon sx={{ mr: 1, fontSize: '2rem' }} />
-                            <Typography variant="h4" gutterBottom component="div" sx={{ mb: 0 }}>
-                                System Logs
-                            </Typography>
-                        </Box>
-
-                        <Paper sx={{ p: 2, mb: 2, background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <FormControl sx={{ minWidth: 120 }}>
-                                    <InputLabel id="level-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Level</InputLabel>
-                                    <Select
-                                        labelId="level-filter-label"
-                                        name="level"
-                                        value={systemLogFilters.level}
-                                        label="Level"
-                                        onChange={handleSystemLogFilterChange}
-                                        sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
-                                    >
-                                        <MenuItem value=""><em>All</em></MenuItem>
-                                        <MenuItem value="DEBUG">Debug</MenuItem>
-                                        <MenuItem value="INFO">Info</MenuItem>
-                                        <MenuItem value="WARNING">Warning</MenuItem>
-                                        <MenuItem value="ERROR">Error</MenuItem>
-                                        <MenuItem value="CRITICAL">Critical</MenuItem>
-                                    </Select>
-                                </FormControl>
-                                <TextField
-                                    name="start_date"
-                                    label="Start Date"
-                                    type="date"
-                                    value={systemLogFilters.start_date}
-                                    onChange={handleSystemLogFilterChange}
-                                    InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                                    sx={{ '.MuiOutlinedInput-root': { color: 'white', fieldset: { borderColor: 'rgba(255, 255, 255, 0.3)' } } }}
-                                />
-                                <TextField
-                                    name="end_date"
-                                    label="End Date"
-                                    type="date"
-                                    value={systemLogFilters.end_date}
-                                    onChange={handleSystemLogFilterChange}
-                                    InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                                    sx={{ '.MuiOutlinedInput-root': { color: 'white', fieldset: { borderColor: 'rgba(255, 255, 255, 0.3)' } } }}
-                                />
-                                <Button variant="contained" onClick={handleApplySystemLogFilters} sx={{ background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)' }}>Apply</Button>
-                                <Button variant="outlined" onClick={handleClearSystemLogFilters} sx={{ color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
-                            </Box>
-                        </Paper>
-
-                        {systemLogsLoading ? (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={{ color: '#FE6B8B' }} /></div>
-                        ) : systemLogsError ? (
-                            <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{systemLogsError}</Alert>
-                        ) : (
-                            <>
-                                <TableContainer component={Paper} sx={{ background: 'transparent' }}>
-                                    <Table sx={{ minWidth: 650 }} aria-label="system logs table">
-                                        <TableHead>
-                                            <TableRow sx={{ '& .MuiTableCell-root': { color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                                <TableCell sx={{ width: '20%' }}>Timestamp</TableCell>
-                                                <TableCell sx={{ width: '10%' }}>Level</TableCell>
-                                                <TableCell>Message</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {systemLogs.length > 0 ? systemLogs.map((log, index) => (
-                                                <StyledTableRow key={index}>
-                                                    <TableCell>{log.timestamp}</TableCell>
-                                                    <TableCell>
-                                                        <Chip label={log.level} color={getLogLevelColor(log.level)} size="small" />
-                                                    </TableCell>
-                                                    <TableCell sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{log.message}</TableCell>
-                                                </StyledTableRow>
-                                            )) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} align="center">No system logs found.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                                <TablePagination
-                                    sx={{ color: 'rgba(255, 255, 255, 0.7)', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
-                                    rowsPerPageOptions={[15, 25, 50, 100]}
-                                    component="div"
-                                    count={systemLogCount}
-                                    rowsPerPage={systemLogRowsPerPage}
-                                    page={systemLogPage}
-                                    onPageChange={handleSystemLogChangePage}
-                                    onRowsPerPageChange={handleSystemLogChangeRowsPerPage}
-                                />
-                            </>
-                        )}
+        <RootContainer>
+            <GlassCard>
+                <Paper sx={{ background: 'rgba(38, 50, 56, 0.6)', backdropFilter: 'blur(12px)', borderRadius: '12px', p: 3, color: '#fff', boxShadow: 'none' }}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'rgba(255, 255, 255, 0.2)', mb: 2 }}>
+                        <Tabs value={currentTab} onChange={handleTabChange} aria-label="log tabs" sx={{ '& .MuiTab-root': { color: 'rgba(255, 255, 255, 0.7)' }, '& .Mui-selected': { color: '#fff' }, '& .MuiTabs-indicator': { backgroundColor: '#fff' } }}>
+                            <Tab icon={<DescriptionIcon />} iconPosition="start" label="Audit Logs" />
+                            <Tab icon={<ComputerIcon />} iconPosition="start" label="System Logs" />
+                        </Tabs>
                     </Box>
-                )}
-            </Paper>
-        </Box>
+
+                    {currentTab === 0 && (
+                        <>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <DescriptionIcon sx={{ mr: 1, fontSize: '2rem' }} />
+                                <Typography variant="h4" gutterBottom component="div" sx={{ mb: 0 }}>
+                                    Audit Logs
+                                </Typography>
+                            </Box>
+
+                            <Paper sx={{ p: 2, mb: 2, background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
+                                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <FormControl sx={{...textFieldSx, minWidth: 200 }}>
+                                        <InputLabel id="user-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>User</InputLabel>
+                                        <Select
+                                            labelId="user-filter-label"
+                                            name="user"
+                                            value={filters.user}
+                                            label="User"
+                                            onChange={handleFilterChange}
+                                            sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                        >
+                                            <MenuItem value=""><em>All Users</em></MenuItem>
+                                            {users.map((user) => (
+                                                <MenuItem key={user.id} value={user.username}>{user.username}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    <TextField
+                                        name="start_date"
+                                        label="Start Date"
+                                        type="date"
+                                        value={filters.start_date}
+                                        onChange={handleFilterChange}
+                                        InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                        sx={textFieldSx}
+                                    />
+                                    <TextField
+                                        name="end_date"
+                                        label="End Date"
+                                        type="date"
+                                        value={filters.end_date}
+                                        onChange={handleFilterChange}
+                                        InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                        sx={textFieldSx}
+                                    />
+                                    <Button variant="contained" 
+                                            onClick={handleApplyFilters} 
+                                            sx={{
+                                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                                color: 'white',
+                                                borderRadius: '25px',
+                                                padding: '10px 25px',
+                                                '&:disabled': {
+                                                    background: 'rgba(255, 255, 255, 0.3)',
+                                                },
+                                                }}
+                                            >Apply Filters</Button>
+                                    <Button variant="outlined" onClick={handleClearFilters} sx={{ borderRadius: '25px',color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
+                                </Box>
+                            </Paper>
+
+                            {loading ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={{ color: '#FE6B8B' }} /></div>
+                            ) : error ? (
+                                <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>
+                            ) : (
+                                <>
+                                    <TableContainer component={Paper} sx={{ background: 'transparent' }}>
+                                        <Table sx={{ minWidth: 650 }} aria-label="audit logs table">
+                                            <TableHead>
+                                                <TableRow sx={{ '& .MuiTableCell-root': { color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
+                                                    <TableCell>User</TableCell>
+                                                    <TableCell>Action</TableCell>
+                                                    <TableCell>Timestamp</TableCell>
+                                                    <TableCell>IP Address</TableCell>
+                                                    <TableCell>Details</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {logs.length > 0 ? logs.map((log) => (
+                                                    <StyledTableRow key={log.id}>
+                                                        <TableCell>{log.user ? log.user.username : 'System'}</TableCell>
+                                                        <TableCell>{log.action}</TableCell>
+                                                        <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                                                        <TableCell>{log.ip_address || 'N/A'}</TableCell>
+                                                        <TableCell>{typeof log.details === 'object' ? JSON.stringify(log.details) : log.details}</TableCell>
+                                                    </StyledTableRow>
+                                                )) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} align="center">No logs found.</TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                    <TablePagination
+                                        sx={{ color: 'rgba(255, 255, 255, 0.7)', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                        rowsPerPageOptions={[15, 25, 50, 100]}
+                                        component="div"
+                                        count={count}
+                                        rowsPerPage={rowsPerPage}
+                                        page={page}
+                                        onPageChange={handleChangePage}
+                                        onRowsPerPageChange={handleChangeRowsPerPage}
+                                    />
+                                </>
+                            )}
+                        </>
+                    )}
+
+                    {currentTab === 1 && (
+                        <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <ComputerIcon sx={{ mr: 1, fontSize: '2rem' }} />
+                                <Typography variant="h4" gutterBottom component="div" sx={{ mb: 0 }}>
+                                    System Logs
+                                </Typography>
+                            </Box>
+
+                            <Paper sx={{ p: 2, mb: 2, background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
+                                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <FormControl sx={{...textFieldSx, minWidth: 120 }}>
+                                        <InputLabel id="level-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Level</InputLabel>
+                                        <Select
+                                            labelId="level-filter-label"
+                                            name="level"
+                                            value={systemLogFilters.level}
+                                            label="Level"
+                                            onChange={handleSystemLogFilterChange}
+                                            sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                        >
+                                            <MenuItem value=""><em>All</em></MenuItem>
+                                            <MenuItem value="DEBUG">Debug</MenuItem>
+                                            <MenuItem value="INFO">Info</MenuItem>
+                                            <MenuItem value="WARNING">Warning</MenuItem>
+                                            <MenuItem value="ERROR">Error</MenuItem>
+                                            <MenuItem value="CRITICAL">Critical</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                    <TextField
+                                        name="start_date"
+                                        label="Start Date"
+                                        type="date"
+                                        value={systemLogFilters.start_date}
+                                        onChange={handleSystemLogFilterChange}
+                                        InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                        sx={textFieldSx}
+                                    />
+                                    <TextField
+                                        name="end_date"
+                                        label="End Date"
+                                        type="date"
+                                        value={systemLogFilters.end_date}
+                                        onChange={handleSystemLogFilterChange}
+                                        InputLabelProps={{ shrink: true, sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                        sx={textFieldSx}
+                                    />
+                                    <Button variant="contained" 
+                                            onClick={handleApplySystemLogFilters} 
+                                            sx={{
+                                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+                                                color: 'white',
+                                                borderRadius: '25px',
+                                                padding: '10px 25px',
+                                                '&:disabled': {
+                                                    background: 'rgba(255, 255, 255, 0.3)',
+                                                },
+                                                }}
+                                            >Apply Fillter</Button>
+                                    <Button variant="outlined" onClick={handleClearSystemLogFilters} sx={{ color: 'white',borderRadius: '25px', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
+                                </Box>
+                            </Paper>
+
+                            {systemLogsLoading ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={{ color: '#FE6B8B' }} /></div>
+                            ) : systemLogsError ? (
+                                <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{systemLogsError}</Alert>
+                            ) : (
+                                <>
+                                    <TableContainer component={Paper} sx={{ background: 'transparent' }}>
+                                        <Table sx={{ minWidth: 650 }} aria-label="system logs table">
+                                            <TableHead>
+                                                <TableRow sx={{ '& .MuiTableCell-root': { color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
+                                                    <TableCell sx={{ width: '20%' }}>Timestamp</TableCell>
+                                                    <TableCell sx={{ width: '10%' }}>Level</TableCell>
+                                                    <TableCell>Message</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {systemLogs.length > 0 ? systemLogs.map((log, index) => (
+                                                    <StyledTableRow key={index}>
+                                                        <TableCell>{log.timestamp}</TableCell>
+                                                        <TableCell>
+                                                            <Chip label={log.level} color={getLogLevelColor(log.level)} size="small" />
+                                                        </TableCell>
+                                                        <TableCell sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{log.message}</TableCell>
+                                                    </StyledTableRow>
+                                                )) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} align="center">No system logs found.</TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                    <TablePagination
+                                        sx={{ color: 'rgba(255, 255, 255, 0.7)', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                        rowsPerPageOptions={[15, 25, 50, 100]}
+                                        component="div"
+                                        count={systemLogCount}
+                                        rowsPerPage={systemLogRowsPerPage}
+                                        page={systemLogPage}
+                                        onPageChange={handleSystemLogChangePage}
+                                        onRowsPerPageChange={handleSystemLogChangeRowsPerPage}
+                                    />
+                                </>
+                            )}
+                        </Box>
+                    )}
+                </Paper>
+            </GlassCard>
+        </RootContainer>
     );
 };
 
