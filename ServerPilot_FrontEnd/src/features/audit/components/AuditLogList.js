@@ -233,8 +233,17 @@ const AuditLogList = () => {
         <RootContainer>
             <GlassCard>
                 <Paper sx={{ background: 'rgba(38, 50, 56, 0.6)', backdropFilter: 'blur(12px)', borderRadius: '12px', p: 3, color: '#fff', boxShadow: 'none' }}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'rgba(255, 255, 255, 0.2)', mb: 2 }}>
-                        <Tabs value={currentTab} onChange={handleTabChange} aria-label="log tabs" sx={{ '& .MuiTab-root': { color: 'rgba(255, 255, 255, 0.7)' }, '& .Mui-selected': { color: '#fff' }, '& .MuiTabs-indicator': { backgroundColor: '#fff' } }}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                        <Tabs 
+                            value={currentTab} 
+                            onChange={handleTabChange} 
+                            aria-label="log tabs" 
+                            sx={{
+                                '& .MuiTab-root': { color: 'text.secondary', fontWeight: 'bold' },
+                                //'& .Mui-selected': { color: '#FE6B8B' }, // Changed active tab color
+                                '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' }, // Changed indicator color
+                            }}
+                            >
                             <Tab icon={<DescriptionIcon />} iconPosition="start" label="Audit Logs" />
                             <Tab icon={<ComputerIcon />} iconPosition="start" label="System Logs" />
                         </Tabs>

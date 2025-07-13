@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Tabs, Tab, Box, Paper, Typography } from '@mui/material';
+import { Tabs, Tab, Box, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import AdminSecurity from '../components/AdminSecurity';
 import GeneralSettings from '../components/GeneralSettings';
@@ -56,7 +56,15 @@ const AdminSettingsPage = () => {
         <GlassCard sx={{ width: '100%' }}>
             <Typography variant="h4" sx={{ p: 2, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>Admin Settings</Typography>
             <Box sx={{ borderBottom: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                <Tabs value={value} onChange={handleChange} aria-label="admin settings tabs" sx={{ '& .MuiTab-root': { color: 'rgba(255, 255, 255, 0.7)' }, '& .Mui-selected': { color: '#fff' }, '& .MuiTabs-indicator': { backgroundColor: '#fff' } }}>
+                <Tabs 
+                  value={value} 
+                  onChange={handleChange} 
+                  aria-label="admin settings tabs" 
+                  sx={{
+                '& .MuiTab-root': { color: 'text.secondary', fontWeight: 'bold' },
+                //'& .Mui-selected': { color: '#FE6B8B' }, // Changed active tab color
+                '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' }, // Changed indicator color
+              }}>
                     <Tab icon={<SettingsIcon />} iconPosition="start" label="General Settings" id="admin-settings-tab-0" />
                     <Tab icon={<SecurityIcon />} iconPosition="start" label="Security" id="admin-settings-tab-1" />
                 </Tabs>

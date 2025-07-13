@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Tabs, Tab, Typography, Divider, GlobalStyles, styled, Container, Paper } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Divider, GlobalStyles, styled } from '@mui/material';
 
 import GeneralSettings from '../components/GeneralSettings';
 import PasswordSettings from '../components/PasswordSettings';
@@ -71,7 +71,7 @@ const SettingsPage = () => {
               scrollButtons="auto"
               sx={{
                 '& .MuiTab-root': { color: 'text.secondary', fontWeight: 'bold' },
-                '& .Mui-selected': { color: '#FE6B8B' }, // Changed active tab color
+                //'& .Mui-selected': { color: '#FE6B8B' }, // Changed active tab color
                 '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' }, // Changed indicator color
               }}
             >

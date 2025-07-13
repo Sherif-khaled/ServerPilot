@@ -186,8 +186,8 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                   },
                   '&.active': {
                     backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                    '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-                      color: theme.palette.primary.main,
+                    '& .MuiListItemIcon-root, & .MuiListItemText-primary,': {
+                      color: '#FE6B8B',
                     },
                   },
                 };

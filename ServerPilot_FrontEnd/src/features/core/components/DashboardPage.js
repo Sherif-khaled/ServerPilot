@@ -9,30 +9,39 @@ import { useAuth } from '../../../AuthContext';
 import { getDashboardStats } from '../../../api/userService';
 import { useNavigate } from 'react-router-dom';
 
-const GlassmorphicCard = ({ children, onClick, tooltip }) => (
-    <Tooltip title={tooltip || ''} arrow>
-        <Card
-            onClick={onClick}
-            sx={{
-                background: 'rgba(38, 50, 56, 0.6);',
-                backdropFilter: 'blur(20px) saturate(180%)',
-                border: '1px solid rgba(255, 255, 255, 0.125)',
-                borderRadius: '12px',
-                color: '#fff',
-                height: '100%',
-                boxShadow: 24,
-                cursor: onClick ? 'pointer' : 'default',
-                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                '&:hover': {
-                    transform: 'translateY(-10px) scale(1.03)',
-                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-                },
-            }}
-        >
-            {children}
-        </Card>
-    </Tooltip>
-);
+const GlassmorphicCard = ({ children, onClick, tooltip }) => {
+    // Read animation setting from localStorage (or context if you have one)
+    const dashboardAnimations = JSON.parse(localStorage.getItem('dashboardAnimations')) ?? false;
+
+    return (
+        <Tooltip title={tooltip || ''} arrow>
+            <Card
+                onClick={onClick}
+                sx={{
+                    background: 'rgba(38, 50, 56, 0.6);',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    border: '1px solid rgba(255, 255, 255, 0.125)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    height: '100%',
+                    boxShadow: 24,
+                    cursor: onClick ? 'pointer' : 'default',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    '&:hover': dashboardAnimations
+                        ? {
+                            transform: 'translateY(-10px) scale(1.03)',
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+                        }
+                        : {
+                            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+                        },
+                }}
+            >
+                {children}
+            </Card>
+        </Tooltip>
+    );
+};
 
 const StatCard = ({ title, value, total, unit, uptimeComponents, icon, tooltip, onClick }) => {
     let displayValue = `${value}${unit || ''}`;
