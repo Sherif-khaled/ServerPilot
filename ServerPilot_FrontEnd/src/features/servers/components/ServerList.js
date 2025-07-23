@@ -100,7 +100,8 @@ export default function ServerList({ customerId: propCustomerId }) {
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [serverInfo, setServerInfo] = useState({ data: null, error: null, serverName: '' });
   const [infoLoading, setInfoLoading] = useState(false);
-  const [testConnectionStatus, setTestConnectionStatus] = useState({}); 
+  const [testConnectionStatus, setTestConnectionStatus] = useState({});
+  const [onlineStatus, setOnlineStatus] = useState({}); 
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -169,6 +170,17 @@ export default function ServerList({ customerId: propCustomerId }) {
     }
   };
 
+    const checkAllServerStatus = async (serversToCheck) => {
+    const statusPromises = serversToCheck.map(server => 
+      testServerConnection(customerId, server.id)
+        .then(() => ({ [server.id]: 'Online' }))
+        .catch(() => ({ [server.id]: 'Offline' }))
+    );
+    const results = await Promise.all(statusPromises);
+    const newStatuses = Object.assign({}, ...results);
+    setOnlineStatus(prev => ({ ...prev, ...newStatuses }));
+  };
+
   const fetchServers = useCallback(async () => {
     if (!customerId) return;
     setLoading(true);
@@ -176,7 +188,11 @@ export default function ServerList({ customerId: propCustomerId }) {
     setSuccessMessage('');
     try {
       const response = await getServers(customerId);
-      setServers(response.data || []);
+      const fetchedServers = response.data;
+      setServers(fetchedServers);
+      if (fetchedServers.length > 0) {
+        checkAllServerStatus(fetchedServers);
+      }
     } catch (err) {
       console.error('Failed to fetch servers:', err);
       setError('Failed to load servers. Please try again.');
@@ -337,7 +353,6 @@ export default function ServerList({ customerId: propCustomerId }) {
       {error && <Alert severity="error" sx={{ mb: 2, background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>}
       {successMessage && <Alert severity="success" sx={{ mb: 2, background: 'rgba(76, 175, 80, 0.8)', color: '#fff' }} onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
 
-      {/* Statistics Cards */}
       <Grid container spacing={4} sx={{ mb: 4, position: 'relative', zIndex: 2 }}>
         <Grid item xs={12} sm={4}>
           <GlassCard>
@@ -376,415 +391,328 @@ export default function ServerList({ customerId: propCustomerId }) {
 
       <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
         <CardContent sx={{ p: 3 }}>
-          {/* Add search bar */}
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ mb: 2 }}>
             <TextField
               fullWidth
               variant="outlined"
               placeholder="Search servers..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.5)'}} />
                   </InputAdornment>
                 ),
-                sx: { background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 2 }
               }}
-               sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                                      '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                                      '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                                      color: 'white'
-                                  },
-                                  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-                                  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' }
-                              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: 'white',
+                  background: 'rgba(0,0,0,0.2)',
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
+                  '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
+                },
+                '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+              }}
             />
           </Box>
 
-          <Menu
-            anchorEl={menuAnchorEl}
-            open={Boolean(menuAnchorEl)}
-            onClose={handleMenuClose}
-            slotProps={{
-              paper: {
-                sx: {
-                  background: 'rgba(40, 50, 70, 0.95)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  minWidth: '180px',
-                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                  marginTop: '4px',
-                  '& .MuiMenuItem-root': {
-                    padding: '12px 16px',
-                    fontSize: '0.875rem',
-                    '&:hover': {
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '4px',
-                      margin: '2px 8px',
-                      width: 'calc(100% - 16px)',
-                    }
-                  },
-                  '& .MuiListItemIcon-root': {
-                    minWidth: '36px',
-                  }
-                }
-              }
-            }}
-            disableScrollLock={false}
-            disablePortal={false}
-            keepMounted={false}
-          >
-            {currentServerForMenu && [
-              <MenuItem key="connect" component={Link} to={`/customers/${customerId}/servers/${currentServerForMenu.id}/console`} onClick={handleMenuClose}>
-                <ListItemIcon><DnsIcon fontSize="small" sx={{ color: 'inherit' }} /></ListItemIcon>
-                <ListItemText>Connect</ListItemText>
-              </MenuItem>,
-              <MenuItem key="info" onClick={() => { handleOpenInfoModal(currentServerForMenu); handleMenuClose(); }}>
-                <ListItemIcon><InfoIcon fontSize="small" sx={{ color: 'inherit' }} /></ListItemIcon>
-                <ListItemText>Get Server Info</ListItemText>
-              </MenuItem>,
-              <MenuItem key="change-password" onClick={() => { handleOpenChangePasswordDialog(currentServerForMenu); handleMenuClose(); }}>
-                <ListItemIcon><LockResetIcon fontSize="small" sx={{ color: 'inherit' }} /></ListItemIcon>
-                <ListItemText>Change Password</ListItemText>
-              </MenuItem>,
-              <MenuItem key="edit" onClick={() => { handleOpenModal(currentServerForMenu); handleMenuClose(); }}>
-                <ListItemIcon><EditIcon fontSize="small" sx={{ color: 'inherit' }} /></ListItemIcon>
-                <ListItemText>Edit</ListItemText>
-              </MenuItem>,
-              <MenuItem key="delete" onClick={() => { handleOpenDeleteDialog(currentServerForMenu); handleMenuClose(); }}>
-                <ListItemIcon><DeleteIcon fontSize="small" sx={{ color: '#f44336' }} /></ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>,
-
-            ]}
-          </Menu>
-          <TableContainer sx={{ mt: 2 }}>
-            <Table sx={{ minWidth: 650 }} aria-label="servers table">
-              <TableHead>
-                <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                  <TableCell>Server</TableCell>
-                  <TableCell>Connection Details</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="center">Connection Test</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredServers.map((server) => (
-                  <React.Fragment key={server.id}>
-                    <TableRow
-                      hover
-                      sx={{ '&:last-child td, &:last-child th': { border: 0 }, opacity: testConnectionStatus[server.id]?.testing ? 0.5 : 1 }}
-                    >
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress sx={{ color: 'white' }} /></Box>
+          ) : filteredServers.length === 0 ? (
+            <Box sx={{ textAlign: 'center', p: 5, color: 'rgba(255,255,255,0.7)' }}>
+              <DnsIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
+              <Typography variant="h6">No servers found.</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>Click "Add Server" to create your first server.</Typography>
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table sx={{ minWidth: 650 }} aria-label="servers table">
+                <TableHead>
+                  <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)', color: 'rgba(255, 255, 255, 0.7)' } }}>
+                    <TableCell>Server</TableCell>
+                    <TableCell>Connection Details</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredServers.map((server) => (
+                    <TableRow hover key={server.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell component="th" scope="row">
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {onlineStatus[server.id] === undefined ? (
+                            <CircularProgress size={12} sx={{ mr: 1.5, color: 'white' }} />
+                          ) : (
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                backgroundColor: onlineStatus[server.id] === 'Online' ? 'success.main' : 'grey.400',
+                                mr: 1.5,
+                                boxShadow: `0 0 8px ${onlineStatus[server.id] === 'Online' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(158, 158, 158, 0.5)'}`
+                              }}
+                            />
+                          )}
                           <DnsIcon sx={{ mr: 1.5, color: 'text.secondary' }} />
-                          <Typography variant="body1" fontWeight="medium">
-  <Link to={`/customers/${customerId}/servers/${server.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-    {server.server_name}
-  </Link>
-</Typography>
+                          <Typography variant="body1" fontWeight="medium" sx={{ color: 'white' }}>
+                            <Link to={`/customers/${customerId}/servers/${server.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                              {server.server_name}
+                            </Link>
+                          </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">{server.server_ip}:{server.ssh_port}</Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" sx={{ color: 'white' }}>{server.server_ip}:{server.ssh_port}</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           User: {server.login_using_root ? 'root' : (server.ssh_user || 'N/A')}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={server.is_active ? 'Active' : 'Inactive'}
-                          color={server.is_active ? 'success' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title={
-                          testConnectionStatus[server.id]?.testing ? "Testing..." :
-                          testConnectionStatus[server.id]?.status === 'success' ? "Connection Successful" :
-                          testConnectionStatus[server.id]?.status === 'error' ? "Connection Failed" :
-                          "Test Connection"
-                        }>
-                          <IconButton
-                            aria-label="test connection"
-                            tabIndex={0}
-                            onClick={() => handleTestConnection(server.id)}
-                            disabled={testConnectionStatus[server.id]?.testing}
-                          >
-                            {testConnectionStatus[server.id]?.testing ? <CircularProgress size={24} /> :
-                              testConnectionStatus[server.id]?.status === 'success' ? <CheckCircleIcon color="success" /> :
-                              testConnectionStatus[server.id]?.status === 'error' ? <ErrorIcon color="error" /> :
-                              <PowerIcon />}
-                          </IconButton>
-                        </Tooltip>
                       </TableCell>
                       <TableCell align="right">
                         <IconButton
                           aria-label="more actions"
                           onClick={(e) => handleMenuOpen(e, server)}
+                          sx={{ color: 'white' }}
                         >
                           <MoreVertIcon />
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                    {testConnectionStatus[server.id] && !testConnectionStatus[server.id]?.testing && (
-                      <TableRow>
-                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
-                          <Collapse in={true} timeout="auto" unmountOnExit>
-                            <Box sx={{ margin: 1, p: 2, border: '1px dashed', borderColor: 'grey.400', borderRadius: 1, bgcolor: testConnectionStatus[server.id]?.status === 'error' ? 'rgba(255, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.03)' }}>
-                              <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap', color: testConnectionStatus[server.id]?.status === 'error' ? 'error.main' : 'text.secondary', fontWeight:'bold' }}>
-                                Test Result:
-                              </Typography>
-                              <Typography variant="caption" sx={{ whiteSpace: 'pre-wrap', color: testConnectionStatus[server.id]?.status === 'error' ? 'error.main' : 'text.secondary', display: 'block', mt: 0.5 }}>
-                                {testConnectionStatus[server.id]?.message}
-                              </Typography>
-                            </Box>
-                          </Collapse>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {servers.length === 0 && !error && (
-  <Box sx={{ textAlign: 'center', p: 5, color: 'rgba(255,255,255,0.7)' }}>
-    <DnsIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
-    <Typography variant="h6">No servers found for this customer.</Typography>
-    <Typography variant="body2" sx={{ mt: 1 }}>Click "Add Server" to create your first server.</Typography>
-  </Box>
-)}
-
-          <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-            <DialogTitle>Delete Server</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Are you sure you want to delete the server "{serverToDelete?.server_name}"? This action cannot be undone.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-              <Button onClick={handleDelete} color="error">Delete</Button>
-            </DialogActions>
-          </Dialog>
-
-          <Dialog open={changePasswordDialogOpen} onClose={handleCloseChangePasswordDialog}>
-            <DialogTitle>Change Server Password for {serverForPasswordChange?.server_name}</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Enter a new password for the server. You can also generate a complex password.
-              </DialogContentText>
-              <TextField
-                autoFocus
-                margin="dense"
-                id="password"
-                label="New Password"
-                type="text"
-                fullWidth
-                variant="standard"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                error={!!changePasswordError}
-                helperText={changePasswordError}
-              />
-              <Button onClick={generateComplexPassword} sx={{ mt: 2 }}>
-                Generate Complex Password
-              </Button>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseChangePasswordDialog}>Cancel</Button>
-              <Button onClick={handleChangePassword}>Change Password</Button>
-            </DialogActions>
-          </Dialog>
-
-          {/* Server Info Modal */}
-          {infoModalOpen && (
-            <Dialog open={infoModalOpen} onClose={handleCloseInfoModal} fullWidth maxWidth="md">
-              <DialogTitle>Server Statistics: {serverInfo?.serverName}</DialogTitle>
-              <DialogContent>
-                {infoLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>
-                ) : serverInfo?.error ? (
-                  <Alert severity="error">{serverInfo.error}</Alert>
-                ) : serverInfo?.data ? (
-                  (() => {
-                  // Safely destructure and parse CPU usage to a number
-                  const { os, cpu_usage: cpuUsageStr, memory = {}, swap = {}, disks = [] } = serverInfo.data;
-                  const cpu_usage = cpuUsageStr != null ? parseFloat(cpuUsageStr) : null;
-
-                  // Prepare data for charts
-                  const memoryChartData = [
-                    { name: 'Used', value: memory.used_gb || 0 },
-                    { name: 'Available', value: memory.available_gb || 0 }
-                  ];
-                  
-                  const cpuChartData = cpu_usage != null ? [
-                    { name: 'Used', value: cpu_usage },
-                    { name: 'Free', value: 100 - cpu_usage }
-                  ] : [];
-
-                  return (
-                    <Grid container spacing={3} sx={{ mt: 1 }}>
-                      {/* OS Info */}
-                      <Grid item xs={12}>
-                        <Card>
-                          <CardContent>
-                            <Typography variant="h6" gutterBottom>System Overview</Typography>
-                            {os && <Typography variant="body2"><strong>OS:</strong> {os}</Typography>}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-
-                      {/* CPU Usage Chart */}
-                      {cpu_usage != null && (
-                        <Grid item xs={12} md={6}>
-                          <Card>
-                            <CardContent>
-                              <Typography variant="h6" gutterBottom>CPU Usage</Typography>
-                              <ResponsiveContainer width="110%" height={170}>
-                                <PieChart>
-                                  <Pie
-                                    data={cpuChartData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    labelLine={false}
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                  >
-                                    {cpuChartData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                  </Pie>
-                                  <RechartsTooltip formatter={(value) => `${value.toFixed(2)}%`} />
-                                </PieChart>
-                              </ResponsiveContainer>
-                              <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                                Usage: {cpu_usage.toFixed(2)}%
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      )}
-
-                      {/* Memory Chart and Info */}
-                      {memory.total_gb != null && (
-                        <Grid item xs={12} md={6}>
-                          <Card>
-                            <CardContent>
-                              <Typography variant="h6" gutterBottom>Memory Usage</Typography>
-                              <ResponsiveContainer width="110%" height={170}>
-                                <PieChart>
-                                  <Pie
-                                    data={memoryChartData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    labelLine={false}
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                  >
-                                    {memoryChartData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                  </Pie>
-                                  <RechartsTooltip formatter={(value) => `${value.toFixed(2)} GB`} />
-                                </PieChart>
-                              </ResponsiveContainer>
-                              <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                                Total: {memory.total_gb} GB | Used: {memory.used_gb} GB | Available: {memory.available_gb} GB
-                              </Typography>
-                              {swap.total_gb != null && (
-                                <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                                  Swap: {swap.used_gb} GB / {swap.total_gb} GB
-                                </Typography>
-                              )}
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      )}
-
-                      {/* Disk Usage Chart */}
-                      {disks.length > 0 && (
-                        <Grid item xs={12}>
-                          <Card>
-                            <CardContent>
-                              <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
-                              <ResponsiveContainer width="110%" height={150}>
-                                <BarChart data={disks} layout="vertical" margin={{ top: 5, right: 20, left: 80, bottom: 5 }}>
-                                  <CartesianGrid strokeDasharray="3 3" />
-                                  <XAxis type="number" />
-                                  <YAxis dataKey="mountpoint" type="category" width={80} />
-                                  <RechartsTooltip formatter={(value) => `${value} GB`} />
-                                  <Legend />
-                                  <Bar dataKey="used_gb" name="Used" stackId="a" fill="#0088FE" />
-                                  <Bar dataKey="available_gb" name="Available" stackId="a" fill="#FF8042" />
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      )}
-                    </Grid>
-                  );
-                })()
-                ) : (
-                  <Typography>No information available.</Typography>
-                )}
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseInfoModal}>Close</Button>
-              </DialogActions>
-            </Dialog>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
-
-          {/* Add/Edit Server Modal */}
-          <Dialog
-              open={isModalOpen}
-              onClose={handleCloseModal}
-              maxWidth="md"
-              fullWidth
-              PaperProps={{
-                sx: {
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  backdropFilter: 'blur(12px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(12px) saturate(180%)', // Safari
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255, 255, 255, 0.125)',
-                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                  color: '#fff',
-                }
-              }}
-            >
-              <DialogTitle>{editingServer ? 'Edit Server' : 'Add New Server'}</DialogTitle>
-              <DialogContent>
-                {isModalOpen && (
-                  <ServerForm
-                    customerId={customerId}
-                    serverData={editingServer}
-                    onSaveSuccess={handleSaveSuccess}
-                    onClose={handleCloseModal}
-                  />
-                )}
-              </DialogContent>
-          </Dialog>
-
         </CardContent>
       </GlassCard>
+
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        slotProps={{
+          paper: {
+            sx: {
+              background: 'rgba(40, 50, 70, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              color: '#fff',
+              minWidth: '180px',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+              marginTop: '4px',
+              '& .MuiMenuItem-root': {
+                padding: '12px 16px',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '4px',
+                  margin: '2px 8px',
+                  width: 'calc(100% - 16px)',
+                }
+              },
+              '& .MuiListItemIcon-root': {
+                minWidth: '36px',
+                color: 'inherit'
+              }
+            }
+          }
+        }}
+      >
+        {currentServerForMenu && [
+          <MenuItem key="info" onClick={() => { handleOpenInfoModal(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><InfoIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>View Stats</ListItemText>
+          </MenuItem>,
+          <MenuItem key="edit" onClick={() => { handleOpenModal(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>,
+          <MenuItem key="change-password" onClick={() => { handleOpenChangePasswordDialog(currentServerForMenu); handleMenuClose(); }}>
+            <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Change Password</ListItemText>
+          </MenuItem>,
+          <MenuItem key="delete" onClick={() => { handleOpenDeleteDialog(currentServerForMenu); handleMenuClose(); }} sx={{ color: '#f44336' }}>
+            <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        ]}
+      </Menu>
+
+      <StyledDialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete the server "{serverToDelete?.server_name}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} sx={{ color: 'white' }}>Cancel</Button>
+          <Button onClick={handleDelete} sx={{ color: '#f44336' }} autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </StyledDialog>
+
+      <StyledDialog open={changePasswordDialogOpen} onClose={handleCloseChangePasswordDialog}>
+        <DialogTitle>Change Server Password</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Enter a new password for the server "{serverForPasswordChange?.server_name}".
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="password"
+            label="New Password"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            error={!!changePasswordError}
+            helperText={changePasswordError}
+          />
+          <Button onClick={generateComplexPassword} sx={{ mt: 2, color: 'white' }}>
+            Generate Complex Password
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseChangePasswordDialog} sx={{ color: 'white' }}>Cancel</Button>
+          <Button onClick={handleChangePassword} sx={{ color: 'white' }}>Change Password</Button>
+        </DialogActions>
+      </StyledDialog>
+
+      {infoModalOpen && (
+        <StyledDialog
+          open={infoModalOpen}
+          onClose={handleCloseInfoModal}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+            <InfoIcon sx={{ mr: 1 }} /> Server Information: {serverInfo.serverName}
+          </DialogTitle>
+          <DialogContent>
+            {infoLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress sx={{ color: 'white' }} /></Box>
+            ) : serverInfo?.error ? (
+              <Alert severity="error">{serverInfo.error}</Alert>
+            ) : serverInfo?.data?.data ? (() => {
+              const { cpu, memory, disks } = serverInfo.data.data;
+              return (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', p: 1 }}>
+                  {cpu && cpu.cpu_usage_percent !== undefined ? (
+                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                      <GlassCard>
+                        <Typography variant="h6" gutterBottom>CPU Usage (%)</Typography>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <PieChart>
+                            <Pie data={[{ name: 'Used', value: cpu.cpu_usage_percent }, { name: 'Available', value: 100 - cpu.cpu_usage_percent }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={5} dataKey="value">
+                              <Cell key={`cell-used`} fill={COLORS[0]} />
+                              <Cell key={`cell-available`} fill={COLORS[1]} />
+                            </Pie>
+                            <RechartsTooltip formatter={(value) => `${value.toFixed(1)}%`} />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                          Cores: {cpu.cores} | Usage: {cpu.cpu_usage_percent.toFixed(1)}%
+                        </Typography>
+                      </GlassCard>
+                    </Box>
+                  ) : (
+                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                      <GlassCard>
+                        <Typography variant="h6" gutterBottom>CPU Usage (%)</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                          <Typography variant="body2" color="text.secondary">Not available</Typography>
+                        </Box>
+                      </GlassCard>
+                    </Box>
+                  )}
+
+                  {memory && memory.used_gb !== undefined ? (
+                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                      <GlassCard>
+                        <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <PieChart>
+                            <Pie data={[{ name: 'Used', value: memory.used_gb }, { name: 'Available', value: memory.available_gb }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#82ca9d" paddingAngle={5} dataKey="value">
+                              <Cell key={`cell-used-mem`} fill={COLORS[0]} />
+                              <Cell key={`cell-avail-mem`} fill={COLORS[1]} />
+                            </Pie>
+                            <RechartsTooltip formatter={(value) => `${value.toFixed(2)} GB`} />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                          Total: {memory.total_gb} GB | Used: {memory.used_gb} GB
+                        </Typography>
+                      </GlassCard>
+                    </Box>
+                  ) : (
+                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                      <GlassCard>
+                        <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                          <Typography variant="body2" color="text.secondary">Not available</Typography>
+                        </Box>
+                      </GlassCard>
+                    </Box>
+                  )}
+
+                  {disks && disks.length > 0 && (
+                    <Box sx={{ width: '100%', p: 1, mt: 2 }}>
+                      <GlassCard>
+                        <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
+                        <ResponsiveContainer width="100%" height={disks.length * 80}>
+                          <BarChart data={disks} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" />
+                            <YAxis dataKey="mountpoint" type="category" width={80} />
+                            <RechartsTooltip formatter={(value, name) => [`${value.toFixed(2)} GB`, name.charAt(0).toUpperCase() + name.slice(1)]} />
+                            <Legend />
+                            <Bar dataKey="used_gb" stackId="a" fill="#8884d8" name="Used" />
+                            <Bar dataKey="available_gb" stackId="a" fill="#82ca9d" name="Available" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </GlassCard>
+                    </Box>
+                  )}
+                </Box>
+              );
+            })() : (
+              <Typography>No information available.</Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseInfoModal} sx={{ color: 'white' }}>Close</Button>
+          </DialogActions>
+        </StyledDialog>
+      )}
+
+      <StyledDialog
+          open={isModalOpen}
+          onClose={handleCloseModal}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>{editingServer ? 'Edit Server' : 'Add New Server'}</DialogTitle>
+          <DialogContent>
+            {isModalOpen && (
+              <ServerForm
+                customerId={customerId}
+                serverData={editingServer}
+                onSaveSuccess={handleSaveSuccess}
+                onClose={handleCloseModal}
+              />
+            )}
+          </DialogContent>
+      </StyledDialog>
 
       <Snackbar
         open={snackbar.open}

@@ -200,9 +200,9 @@ class ServerViewSet(viewsets.ModelViewSet):
         logger.info(f"Testing connection for server: {server.id} ({server.server_name})")
         
         try:
-            success, output = server.connect_ssh(command=command)
+            success, output, exit_status = server.connect_ssh(command=command)
 
-            if success:
+            if success and exit_status == 0:
                 logger.info(f"Connection test successful for server {server.id}.")
                 log_action(
                     request.user,
@@ -525,21 +525,29 @@ class ServerInfoView(AsyncAPIView):
                 results = await asyncio.gather(
                     conn.run('uname -a'),
                     conn.run("grep 'cpu ' /proc/stat"),
-                    conn.run('free -b'), # Get memory in bytes
-                    conn.run('df -B1'),   # Get disk usage in bytes
-                    asyncio.sleep(1),    # Sleep for CPU calculation
+                    conn.run('free -b'),
+                    conn.run('df -B1'),
+                    conn.run('nproc'),
+                    asyncio.sleep(1),
                 )
                 # After sleep, get the second CPU stat
                 cpu_result2 = await conn.run("grep 'cpu ' /proc/stat")
 
-                os_result, cpu_result1, mem_result, disk_result, _ = results
+                os_result, cpu_result1, mem_result, disk_result, nproc_result, _ = results
 
                 # --- Process CPU Usage --- #
-                cpu_line1 = list(map(int, cpu_result1.stdout.split()[1:]))
-                cpu_line2 = list(map(int, cpu_result2.stdout.split()[1:]))
-                total_diff = sum(cpu_line2) - sum(cpu_line1)
-                idle_diff = cpu_line2[3] - cpu_line1[3]
-                cpu_usage = 100 * (total_diff - idle_diff) / total_diff if total_diff else 0
+                cpu_usage = 0
+                if cpu_result1.stdout and cpu_result2.stdout:
+                    cpu_line1 = list(map(int, cpu_result1.stdout.split()[1:]))
+                    cpu_line2 = list(map(int, cpu_result2.stdout.split()[1:]))
+                    total_diff = sum(cpu_line2) - sum(cpu_line1)
+                    idle_diff = cpu_line2[3] - cpu_line1[3]
+                    cpu_usage = 100 * (total_diff - idle_diff) / total_diff if total_diff else 0
+
+                cpu_data = {
+                    'cores': int(nproc_result.stdout.strip()),
+                    'cpu_usage_percent': round(cpu_usage, 2),
+                }
 
                 # --- Process Memory and Swap --- #
                 mem_lines = mem_result.stdout.strip().split('\n')
@@ -576,12 +584,12 @@ class ServerInfoView(AsyncAPIView):
                 # --- Final Data Structure --- #
                 data = {
                     'os': os_result.stdout.strip(),
-                    'cpu_usage': f'{cpu_usage:.2f}',
+                    'cpu': cpu_data,
                     'memory': memory_data,
                     'swap': swap_data,
                     'disks': disks_data,
                 }
-                return Response(data)
+                return Response({"serverName": server.server_name, "data": data})
 
         except asyncssh.Error as e:
             logger.error(f"SSH connection failed for server {server.id}: {e}", exc_info=True)
