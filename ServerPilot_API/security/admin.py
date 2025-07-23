@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SecuritySettings, PasswordPolicy, PasswordHistory
+from .models import SecuritySettings, PasswordPolicy, PasswordHistory, SecurityRisk
 
 # Register SecuritySettings to make it editable in the admin panel.
 @admin.register(SecuritySettings)
@@ -28,6 +28,21 @@ class PasswordPolicyAdmin(admin.ModelAdmin):
         return not PasswordPolicy.objects.exists()
 
 # Register PasswordHistory for viewing purposes (optional, but good practice).
+@admin.register(SecurityRisk)
+class SecurityRiskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'risk_level', 'is_enabled', 'expect_non_zero_exit', 'required_role', 'created_at')
+    list_filter = ('risk_level', 'is_enabled', 'expect_non_zero_exit')
+    search_fields = ('title', 'description')
+    fieldsets = (
+        ('Risk Details', {
+            'fields': ('title', 'description', 'risk_level', 'is_enabled', 'required_role')
+        }),
+        ('Execution Logic', {
+            'fields': ('check_command', 'match_pattern', 'expect_non_zero_exit', 'fix_command')
+        }),
+    )
+
+
 @admin.register(PasswordHistory)
 class PasswordHistoryAdmin(admin.ModelAdmin):
     list_display = ('user', 'created_at')

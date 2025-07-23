@@ -484,7 +484,11 @@ export default function ServerList({ customerId: propCustomerId }) {
                       <TableCell component="th" scope="row">
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <DnsIcon sx={{ mr: 1.5, color: 'text.secondary' }} />
-                          <Typography variant="body1" fontWeight="medium">{server.server_name}</Typography>
+                          <Typography variant="body1" fontWeight="medium">
+  <Link to={`/customers/${customerId}/servers/${server.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+    {server.server_name}
+  </Link>
+</Typography>
                         </Box>
                       </TableCell>
                       <TableCell>

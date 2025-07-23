@@ -57,3 +57,44 @@ class SecuritySettings(models.Model):
     class Meta:
         verbose_name = "Security Settings"
         verbose_name_plural = "Security Settings"
+
+
+class SecurityRisk(models.Model):
+    """Model representing a security risk check that can be executed on a server or system."""
+
+    class RiskLevel(models.TextChoices):
+        LOW = "low", "Low"
+        MEDIUM = "medium", "Medium"
+        CRITICAL = "critical", "Critical"
+
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+
+    # Command (e.g., shell/Python) to execute in order to check if risk exists
+    check_command = models.TextField(help_text="Command to check for the risk condition.")
+
+    # Regex or glob pattern to match from the check_command output that indicates the risk is present
+    match_pattern = models.CharField(max_length=255, help_text="Pattern indicating risk presence in command output.")
+
+    # If True, a non-zero exit code from the check_command is expected and considered a success for matching.
+    expect_non_zero_exit = models.BooleanField(default=False, help_text="Set to True if a non-zero exit code indicates the risk is present.")
+
+    # Command to automatically fix / mitigate the risk
+    fix_command = models.TextField(blank=True)
+
+    risk_level = models.CharField(max_length=8, choices=RiskLevel.choices, default=RiskLevel.LOW)
+
+    # Django group / role name that is required to execute the fix. Default is 'admin'
+    required_role = models.CharField(max_length=64, default="admin")
+
+    is_enabled = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Security Risk"
+        verbose_name_plural = "Security Risks"

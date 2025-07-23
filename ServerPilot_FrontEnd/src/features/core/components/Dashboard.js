@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
 import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -127,7 +127,6 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
           </IconButton>
         </Toolbar>
       </AppBar>
-      {/* Overlay for mobile when drawer is open */}
       {/* Overlay for mobile when drawer is open */}
       {!isSmUp && drawerOpen && (
         <Box
@@ -275,12 +274,16 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                               <ListItemIcon sx={{ minWidth: '40px' }}><StorageIcon /></ListItemIcon>
                               <ListItemText primary="Database Management" />
                             </ListItem>
+                            {/* Security Risk Roles */}
+                            <ListItem component={NavLink} to="/security-risk-roles" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                              <ListItemIcon sx={{ minWidth: '40px' }}><SecurityIcon /></ListItemIcon>
+                              <ListItemText primary="Security Risk Roles" />
+                            </ListItem>
                           </List>
                         </Collapse>
                       </>
                     )}
 
-                    {/* Logout */}
                     <Divider sx={{ my: 1 }} />
                     <ListItemButton onClick={handleLogout} sx={navLinkSx}>
                       <ListItemIcon sx={{ minWidth: '40px' }}><LogoutIcon /></ListItemIcon>

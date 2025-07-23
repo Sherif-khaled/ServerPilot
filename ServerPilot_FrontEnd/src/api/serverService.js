@@ -33,6 +33,38 @@ const changeServerPassword = (customerId, serverId, password) => {
   return apiClient.post(`/customers/${customerId}/servers/${serverId}/change_password/`, { password });
 };
 
+const runSecurityScan = (customerId, serverId) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/run-security-scan/`);
+};
+
+const getLatestSecurityScan = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/latest-security-scan/`);
+};
+
+const updateRecommendationStatus = (customerId, serverId, recommendation_id, status) => {
+  return apiClient.patch(`/customers/${customerId}/servers/${serverId}/recommendations/update-status/`, { recommendation_id, status });
+};
+
+const fixRecommendation = (customerId, serverId, recommendationId) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/fix_recommendation/`, { recommendation_id: recommendationId });
+};
+
+const getSecurityRisks = () => {
+  return apiClient.get('/security/risks/');
+};
+
+const updateSecurityRisk = (riskId, riskData) => {
+  return apiClient.put(`/security/risks/${riskId}/`, riskData);
+};
+
+const createSecurityRisk = (riskData) => {
+  return apiClient.post('/security/risks/', riskData);
+};
+
+const deleteSecurityRisk = (riskId) => {
+  return apiClient.delete(`/security/risks/${riskId}/`);
+};
+
 export {
   getServers,
   getServerDetails,
@@ -42,4 +74,12 @@ export {
   testServerConnection,
   getServerInfo,
   changeServerPassword,
+  runSecurityScan,
+  getLatestSecurityScan,
+  updateRecommendationStatus,
+  fixRecommendation,
+  getSecurityRisks,
+  updateSecurityRisk,
+  createSecurityRisk,
+  deleteSecurityRisk,
 };

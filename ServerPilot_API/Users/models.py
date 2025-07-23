@@ -6,6 +6,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 from django.utils import timezone as tz
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+from encrypted_model_fields.fields import EncryptedCharField
 
 
 class CustomUser(AbstractUser):
@@ -109,3 +112,54 @@ class UserActionLog(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.action} at {self.timestamp.strftime("%Y-%m-%d %H:%M:%S")}'
+
+# Singleton model for site-wide settings
+class SingletonModel(models.Model):
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if not self.pk and self.__class__.objects.exists():
+            raise ValidationError(f'There can be only one {self.__class__.__name__} instance.')
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+
+class AISecuritySettings(SingletonModel):
+    PROVIDER_CHOICES = [
+        ('openai', 'OpenAI'),
+        ('gemini', 'Google Gemini'),
+    ]
+
+    provider = models.CharField(
+        max_length=50,
+        choices=PROVIDER_CHOICES,
+        default='openai',
+        help_text="The AI provider to use for security analysis."
+    )
+    api_key = EncryptedCharField(
+        max_length=255, 
+        blank=True, 
+        null=True, 
+        help_text="API key for the selected AI provider."
+    )
+    security_token = EncryptedCharField(
+        max_length=255, 
+        blank=True, 
+        null=True, 
+        help_text="Optional security token or organization ID."
+    )
+    is_configured = models.BooleanField(
+        default=False,
+        help_text="Indicates if the connection to the AI provider has been successfully tested."
+    )
+
+    def __str__(self):
+        return f"AI Security Settings ({self.get_provider_display()})"
+
+    class Meta:
+        verbose_name = 'AI Security Settings'
+        verbose_name_plural = 'AI Security Settings'

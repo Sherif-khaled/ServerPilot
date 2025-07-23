@@ -2,20 +2,10 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
+from ServerPilot_API.Users.models import SingletonModel
 
 
-class SingletonModel(models.Model):
-    class Meta:
-        abstract = True
 
-    def save(self, *args, **kwargs):
-        if not self.pk and self.__class__.objects.exists():
-            raise ValidationError(f'There can be only one {self.__class__.__name__} instance.')
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def load(cls):
-        return cls.objects.get_or_create(pk=1)[0]
 
 
 class EmailSettings(SingletonModel):
@@ -39,4 +29,6 @@ class EmailSettings(SingletonModel):
         verbose_name = 'Email Settings'
         verbose_name_plural = 'Email Settings'
 
-# Create your models here.
+
+
+

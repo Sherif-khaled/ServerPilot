@@ -1,4 +1,5 @@
 import logging
+import re
 import asyncssh
 import asyncio
 from asgiref.sync import sync_to_async
@@ -10,11 +11,13 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from .models import Server
 from ServerPilot_API.Customers.models import Customer
-from .serializers import ServerSerializer
+from .serializers import ServerSerializer, SecurityScanSerializer, SecurityRecommendationSerializer
+from .models import SecurityScan, SecurityRecommendation
 from .permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
 from rest_framework import exceptions
 from rest_framework.decorators import action
 from ServerPilot_API.audit_log.services import log_action
+from ServerPilot_API.security.models import SecurityRisk
 
 logger = logging.getLogger(__name__)
 
@@ -277,6 +280,140 @@ class ServerViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f'Error changing password for server {server.id}: {e}', exc_info=True)
             return Response({'status': 'error', 'message': 'An unexpected error occurred.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='run-security-scan')
+    def run_security_scan(self, request, pk=None, customer_pk=None):
+        """
+        Initiates a security scan on the server based on predefined security risks.
+        """
+        server = self.get_object()
+        scan = None  # Initialize scan to None
+        try:
+            risks = SecurityRisk.objects.filter(is_enabled=True)
+            scan = SecurityScan.objects.create(server=server)
+
+            for risk in risks:
+                logger.info(f"[Security Scan] Checking risk Pattern: '{risk.match_pattern}' for server: {server.id}")
+                logger.info(f"[Security Scan] Checking risk: '{risk.title}' for server: {server.id}")
+                logger.debug(f"[Security Scan] Executing command: {risk.check_command}")
+                
+                # connect_ssh now returns (success, output, exit_status)
+                conn_success, output, exit_status = server.connect_ssh(command=risk.check_command)
+
+                if not conn_success:
+                    logger.warning(f"[Security Scan] SSH connection failed for risk '{risk.title}': {output}")
+                    continue
+
+                logger.debug(f"[Security Scan] Command for '{risk.title}' executed with exit code {exit_status}. Output:\n{output}")
+
+                # For normal checks, a non-zero exit code means the command failed, so we skip it.
+                # If expect_non_zero_exit is True, we proceed regardless of the exit code, 
+                # as the command is expected to 'fail' to indicate a risk.
+                if not risk.expect_non_zero_exit and exit_status != 0:
+                    logger.warning(f"[Security Scan] Command for risk '{risk.title}' failed with exit code {exit_status}. Skipping pattern match.")
+                    continue
+
+                logger.debug(f"[Security Scan] Proceeding to match pattern: '{risk.match_pattern}'")
+                match_found = bool(re.search(risk.match_pattern, output))
+                logger.info(f"[Security Scan] Match found for '{risk.title}': {match_found}")
+
+                if match_found:
+                    logger.info(f"[Security Scan] Creating recommendation for risk: '{risk.title}'")
+                    SecurityRecommendation.objects.create(
+                        scan=scan,
+                        risk_level=risk.risk_level,
+                        title=risk.title,
+                        description=risk.description,
+                        solution=risk.fix_command,
+                        status='pending'  # Explicitly set status for found risks
+                    )
+                else:
+                    # If no match was found, it means the check passed.
+                    logger.info(f"[Security Scan] Check passed for: '{risk.title}'")
+                    SecurityRecommendation.objects.create(
+                        scan=scan,
+                        risk_level='low',  # Passed checks are considered low risk/informational
+                        title=f"{risk.title}",
+                        description='This security check passed successfully.',
+                        solution='No action required.',
+                        status='passed'
+                    )
+            
+            scan.status = 'completed'
+            scan.save()
+            scan.refresh_from_db()  # Reload the scan object to include recommendations
+
+            serializer = SecurityScanSerializer(scan)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # If the scan was created but an error occurred, mark it as failed.
+            if scan and scan.pk:
+                scan.status = 'failed'
+                scan.save()
+            logger.error(f'Error running security scan for server {server.id}: {e}', exc_info=True)
+            return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'])
+    def fix_recommendation(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        recommendation_id = request.data.get('recommendation_id')
+        if not recommendation_id:
+            return Response({'error': 'recommendation_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            recommendation = SecurityRecommendation.objects.get(pk=recommendation_id, scan__server=server)
+
+            if not recommendation.solution:
+                return Response({'error': 'No solution command available for this recommendation.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            command_to_run = recommendation.solution
+            # For commands that require interactive confirmation, run them non-interactively.
+            if 'ufw enable' in command_to_run:
+                command_to_run = f'echo y | {command_to_run}'
+
+            success, output, exit_status = server.connect_ssh(command=command_to_run, timeout=60)
+
+            if success:
+                recommendation.status = 'fixed'
+                recommendation.save()
+                log_action(request.user, 'recommendation_fix', request, f'Successfully fixed recommendation "{recommendation.title}" on server {server.server_name}')
+                return Response({'status': 'success', 'message': 'Recommendation fixed successfully.'}, status=status.HTTP_200_OK)
+            else:
+                log_action(request.user, 'recommendation_fix_failed', request, f'Failed to fix recommendation "{recommendation.title}" on server {server.server_name}: {output}')
+                return Response({'status': 'error', 'message': 'Failed to apply fix.', 'details': output}, status=status.HTTP_400_BAD_REQUEST)
+
+        except SecurityRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f'Error fixing recommendation {recommendation_id} for server {pk}: {e}', exc_info=True)
+            return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'], url_path='latest-security-scan')
+    def latest_security_scan(self, request, *args, **kwargs):
+        server = self.get_object()
+        latest_scan = SecurityScan.objects.filter(server=server).order_by('-scanned_at').first()
+        if not latest_scan:     
+            return Response({'message': 'No security scans found for this server.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = SecurityScanSerializer(latest_scan)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'], url_path='recommendations/update-status')
+    def update_recommendation_status(self, request, *args, **kwargs):
+        server = self.get_object()
+        recommendation_id = request.data.get('recommendation_id')
+        new_status = request.data.get('status')
+
+        if not recommendation_id or not new_status:
+            return Response({'error': 'recommendation_id and status are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            recommendation = SecurityRecommendation.objects.get(id=recommendation_id, scan__server=server)
+            recommendation.status = new_status
+            recommendation.save()
+            return Response(SecurityRecommendationSerializer(recommendation).data)
+        except SecurityRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class AsyncAPIView(APIView):

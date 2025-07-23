@@ -23,7 +23,7 @@ from django.core.mail import send_mail
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 from django.conf import settings
-from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode, UserSession
+from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode, UserSession, AISecuritySettings, AISecuritySettings
 import webauthn
 from webauthn.helpers.structs import (
     RegistrationCredential, AuthenticatorSelectionCriteria, PublicKeyCredentialRpEntity,
@@ -38,7 +38,7 @@ import base64
 from .serializers import (
     RegisterSerializer, LoginSerializer, ProfileSerializer, PasswordChangeSerializer, MFASerializer, MFAVerifySerializer,
     UserAdminCreateSerializer, UserAdminUpdateSerializer, GitHubAuthSerializer, UserActionLogSerializer,
-    AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, UserSessionSerializer
+    AdminSetPasswordSerializer, WebAuthnKeySerializer, RecoveryCodeSerializer, UserListSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, UserSessionSerializer, AISecuritySettingsSerializer
 )
 from .logging_utils import log_user_action
 import pyotp
@@ -938,6 +938,82 @@ class UserActionLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = UserActionLog.objects.all()
     serializer_class = UserActionLogSerializer
     permission_classes = [permissions.IsAdminUser]
+
+# AI Security Settings Views
+class AISecuritySettingsView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        settings = AISecuritySettings.load()
+        serializer = AISecuritySettingsSerializer(settings)
+        data = {
+            'provider': serializer.data['provider'],
+            'is_configured': serializer.data['is_configured']
+        }
+        return Response(data)
+
+    def put(self, request):
+        settings = AISecuritySettings.load()
+        serializer = AISecuritySettingsSerializer(settings, data=request.data, partial=True)
+        if serializer.is_valid():
+            instance = serializer.save()
+            if any(key in request.data for key in ['api_key', 'security_token', 'provider']):
+                instance.is_configured = False
+                instance.save(update_fields=['is_configured'])
+
+            response_data = {
+                'provider': instance.provider,
+                'is_configured': instance.is_configured,
+                'message': 'AI Security settings updated successfully.'
+            }
+            return Response(response_data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TestAIConnectionView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        provider = request.data.get('provider')
+        api_key = request.data.get('api_key')
+
+        if not all([provider, api_key]):
+            return Response({'error': 'Provider and API Key are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_successful = False
+        try:
+            if provider == 'openai':
+                if api_key.startswith('sk-'):
+                    is_successful = True
+            elif provider == 'gemini':
+                if len(api_key) > 30:
+                    is_successful = True
+            
+            if is_successful:
+                settings = AISecuritySettings.load()
+                settings.provider = provider
+                settings.api_key = api_key
+                settings.security_token = request.data.get('security_token')
+                settings.is_configured = True
+                settings.save()
+                return Response({'message': 'Connection successful!', 'is_configured': True})
+            else:
+                raise ValueError("Invalid API Key format for selected provider.")
+
+        except Exception as e:
+            settings = AISecuritySettings.load()
+            settings.is_configured = False
+            settings.save()
+            return Response({'error': f'Connection failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AIConfigStatusView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        settings = AISecuritySettings.load()
+        return Response({'is_configured': settings.is_configured})
+
 
 # CSRF Token view
 @method_decorator(ensure_csrf_cookie, name='dispatch')

@@ -1,7 +1,7 @@
 import logging
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode, UserSession
+from .models import CustomUser, UserActionLog, WebAuthnKey, RecoveryCode, UserSession, AISecuritySettings
 
 logger = logging.getLogger(__name__)
 
@@ -272,3 +272,14 @@ class UserSessionSerializer(serializers.ModelSerializer):
 
     def get_is_current_session(self, obj):
         return obj.session_key == self.context['request'].session.session_key
+
+
+class AISecuritySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AISecuritySettings
+        fields = ['provider', 'api_key', 'security_token', 'is_configured']
+        extra_kwargs = {
+            'api_key': {'write_only': True, 'required': False},
+            'security_token': {'write_only': True, 'required': False},
+            'is_configured': {'read_only': True}
+        }

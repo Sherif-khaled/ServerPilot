@@ -12,6 +12,10 @@ ServerPilot is a web-based server management tool built with Django. It provides
 *   **Application Management:** Deploy and manage applications on your servers.
 *   **Real-time Monitoring:** Monitor server resources like CPU, memory, and disk usage in real-time.
 *   **Secure Connections:** Uses SSH for secure communication with your servers.
+*   **Security Risks:** Predefined security risks for system, SSH, and PostgreSQL.
+*   **Notifications:** Receive notifications for critical events.
+*   **Backup:** Backup your servers and applications.
+*   **Integrate AI:** Use AI to analyze your servers and applications.
 *   **User Authentication:** Secure user authentication and management.
 
 ## Technologies Used
@@ -77,6 +81,16 @@ ServerPilot is a web-based server management tool built with Django. It provides
 
     ```bash
     python manage.py migrate
+    ```
+
+6.  **Load initial data (Recommanded):**
+
+    This will load predefined security risks into the database.
+
+    ```bash
+    python manage.py loaddata ServerPilot_API/security/fixtures/system_security_risks.json
+    python manage.py loaddata ServerPilot_API/security/fixtures/ssh_security_risks.json
+    python manage.py loaddata ServerPilot_API/security/fixtures/postgresql_security_risks.json
     ```
 
 ### Frontend

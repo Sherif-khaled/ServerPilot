@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Server
+from .models import Server, SecurityScan, SecurityRecommendation
 # Customer model import might not be strictly needed here anymore unless for type hinting
 # from API.Customers.models import Customer 
 
@@ -106,3 +106,16 @@ class ServerSerializer(serializers.ModelSerializer):
         # If customer change is needed, it should be a specific action or handled differently
         validated_data.pop('customer', None) 
         return super().update(instance, validated_data)
+
+class SecurityRecommendationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SecurityRecommendation
+        fields = '__all__'
+
+class SecurityScanSerializer(serializers.ModelSerializer):
+    recommendations = SecurityRecommendationSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SecurityScan
+        fields = ('id', 'server', 'scanned_at', 'status', 'recommendations')
+        read_only_fields = ('scanned_at', 'server')

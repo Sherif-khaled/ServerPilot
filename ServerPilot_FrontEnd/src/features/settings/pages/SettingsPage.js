@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Box, Tabs, Tab, Typography, Divider, GlobalStyles, styled } from '@mui/material';
 
 import GeneralSettings from '../components/GeneralSettings';
-import PasswordSettings from '../components/PasswordSettings';
+import MfaSettings from '../components/MfaSettings';
+import PasswordChangeForm from '../components/PasswordChangeForm';
 import AppearanceSettings from '../components/AppearanceSettings';
 import SecurityKeysSettings from '../components/SecurityKeysSettings';
 import RecoveryCodesSettings from '../components/RecoveryCodesSettings';
 import WebSessions from '../components/WebSessions';
+import AISettings from '../components/AISettings';
 
 const RootContainer = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -48,7 +51,14 @@ function TabPanel(props) {
 }
 
 const SettingsPage = () => {
-  const [value, setValue] = useState(0);
+  const location = useLocation();
+  const [value, setValue] = useState(location.state?.tab || 0);
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setValue(location.state.tab);
+    }
+  }, [location.state]);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -79,13 +89,16 @@ const SettingsPage = () => {
               <Tab label="Password & Authentication" id="settings-tab-1" />
               <Tab label="Sessions" id="settings-tab-2" />
               <Tab label="Appearance" id="settings-tab-3" />
+              <Tab label="AI Integration" id="settings-tab-4" />
             </Tabs>
           </Box>
           <TabPanel value={value} index={0}>
             <GeneralSettings />
           </TabPanel>
           <TabPanel value={value} index={1}>
-            <PasswordSettings />
+            <PasswordChangeForm />
+            <Divider sx={{ my: 3, borderColor: 'divider' }} />
+            <MfaSettings />
             <Divider sx={{ my: 3, borderColor: 'divider' }} />
             <Box sx={{ mt: 2 }}>
               <SecurityKeysSettings />
@@ -100,6 +113,9 @@ const SettingsPage = () => {
           </TabPanel>
           <TabPanel value={value} index={3}>
             <AppearanceSettings />
+          </TabPanel>
+          <TabPanel value={value} index={4}>
+            <AISettings />
           </TabPanel>
         </GlassCard>
       </RootContainer>

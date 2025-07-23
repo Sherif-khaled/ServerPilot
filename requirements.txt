@@ -34,3 +34,4 @@ paramiko==3.4.0
 python-multipart==0.0.6
 celery>=5.3,<5.4
 django-celery-beat>=2.6.0
+openai

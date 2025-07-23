@@ -28,10 +28,11 @@ urlpatterns = [
     path('api/users/', include('ServerPilot_API.Users.urls')),
     path('api/customers/', include('ServerPilot_API.Customers.urls')),
     path('api/audit/', include('ServerPilot_API.audit_log.urls')),
-    path('api/db/', include('db_management.urls')),
+    path('api/db/', include('ServerPilot_API.db_management.urls')),
     path('api/security/', include('ServerPilot_API.security.urls')),
-    path('api/stats/', include('stats.urls')),
+    path('api/stats/', include('ServerPilot_API.stats.urls')),
     path('api/configuration/', include('ServerPilot_API.configuration.urls')),
+    path('api/ai/', include('ServerPilot_API.ai_handler.urls')),
 ]
 
 if settings.DEBUG:

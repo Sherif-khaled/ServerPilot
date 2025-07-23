@@ -1,0 +1,116 @@
+[
+    {
+      "model": "security.securityrisk",
+      "pk": 1,
+      "fields": {
+        "title": "Root SSH Login Enabled",
+        "description": "Root login over SSH is currently allowed which can lead to unauthorized access.",
+        "check_command": "grep -E '^PermitRootLogin' /etc/ssh/sshd_config",
+        "match_pattern": "PermitRootLogin yes",
+        "fix_command": "sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "critical",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-15T12:45:00+03:00",
+        "updated_at": "2025-07-15T12:45:00+03:00"
+      }
+    },
+    {
+        "model": "security.securityrisk",
+        "pk": 2,
+        "fields": {
+          "title": "Sudo Without Password",
+          "description": "Allows privilege escalation",
+          "check_command": "grep -E 'ALL=\\(ALL\\) NOPASSWD:ALL' /etc/sudoers /etc/sudoers.d/*",
+          "match_pattern": "NOPASSWD",
+          "fix_command": "sed -i 's/NOPASSWD:ALL/PASSWD:ALL/' /etc/sudoers.d/<file>",
+          "risk_level": "high",
+          "required_role": "admin",
+          "is_enabled": true,
+          "created_at": "2025-07-15T12:45:00+03:00",
+          "updated_at": "2025-07-15T12:45:00+03:00"
+        }
+    },
+    {
+        "model": "security.securityrisk",
+        "pk": 3,
+        "fields": {
+          "title": "No Firewall Enabled (e.g., UFW)",
+          "description": "Exposes all ports",
+          "check_command": "ufw status",
+          "match_pattern": "inactive",
+          "fix_command": "ufw enable",
+          "risk_level": "critical",
+          "required_role": "admin",
+          "is_enabled": true,
+          "created_at": "2025-07-15T12:45:00+03:00",
+          "updated_at": "2025-07-15T12:45:00+03:00"
+        }
+    },
+    {
+        "model": "security.securityrisk",
+        "pk": 4,
+        "fields": {
+          "title": "No Audit Logging",
+          "description": "Hard to trace breaches",
+          "check_command": "auditctl -s",
+          "match_pattern": "enabled 0",
+          "fix_command": "systemctl enable auditd && systemctl start auditd",
+          "risk_level": "medium",
+          "required_role": "admin",
+          "is_enabled": true,
+          "created_at": "2025-07-15T12:45:00+03:00",
+          "updated_at": "2025-07-15T12:45:00+03:00"
+        }
+    },
+    {
+        "model": "security.securityrisk",
+        "pk": 5,
+        "fields": {
+          "title": "SELinux Disabled",
+          "description": "SELinux is disabled, reducing system security.",
+          "check_command": "getenforce",
+          "match_pattern": "Disabled",
+          "fix_command": "setenforce 1 && sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config",
+          "risk_level": "medium",
+          "required_role": "secops",
+          "is_enabled": true,
+          "created_at": "2025-07-15T12:45:00+03:00",
+          "updated_at": "2025-07-15T12:45:00+03:00"
+        }
+    },
+    {
+        "model": "security.securityrisk",
+        "pk": 6,
+        "fields": {
+          "title": "Time Sync Not Enabled (NTP)",
+          "description": "Affects log accuracy & certificates",
+          "check_command": "timedatectl status",
+          "match_pattern": "NTP service: inactive",
+          "fix_command": "timedatectl set-ntp true",
+          "risk_level": "low",
+          "required_role": "admin",
+          "is_enabled": true,
+          "created_at": "2025-07-15T12:45:00+03:00",
+          "updated_at": "2025-07-15T12:45:00+03:00"
+        }
+    },
+    {
+        "model": "security.securityrisk",
+        "pk": 7,
+        "fields": {
+          "title": "ICMP Redirects Enabled",
+          "description": "ICMP redirects are enabled, potentially allowing traffic manipulation.",
+          "check_command": "sysctl net.ipv4.conf.all.accept_redirects",
+          "match_pattern": "=1$",
+          "fix_command": "sysctl -w net.ipv4.conf.all.accept_redirects=0 && sysctl -p",
+          "risk_level": "low",
+          "required_role": "netadmin",
+          "is_enabled": true,
+          "created_at": "2025-07-15T12:45:00+03:00",
+          "updated_at": "2025-07-15T12:45:00+03:00"
+        }
+    }
+      
+
+]

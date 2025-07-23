@@ -12,17 +12,19 @@ import CustomerForm from './features/customers/components/CustomerForm';
 import SshTerminalPage from './features/servers/pages/SshTerminalPage';
 import ServerList from './features/servers/components/ServerList'; // Import ServerList
 import ServerForm from './features/servers/components/ServerForm'; // Import ServerForm
+import ServerDetailsPage from './features/servers/pages/ServerDetailsPage'; // Import ServerDetailsPage
 import SettingsPage from './features/settings/pages/SettingsPage';
 import UserCreateEditPage from './features/users/pages/UserCreateEditPage'; // Import the new page
 import ProtectedRoute from './features/core/components/ProtectedRoute'; // Import ProtectedRoute
 import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
-
+import SecurityRiskRolesPage from './features/security/pages/SecurityRiskRolesPage';
 import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
 import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
 import AdminSettingsPage from './features/administration/pages/AdminSettingsPage';
 import ForgotPassword from './features/users/components/ForgotPassword';
 import ResetPassword from './features/users/components/ResetPassword';
+
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
   const navigate = useNavigate();
@@ -49,6 +51,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
 
         {/* Server Management Routes (Nested under Customer) */}
         <Route path="/customers/:customerId/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerList /></Dashboard>} />
+        <Route path="/customers/:customerId/servers/:serverId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerDetailsPage /></Dashboard>} />
         <Route path="/customers/:customerId/servers/add" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerForm /></Dashboard>} />
         <Route path="/customers/:customerId/servers/edit/:serverId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerForm /></Dashboard>} />
         <Route path="/customers/:customerId/servers/:serverId/console" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SshTerminalPage /></Dashboard>} />
@@ -57,6 +60,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/audit-logs" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AuditLogList /></Dashboard>} />
         <Route path="/password-policy" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><PasswordPolicyPage /></Dashboard>} />
         <Route path="/database-management" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode} overrideBackground><DatabaseManagementPage /></Dashboard>} />
+        <Route path="/security-risk-roles" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SecurityRiskRolesPage /></Dashboard>} />
         <Route path="/admin/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AdminSettingsPage /></Dashboard>} />
       </Route>
     </Routes>

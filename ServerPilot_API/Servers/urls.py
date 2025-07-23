@@ -29,6 +29,8 @@ urlpatterns = [
     path('customers/<int:customer_pk>/servers/<int:pk>/credentials/', 
          ServerViewSet.as_view({'get': 'get_credentials'}), 
          name='server-credentials'),
+
+
 ]
 
 # For now, we will primarily focus on nested routes defined in the main API urls.py.

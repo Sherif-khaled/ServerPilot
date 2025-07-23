@@ -1,0 +1,67 @@
+[
+    {
+      "model": "security.securityrisk",
+      "pk": 16,
+      "fields": {
+        "title": "Listen on All Interfaces (0.0.0.0)",
+        "description": "Exposes DB externally",
+        "check_command": "grep -E 'listen_addresses' /etc/postgresql/*/main/postgresql.conf",
+        "match_pattern": "listen_addresses = '*'",
+        "fix_command": "sed -i \"s/listen_addresses = '\\*'/listen_addresses = 'localhost'/\" /etc/postgresql/*/main/postgresql.conf && systemctl restart postgresql",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:10:00+03:00",
+        "updated_at": "2025-07-23T15:10:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 17,
+      "fields": {
+        "title": "Default Port Open",
+        "description": "Easily targeted",
+        "check_command": "grep -E 'port = 5432' /etc/postgresql/*/main/postgresql.conf",
+        "match_pattern": "port = 5432",
+        "fix_command": "sed -i 's/port = 5432/port = 5433/' /etc/postgresql/*/main/postgresql.conf && systemctl restart postgresql",
+        "risk_level": "medium",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:10:00+03:00",
+        "updated_at": "2025-07-23T15:10:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 18,
+      "fields": {
+        "title": "No SSL/TLS Encryption",
+        "description": "Susceptible to MITM attacks",
+        "check_command": "grep -i 'ssl = off' /etc/postgresql/*/main/postgresql.conf",
+        "match_pattern": "ssl = off",
+        "fix_command": "sed -i 's/ssl = off/ssl = on/' /etc/postgresql/*/main/postgresql.conf && systemctl restart postgresql",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:10:00+03:00",
+        "updated_at": "2025-07-23T15:10:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 20,
+      "fields": {
+        "title": "Outdated PostgreSQL Version",
+        "description": "May contain vulnerabilities",
+        "check_command": "psql --version | grep -E '9\\.|10\\.|11\\.|12\\.'",
+        "match_pattern": "9\\.|10\\.|11\\.|12\\.",
+        "fix_command": "apt update && apt upgrade postgresql -y",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:10:00+03:00",
+        "updated_at": "2025-07-23T15:10:00+03:00"
+      }
+    }
+  ]
+  

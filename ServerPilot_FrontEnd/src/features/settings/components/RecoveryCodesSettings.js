@@ -1,36 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Box,
-    Button,
-    Typography,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    CircularProgress,
-    Paper,
-    Alert
-} from '@mui/material';
+import {Box,Button,Typography,List,ListItem,ListItemIcon,ListItemText,CircularProgress,Paper,Alert} from '@mui/material';
 import { FileCopy as FileCopyIcon, Download as DownloadIcon, VpnKey as VpnKeyIcon } from '@mui/icons-material';
 import { generateRecoveryCodes, confirmRecoveryCodes } from '../../../services/webAuthnService';
 import { getProfile } from '../../../api/userService';
 import { Checkbox, FormControlLabel } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-  '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-  '&.Mui-focused fieldset': { borderColor: 'transparent' },
-  '&.Mui-focused': {
-  boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-  borderRadius: 1,
-        },
-  color: '#fff',
-    },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-};
+const GlassPaper = styled(Paper)(({ theme }) => ({
+    background: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(12px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.125)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    padding: theme.spacing(3),
+    color: '#fff',
+}));
 
 const RecoveryCodesSettings = () => {
     const [codes, setCodes] = useState([]);
@@ -103,23 +88,7 @@ const RecoveryCodesSettings = () => {
     };
 
     return (
-        <Paper
-            elevation={0}
-            sx={{
-                p: 3,
-                mt: 4,
-                background: 'rgba(255, 255, 255, 0.13)',
-                backdropFilter: 'blur(18px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
-                border: '1.5px solid rgba(255,255,255,0.25)',
-                borderRadius: 4,
-                boxShadow: `
-                    0 8px 32px 0 rgba(31, 38, 135, 0.37),
-                    0 1.5px 6px 0 rgba(0,0,0,0.12),
-                    0 0.5px 1.5px 0 rgba(0,0,0,0.10)
-                `,
-            }}
-        >
+        <GlassPaper>
             <Typography variant="h6" gutterBottom>
                 Recovery Codes
             </Typography>
@@ -222,7 +191,7 @@ const RecoveryCodesSettings = () => {
                     </Box>
                 </Box>
             )}
-        </Paper>
+        </GlassPaper>
     );
 };
 

@@ -1,0 +1,131 @@
+[
+    {
+      "model": "security.securityrisk",
+      "pk": 8,
+      "fields": {
+        "title": "PermitRootLogin Yes",
+        "description": "Enables brute-force on root",
+        "check_command": "grep -E '^PermitRootLogin' /etc/ssh/sshd_config",
+        "match_pattern": "PermitRootLogin yes",
+        "fix_command": "sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "critical",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 9,
+      "fields": {
+        "title": "Password Authentication Enabled",
+        "description": "Susceptible to brute-force",
+        "check_command": "grep -E 'PasswordAuthentication yes' /etc/ssh/sshd_config",
+        "match_pattern": "PasswordAuthentication yes",
+        "fix_command": "sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 10,
+      "fields": {
+        "title": "SSH Port is Default (22)",
+        "description": "Easier for scanners",
+        "check_command": "grep -E 'Port 22' /etc/ssh/sshd_config",
+        "match_pattern": "Port 22",
+        "fix_command": "sed -i 's/^Port 22/Port 2222/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "medium",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 11,
+      "fields": {
+        "title": "No Fail2Ban or Rate Limiting",
+        "description": "Unrestricted login attempts",
+        "check_command": "systemctl is-enabled fail2ban",
+        "match_pattern": "disabled",
+        "fix_command": "apt install fail2ban -y && systemctl enable --now fail2ban",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 12,
+      "fields": {
+        "title": "No SSH Key Authentication",
+        "description": "Weaker than key-based auth",
+        "check_command": "grep -E 'PubkeyAuthentication no' /etc/ssh/sshd_config",
+        "match_pattern": "PubkeyAuthentication no",
+        "fix_command": "sed -i 's/^PubkeyAuthentication no/PubkeyAuthentication yes/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 13,
+      "fields": {
+        "title": "Old SSH Protocol Enabled (v1)",
+        "description": "Insecure protocol",
+        "check_command": "grep -E 'Protocol 1' /etc/ssh/sshd_config",
+        "match_pattern": "Protocol 1",
+        "fix_command": "sed -i 's/^Protocol.*/Protocol 2/' /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "critical",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 14,
+      "fields": {
+        "title": "Broad SSH Access (0.0.0.0/0)",
+        "description": "Allows global access",
+        "check_command": "iptables -L | grep ssh",
+        "match_pattern": "0.0.0.0/0",
+        "fix_command": "ufw allow from <trusted-ip> to any port 22 && ufw deny 22",
+        "risk_level": "high",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    },
+    {
+      "model": "security.securityrisk",
+      "pk": 15,
+      "fields": {
+        "title": "No Login Banner",
+        "description": "No legal warning for access",
+        "check_command": "test -f /etc/issue.net || echo 'missing'",
+        "match_pattern": "missing",
+        "fix_command": "echo 'Unauthorized access prohibited' > /etc/issue.net && echo 'Banner /etc/issue.net' >> /etc/ssh/sshd_config && systemctl restart sshd",
+        "risk_level": "low",
+        "required_role": "admin",
+        "is_enabled": true,
+        "created_at": "2025-07-23T15:00:00+03:00",
+        "updated_at": "2025-07-23T15:00:00+03:00"
+      }
+    }
+  ]
+  

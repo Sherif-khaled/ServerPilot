@@ -148,10 +148,11 @@ INSTALLED_APPS = [
     'ServerPilot_API.Servers',
     'ServerPilot_API.Customers',
     'ServerPilot_API.audit_log',
+    'ServerPilot_API.ai_handler',
     'ServerPilot_API.security',
     'ServerPilot_API.configuration',
-    'stats',
-    'db_management',
+    'ServerPilot_API.stats',
+    'ServerPilot_API.db_management',
 ]
 
 MIDDLEWARE = [

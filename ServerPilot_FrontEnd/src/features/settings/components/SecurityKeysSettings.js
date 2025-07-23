@@ -7,6 +7,8 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import * as webAuthnService from '../../../services/webAuthnService';
 import { startRegistration } from '@simplewebauthn/browser';
+import Paper from '@mui/material/Paper';
+import { styled } from '@mui/material/styles';
 
 const SecurityKeysSettings = () => {
     const [keys, setKeys] = useState([]);
@@ -74,9 +76,19 @@ const SecurityKeysSettings = () => {
             setError('Failed to delete the key.');
         }
     };
+    const GlassPaper = styled(Paper)(({ theme }) => ({
+        background: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(12px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.125)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        padding: theme.spacing(3),
+        color: '#fff',
+    }));
 
     return (
-        <Box>
+        <GlassPaper>
             <Typography variant="h6" gutterBottom>Security Keys</Typography>
             <Typography variant="body2" color="textSecondary" paragraph>
                 Manage your security keys (e.g., YubiKey, Windows Hello, etc.) for a more secure login experience.
@@ -146,7 +158,7 @@ const SecurityKeysSettings = () => {
                     <Button onClick={handleRegister}>Register</Button>
                 </DialogActions>
             </Dialog>
-        </Box>
+        </GlassPaper>
     );
 };
 

@@ -7,7 +7,8 @@ from .views import (
     RegisterView, ActivateView, LoginView, LogoutView, GitHubAuthView, ProfileView, PasswordChangeView, 
     UserAdminViewSet, UserStatsView, UserActionLogViewSet, UserViewSet, WebAuthnViewSet, RecoveryCodeViewSet,
     MFAEnableSetupView, MFAVerifySetupView, MFADisableView, MFAChallengeView, UserProfilePictureView, PasswordResetRequestView, PasswordResetConfirmView,
-    UserSessionListView, UserSessionRevokeView
+    UserSessionListView, UserSessionRevokeView,
+    AISecuritySettingsView, AIConfigStatusView, TestAIConnectionView
 )
 
 router = DefaultRouter()
@@ -39,5 +40,11 @@ urlpatterns = [
     path('mfa/challenge/', MFAChallengeView.as_view(), name='mfa-challenge'),
     path('admin/stats/', UserStatsView.as_view(), name='userstats'),
     path('get-csrf-token/', CsrfTokenView.as_view(), name='get-csrf-token'),
+
+    # AI Security Settings URLs
+    path('ai-security-settings/', AISecuritySettingsView.as_view(), name='ai-security-settings'),
+    path('ai-config-status/', AIConfigStatusView.as_view(), name='ai-config-status'),
+    path('test-ai-connection/', TestAIConnectionView.as_view(), name='test-ai-connection'),
+
     path('', include(router.urls)),
 ]

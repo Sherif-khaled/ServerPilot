@@ -2,6 +2,14 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import pathlib
+
+# Add the project root directory to the Python path
+# This is necessary for resolving module imports correctly, especially when running management commands
+# or when the project is structured in a way that the root is not automatically in the path.
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 def main():

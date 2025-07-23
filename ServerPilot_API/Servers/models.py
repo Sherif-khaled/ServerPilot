@@ -4,6 +4,42 @@ from ServerPilot_API.Customers.models import Customer
 import paramiko # Added import
 import io      # Added import
 
+class SecurityScan(models.Model):
+    server = models.ForeignKey('Server', related_name='security_scans', on_delete=models.CASCADE)
+    scanned_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[('completed', 'Completed'), ('failed', 'Failed')], default='completed')
+
+    def __str__(self):
+        return f"Scan for {self.server.server_name} at {self.scanned_at.strftime('%Y-%m-%d %H:%M')}"
+
+    class Meta:
+        ordering = ['-scanned_at']
+
+class SecurityRecommendation(models.Model):
+    scan = models.ForeignKey(SecurityScan, related_name='recommendations', on_delete=models.CASCADE)
+    RISK_LEVELS = (
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low'),
+    )
+    risk_level = models.CharField(max_length=10, choices=RISK_LEVELS)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    solution = models.TextField(default='')
+    command_solution = models.TextField(blank=True, null=True)
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('resolved', 'Resolved'),
+        ('ignored', 'Ignored'),
+        ('in_progress', 'In Progress'),
+        ('acknowledged', 'Acknowledged'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    def __str__(self):
+        return self.title
+
+
 class Server(models.Model):
     customer = models.ForeignKey(Customer, related_name='servers', on_delete=models.CASCADE)
     server_name = models.CharField(max_length=255)
@@ -29,7 +65,9 @@ class Server(models.Model):
     def connect_ssh(self, command='ls -la', timeout=10):
         """
         Attempts to connect to the server via SSH and execute a command.
-        Returns a tuple: (success: bool, output: str or Exception message)
+        Returns a tuple: (success: bool, output: str, exit_status: int)
+        `success` is False only if the connection itself fails.
+        `exit_status` is the command's exit code, or -1 on connection failure.
         """
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -45,7 +83,7 @@ class Server(models.Model):
             password_to_use = self.ssh_password
         
         if not username_to_use:
-            return False, "SSH username is not configured for the selected login type."
+            return False, "SSH username is not configured for the selected login type.", -1
 
         try:
             connection_args = {
@@ -76,44 +114,42 @@ class Server(models.Model):
                             continue 
                     
                     if not loaded_key:
-                        return False, "Failed to load SSH private key. Ensure it's a valid unencrypted key of a supported type (RSA, Ed25519, ECDSA)."
+                        return False, "Failed to load SSH private key. Ensure it's a valid unencrypted key of a supported type (RSA, Ed25519, ECDSA).", -1
                     
                     connection_args['pkey'] = loaded_key
                     connection_args['password'] = None 
                 except Exception as e:
-                    return False, f"Error processing SSH key: {str(e)}"
+                    return False, f"Error processing SSH key: {str(e)}", -1
             
             elif password_to_use:
                 connection_args['password'] = password_to_use
             else:
-                return False, "No SSH key or password provided for the selected login type."
+                return False, "No SSH key or password provided for the selected login type.", -1
 
+            connection_args['timeout'] = timeout
             client.connect(**connection_args)
-            
+
             stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
-            output = stdout.read().decode('utf-8', errors='replace') 
-            error_output = stderr.read().decode('utf-8', errors='replace')
+            output = stdout.read().decode('utf-8', errors='replace').strip()
+            error_output = stderr.read().decode('utf-8', errors='replace').strip()
             
             exit_status = stdout.channel.recv_exit_status()
 
-            if exit_status != 0:
-                full_error_message = f"Command exited with status {exit_status}."
-                if output.strip(): full_error_message += f"\nSTDOUT: {output.strip()}"
-                if error_output.strip(): full_error_message += f"\nSTDERR: {error_output.strip()}"
-                return False, full_error_message
-            if error_output.strip() and exit_status == 0 : 
-                 output += f"\nSTDERR (Warning): {error_output.strip()}"
-                
-            return True, output.strip()
+            # Combine stdout and stderr for the final output, as both can be relevant
+            full_output = output
+            if error_output:
+                full_output += f"\n{error_output}"
+
+            return True, full_output, exit_status
 
         except paramiko.AuthenticationException as e:
-            return False, f"Authentication failed: {str(e)}"
+            return False, f"Authentication failed: {str(e)}", -1
         except paramiko.SSHException as e: 
-            return False, f"SSH connection error: {str(e)}"
+            return False, f"SSH connection error: {str(e)}", -1
         except TimeoutError: 
-             return False, f"Connection timed out after {timeout} seconds."
+             return False, f"Connection timed out after {timeout} seconds.", -1
         except Exception as e: 
-            return False, f"An unexpected error occurred during SSH operation: {str(e)}"
+            return False, f"An unexpected error occurred during SSH operation: {str(e)}", -1
         finally:
             if client:
                 client.close()

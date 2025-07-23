@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, Alert, CircularProgress } from '@mui/material';
 import { getProfile, setupMfa, verifyMfa, disableMfa } from '../../../api/userService';
+import { styled } from '@mui/material/styles';
+import Paper from '@mui/material/Paper';
 
 const MfaSettings = () => {
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -9,6 +11,17 @@ const MfaSettings = () => {
   const [success, setSuccess] = useState('');
   const [qrCodeUri, setQrCodeUri] = useState(null);
   const [otp, setOtp] = useState('');
+
+  const GlassPaper = styled(Paper)(({ theme }) => ({
+    background: 'rgba(255, 255, 255, 0.08)',
+    backdropFilter: 'blur(12px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.125)',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    padding: theme.spacing(3),
+    color: '#fff',
+}));
 
   const textFieldSx = {
   '& .MuiOutlinedInput-root': {
@@ -126,7 +139,13 @@ const MfaSettings = () => {
   }
 
   return (
-    <Box>
+    <GlassPaper>
+      <Typography variant="h6" gutterBottom>
+        Multi-Factor Authentication (MFA)
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255,255,255,0.7)' }}>
+        Enable Multi-Factor Authentication (MFA) to add an extra layer of security to your account.
+      </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
@@ -190,7 +209,7 @@ const MfaSettings = () => {
           )}
         </Box>
       )}
-    </Box>
+    </GlassPaper>
   );
 };
 
