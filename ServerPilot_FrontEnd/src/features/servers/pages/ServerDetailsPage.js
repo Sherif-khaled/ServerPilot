@@ -120,7 +120,7 @@ export default function ServerDetailsPage() {
             <ApplicationsTab />
           </TabPanel>
           <TabPanel value={tabValue} index={2}>
-            <MonitoringTab />
+            <MonitoringTab customerId={customerId} serverId={serverId} />
           </TabPanel>
           <TabPanel value={tabValue} index={3}>
             <SecurityAdvisorTab customerId={customerId} serverId={serverId} />

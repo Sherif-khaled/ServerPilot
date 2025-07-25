@@ -188,7 +188,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#FE6B8B' }}/></Box>;
   }
 
   if (!isAIConfigured) {
@@ -291,7 +291,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             Fix All Critical Issues
           </Button>
           <Button variant="contained" color="primary" onClick={handleRescan} disabled={scanning || loading}>
-            {scanning ? <CircularProgress size={24} /> : 'Re-Scan Server'}
+            {scanning ? <CircularProgress size={24}  sx={{ color: '#FE6B8B' }}/> : 'Re-Scan Server'}
           </Button>
         </Box>
       </Box>

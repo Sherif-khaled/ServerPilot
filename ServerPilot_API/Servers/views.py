@@ -19,6 +19,52 @@ from rest_framework.decorators import action
 from ServerPilot_API.audit_log.services import log_action
 from ServerPilot_API.security.models import SecurityRisk
 
+
+def _parse_bandwidth(net_dev_start, net_dev_end):
+    """Parse the output of /proc/net/dev to get bandwidth in Mbps."""
+    def get_bytes(output):
+        rx_total, tx_total = 0, 0
+        lines = output.strip().split('\n')[2:]  # Skip header lines
+        for line in lines:
+            if ':' in line:
+                parts = line.split(':')[1].split()
+                rx_total += int(parts[0])
+                tx_total += int(parts[8])
+        return rx_total, tx_total
+
+    try:
+        rx_start, tx_start = get_bytes(net_dev_start)
+        rx_end, tx_end = get_bytes(net_dev_end)
+
+        # Bytes per second, then convert to Megabits per second
+        rx_mbps = (rx_end - rx_start) * 8 / (1024 * 1024)
+        tx_mbps = (tx_end - tx_start) * 8 / (1024 * 1024)
+
+        return {'rx_mbps': round(rx_mbps, 2), 'tx_mbps': round(tx_mbps, 2)}
+    except (IndexError, ValueError) as e:
+        logger.warning(f"Could not parse /proc/net/dev output: {e}")
+        return {'rx_mbps': 0, 'tx_mbps': 0}
+
+def _parse_disk_io(iostat_output):
+    """Parse the output of iostat to get disk I/O stats in MB/s."""
+    lines = iostat_output.strip().split('\n')
+    read_mbps, write_mbps = 0.0, 0.0
+    # The second report is the one we want, so find the second 'Device' header
+    try:
+        device_header_index = [i for i, line in enumerate(lines) if line.startswith('Device')][1]
+        stats_lines = lines[device_header_index + 1:]
+        for line in stats_lines:
+            parts = line.split()
+            if parts:
+                # kBytes_read/s is at index 2, kBytes_wrtn/s is at index 3
+                read_mbps += float(parts[2]) / 1024
+                write_mbps += float(parts[3]) / 1024
+    except (IndexError, ValueError) as e:
+        logger.warning(f"Could not parse iostat output: {e}")
+        return {'read_mbps': 0, 'write_mbps': 0}
+
+    return {'read_mbps': round(read_mbps, 2), 'write_mbps': round(write_mbps, 2)}
+
 logger = logging.getLogger(__name__)
 
 
@@ -522,18 +568,58 @@ class ServerInfoView(AsyncAPIView):
                 str(server.server_ip), port=server.ssh_port, **conn_options
             ) as conn:
                 # --- Concurrently run all commands --- #
-                results = await asyncio.gather(
-                    conn.run('uname -a'),
+                # --- Concurrently run all commands (first reading) --- #
+                results1 = await asyncio.gather(
+                    conn.run('lsb_release -a | grep Description | cut -f2-'),
                     conn.run("grep 'cpu ' /proc/stat"),
                     conn.run('free -b'),
                     conn.run('df -B1'),
                     conn.run('nproc'),
-                    asyncio.sleep(1),
+                    conn.run('iostat -d -k 1 2'), # For disk I/O
+                    conn.run('cat /proc/net/dev'), # For bandwidth
+                    conn.run('uptime -p'),
+                    conn.run('cat /proc/swaps'),
                 )
+
+                await asyncio.sleep(1)
+
+                # --- Concurrently run all commands (second reading) --- #
+                results2 = await asyncio.gather(
+                    conn.run("grep 'cpu ' /proc/stat"),
+                    conn.run('cat /proc/net/dev'),
+                )
+
                 # After sleep, get the second CPU stat
                 cpu_result2 = await conn.run("grep 'cpu ' /proc/stat")
 
-                os_result, cpu_result1, mem_result, disk_result, nproc_result, _ = results
+                os_result, cpu_result1, mem_result, disk_result, nproc_result, iostat_result, net_dev_result1, uptime_result, swap_result = results1
+                cpu_result2, net_dev_result2, *_ = results2
+
+                # --- Process SWAP Info --- #
+                swap_data = {
+                    'enabled': False,
+                    'total_gb': 0,
+                    'used_gb': 0,
+                    'free_gb': 0
+                }
+                if swap_result.stdout:
+                    lines = swap_result.stdout.strip().split('\n')
+                    if len(lines) > 1:
+                        parts = lines[1].split()
+                        if len(parts) >= 4:
+                            total_kb = int(parts[2])
+                            used_kb = int(parts[3])
+                            
+                            total_gb = total_kb / (1024 * 1024)
+                            used_gb = used_kb / (1024 * 1024)
+                            free_gb = total_gb - used_gb
+                            
+                            swap_data = {
+                                'enabled': True,
+                                'total_gb': round(total_gb, 2),
+                                'used_gb': round(used_gb, 2),
+                                'free_gb': round(free_gb, 2)
+                            }
 
                 # --- Process CPU Usage --- #
                 cpu_usage = 0
@@ -582,12 +668,29 @@ class ServerInfoView(AsyncAPIView):
                         })
 
                 # --- Final Data Structure --- #
+                # --- Process Disk I/O ---
+                disk_io_data = _parse_disk_io(iostat_result.stdout)
+
+                # --- Final Data Structure --- #
+                # --- Process Bandwidth ---
+                bandwidth_data = _parse_bandwidth(net_dev_result1.stdout, net_dev_result2.stdout)
+
+                # --- Final Data Structure --- #
                 data = {
-                    'os': os_result.stdout.strip(),
+                    'os_info': os_result.stdout.strip(),
                     'cpu': cpu_data,
                     'memory': memory_data,
                     'swap': swap_data,
                     'disks': disks_data,
+                    'disk_io': disk_io_data,
+                    'bandwidth': bandwidth_data,
+                    'uptime': uptime_result.stdout.strip(),
+                    'swap': swap_data,
+                    'thresholds': {
+                        'cpu': server.cpu_threshold,
+                        'memory': server.memory_threshold,
+                        'disk': server.disk_threshold,
+                    }
                 }
                 return Response({"serverName": server.server_name, "data": data})
 

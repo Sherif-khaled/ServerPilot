@@ -32,6 +32,9 @@ import {
 
 import { getServers, deleteServer, testServerConnection, getServerInfo, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
+import CpuUsage from './monitoring/CpuUsage';
+import MemoryUsage from './monitoring/MemoryUsage';
+import DiskUsage from './monitoring/DiskUsage';
 
 const COLORS = ['#0088FE', '#FF8042']; // Blue for Used, Orange for Available 
 
@@ -606,24 +609,7 @@ export default function ServerList({ customerId: propCustomerId }) {
               return (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', p: 1 }}>
                   {cpu && cpu.cpu_usage_percent !== undefined ? (
-                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
-                      <GlassCard>
-                        <Typography variant="h6" gutterBottom>CPU Usage (%)</Typography>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <PieChart>
-                            <Pie data={[{ name: 'Used', value: cpu.cpu_usage_percent }, { name: 'Available', value: 100 - cpu.cpu_usage_percent }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={5} dataKey="value">
-                              <Cell key={`cell-used`} fill={COLORS[0]} />
-                              <Cell key={`cell-available`} fill={COLORS[1]} />
-                            </Pie>
-                            <RechartsTooltip formatter={(value) => `${value.toFixed(1)}%`} />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                          Cores: {cpu.cores} | Usage: {cpu.cpu_usage_percent.toFixed(1)}%
-                        </Typography>
-                      </GlassCard>
-                    </Box>
+                    <CpuUsage cpu={cpu} width={{ xs: '100%', md: '50%' }} />
                   ) : (
                     <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
                       <GlassCard>
@@ -636,24 +622,7 @@ export default function ServerList({ customerId: propCustomerId }) {
                   )}
 
                   {memory && memory.used_gb !== undefined ? (
-                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
-                      <GlassCard>
-                        <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <PieChart>
-                            <Pie data={[{ name: 'Used', value: memory.used_gb }, { name: 'Available', value: memory.available_gb }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#82ca9d" paddingAngle={5} dataKey="value">
-                              <Cell key={`cell-used-mem`} fill={COLORS[0]} />
-                              <Cell key={`cell-avail-mem`} fill={COLORS[1]} />
-                            </Pie>
-                            <RechartsTooltip formatter={(value) => `${value.toFixed(2)} GB`} />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <Typography variant="body2" align="center" sx={{ mt: 1 }}>
-                          Total: {memory.total_gb} GB | Used: {memory.used_gb} GB
-                        </Typography>
-                      </GlassCard>
-                    </Box>
+                    <MemoryUsage memory={memory} width={{ xs: '100%', md: '50%' }} />
                   ) : (
                     <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
                       <GlassCard>
@@ -665,24 +634,7 @@ export default function ServerList({ customerId: propCustomerId }) {
                     </Box>
                   )}
 
-                  {disks && disks.length > 0 && (
-                    <Box sx={{ width: '100%', p: 1, mt: 2 }}>
-                      <GlassCard>
-                        <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
-                        <ResponsiveContainer width="100%" height={disks.length * 80}>
-                          <BarChart data={disks} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis dataKey="mountpoint" type="category" width={80} />
-                            <RechartsTooltip formatter={(value, name) => [`${value.toFixed(2)} GB`, name.charAt(0).toUpperCase() + name.slice(1)]} />
-                            <Legend />
-                            <Bar dataKey="used_gb" stackId="a" fill="#8884d8" name="Used" />
-                            <Bar dataKey="available_gb" stackId="a" fill="#82ca9d" name="Available" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </GlassCard>
-                    </Box>
-                  )}
+                  <DiskUsage disks={disks } width={{ xs: '100%', md: '100%' }} />
                 </Box>
               );
             })() : (
