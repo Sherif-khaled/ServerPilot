@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Server, SecurityScan, SecurityRecommendation
+from .models import Server, SecurityScan, SecurityRecommendation, FirewallRule
 # Customer model import might not be strictly needed here anymore unless for type hinting
 # from API.Customers.models import Customer 
 
@@ -7,7 +7,7 @@ class ServerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Server
         fields = (
-            'id', 'customer', 'server_name', 'server_ip', 'ssh_port',
+            'id', 'customer', 'server_name', 'server_ip', 'ssh_port', 'firewall_enabled',
             'login_using_root',
             'ssh_user', 'ssh_password', 
             'ssh_root_password',
@@ -111,6 +111,12 @@ class SecurityRecommendationSerializer(serializers.ModelSerializer):
     class Meta:
         model = SecurityRecommendation
         fields = '__all__'
+
+class FirewallRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FirewallRule
+        fields = ('id', 'server', 'port', 'protocol', 'source_ip', 'action', 'description', 'created_at')
+        read_only_fields = ('created_at', 'server')
 
 class SecurityScanSerializer(serializers.ModelSerializer):
     recommendations = SecurityRecommendationSerializer(many=True, read_only=True)

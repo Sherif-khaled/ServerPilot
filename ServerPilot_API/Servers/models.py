@@ -40,10 +40,29 @@ class SecurityRecommendation(models.Model):
         return self.title
 
 
+class FirewallRule(models.Model):
+    server = models.ForeignKey('Server', related_name='firewall_rules', on_delete=models.CASCADE)
+    port = models.CharField(max_length=255, help_text="Port or port range (e.g., '22', '80,443', '1000-2000')")
+    protocol = models.CharField(max_length=10, choices=[('tcp', 'TCP'), ('udp', 'UDP'), ('any', 'Any')], default='tcp')
+    source_ip = models.CharField(max_length=255, default='0.0.0.0/0', help_text="Source IP or CIDR (e.g., '192.168.1.1', '10.0.0.0/8')")
+    action = models.CharField(max_length=10, choices=[('allow', 'Allow'), ('block', 'Block')], default='allow')
+    description = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_action_display()} {self.protocol.upper()} on port {self.port} from {self.source_ip} for {self.server.server_name}"
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Firewall Rule'
+        verbose_name_plural = 'Firewall Rules'
+
+
 class Server(models.Model):
     customer = models.ForeignKey(Customer, related_name='servers', on_delete=models.CASCADE)
     server_name = models.CharField(max_length=255)
     server_ip = models.GenericIPAddressField()
+    firewall_enabled = models.BooleanField(default=False)
     ssh_port = models.PositiveIntegerField(default=22)
 
     login_using_root = models.BooleanField(default=False)
@@ -135,7 +154,18 @@ class Server(models.Model):
             connection_args['timeout'] = timeout
             client.connect(**connection_args)
 
-            stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+            # --- Sudo Handling --- #
+            # If the command uses sudo, we need to handle it specially.
+            if command.strip().startswith('sudo'):
+                # Use -S to read password from stdin. get_pty is often needed for sudo.
+                stdin, stdout, stderr = client.exec_command(command, timeout=timeout, get_pty=True)
+                # We need to write the password to stdin for sudo.
+                # Note: This assumes the ssh user's password is the sudo password.
+                if password_to_use:
+                    stdin.write(password_to_use + '\n')
+                    stdin.flush()
+            else:
+                stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
             output = stdout.read().decode('utf-8', errors='replace').strip()
             error_output = stderr.read().decode('utf-8', errors='replace').strip()
             

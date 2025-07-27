@@ -1,23 +1,23 @@
 import logging
 import re
-import asyncssh
 import asyncio
-from asgiref.sync import sync_to_async
+import asyncssh
+from asgiref.sync import async_to_sync, sync_to_async
 from django.http import Http404
 from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
-from .models import Server
+from .models import Server, FirewallRule
 from ServerPilot_API.Customers.models import Customer
-from .serializers import ServerSerializer, SecurityScanSerializer, SecurityRecommendationSerializer
+from .serializers import ServerSerializer, SecurityScanSerializer, SecurityRecommendationSerializer, FirewallRuleSerializer
 from .models import SecurityScan, SecurityRecommendation
 from .permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
-from rest_framework import exceptions
-from rest_framework.decorators import action
 from ServerPilot_API.audit_log.services import log_action
 from ServerPilot_API.security.models import SecurityRisk
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_bandwidth(net_dev_start, net_dev_end):
@@ -444,6 +444,197 @@ class ServerViewSet(viewsets.ModelViewSet):
         serializer = SecurityScanSerializer(latest_scan)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='toggle-firewall')
+    def toggle_firewall(self, request, pk=None, customer_pk=None):
+        """
+        Toggles the firewall for a server.
+        """
+        server = self.get_object()
+        if server.firewall_enabled:
+            success, output, exit_status = server.connect_ssh(command='sudo ufw disable')
+            if not success:
+                return Response({"error": f"Failed to disable firewall: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            success, output, exit_status = server.connect_ssh(command='echo y | sudo ufw enable')
+            if not success:
+                return Response({"error": f"Failed to enable firewall: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        server.firewall_enabled = not server.firewall_enabled
+        server.save()
+        status_text = "enabled" if server.firewall_enabled else "disabled"
+        log_action(user=request.user, action=f'Firewall {status_text}', request=request, details=f"Firewall for server '{server.server_name}' was {status_text}.")
+        return Response({'status': f'Firewall {status_text}', 'firewall_enabled': server.firewall_enabled}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='ufw-rules')
+    def get_ufw_rules(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        success, output, exit_status = server.connect_ssh(command='sudo ufw status numbered')
+
+        if not success:
+            return Response({"error": f"Failed to connect to server: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # A non-zero exit status might not be an error if UFW is just inactive, but we can check the output.
+        # We proceed and let the parser handle cases where rules are not present.
+
+        try:
+            rules = []
+            lines = output.strip().split('\n')
+            # Find the start of the rules table
+            rules_start_index = next(i for i, line in enumerate(lines) if '----' in line) + 1
+
+            for line in lines[rules_start_index:]:
+                # This regex is designed to be more robust for UFW's output format.
+                match = re.match(r'\s*\[\s*(\d+)\]\s+(.*?)\s+(ALLOW|DENY|REJECT)\s+IN\s+(.*)', line)
+                if match:
+                    port_protocol_str = match.group(2).strip()
+                    port, protocol = (port_protocol_str.split('/') + [None])[:2]
+                    rules.append({
+                        'id': match.group(1),
+                        'port': port,
+                        'protocol': protocol,
+                        'action': match.group(3).strip(),
+                        'source': match.group(4).strip(),
+                    })
+            return Response(rules, status=status.HTTP_200_OK)
+        except StopIteration:
+            # This means the '----' line wasn't found, which is normal if UFW is inactive or has no rules.
+            return Response([], status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error parsing UFW rules for server {server.id}: {e}", exc_info=True)
+            return Response({"error": "Failed to parse UFW rules."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='add-ufw-rule')
+    def add_ufw_rule(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        port = request.data.get('port')
+        action = request.data.get('action', 'allow')
+        protocol = request.data.get('protocol')
+        source = request.data.get('source')
+
+        # Start building the command
+        command = f'sudo ufw {action} '
+
+        # Check if a specific source IP is provided
+        if source and source.lower() not in ['anywhere', 'any', '0.0.0.0/0', '']:
+            command += f'from {source} to any port {port}'
+            if protocol and not protocol.startswith('custom'):
+                command += f' proto {protocol}'
+        else:
+            # No specific source, so use the simpler format
+            command += f'{port}'
+            if protocol and not protocol.startswith('custom'):
+                command += f'/{protocol}'
+
+        success, output, _ = server.connect_ssh(command=command)
+        if not success:
+            return Response({"error": f"Failed to add rule: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"status": "Rule added successfully"}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='delete-ufw-rule')
+    def delete_ufw_rule(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        rule_id = request.data.get('id')
+
+        if not rule_id:
+            return Response({"error": "Rule ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        command = f'echo y | sudo ufw delete {rule_id}'
+        success, output, _ = server.connect_ssh(command=command)
+        if not success:
+            return Response({"error": f"Failed to delete rule: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"status": "Rule deleted successfully"}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='edit-ufw-rule')
+    def edit_ufw_rule(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        rule_id = request.data.get('id')
+        new_port = request.data.get('port')
+        new_action = request.data.get('action')
+        new_protocol = request.data.get('protocol')
+
+        if not all([rule_id, new_port, new_action]):
+            return Response({"error": "Missing rule data for edit."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # UFW doesn't have a direct edit command. The process is to delete the old rule and add a new one.
+        # First, delete the old rule by its number.
+        delete_command = f'echo y | sudo ufw delete {rule_id}'
+        success, output, _ = server.connect_ssh(command=delete_command)
+        if not success:
+            return Response({"error": f"Failed to delete old rule: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Second, add the new rule.
+        add_command = f'sudo ufw {new_action} {new_port}'
+        if new_protocol and not new_protocol.startswith('custom'):
+            add_command += f'/{new_protocol}'
+            
+        success, output, _ = server.connect_ssh(command=add_command)
+        if not success:
+            # Attempt to roll back by re-adding the original rule might be complex, so we just report the error.
+            return Response({"error": f"Failed to add new rule: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"status": "Rule updated successfully"}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='firewall-status')
+    def get_firewall_status(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        # The command needs sudo to read the firewall status correctly.
+        success, output, exit_status = server.connect_ssh(command='sudo ufw status')
+
+        if not success:
+            # Log the actual error output for debugging
+            logger.error(f"SSH command failed for server {server.id}. Exit status: {exit_status}, Output: {output}")
+            return Response({"error": f"Failed to execute command on server: {output}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        is_active = 'Status: active' in output
+
+        # Sync the database with the live status
+        if server.firewall_enabled != is_active:
+            server.firewall_enabled = is_active
+            server.save(update_fields=['firewall_enabled'])
+
+        return Response({'firewall_enabled': is_active})
+
+    @action(detail=True, methods=['post'], url_path='add-ufw-rule')
+    def add_ufw_rule(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        # Basic validation
+        port = request.data.get('port')
+        action = request.data.get('action', 'allow').lower()
+        if not port or action not in ['allow', 'deny', 'reject']:
+            return Response({'error': 'Port and a valid action (allow, deny, reject) are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        command = f"sudo ufw {action} {port}"
+        success, output, exit_status = server.connect_ssh(command=command)
+
+        if not success or exit_status != 0:
+            error_message = f"Failed to add rule on server. Exit code: {exit_status}, Output: {output}"
+            logger.error(error_message)
+            return Response({'error': error_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        log_action(user=request.user, action=f'Firewall rule added', request=request, details=f"Added rule '{command}' to server '{server.server_name}'.")
+        return Response({'status': 'success', 'message': 'Rule added successfully.'}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='delete-ufw-rule')
+    def delete_ufw_rule(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        rule_number = request.data.get('id')
+        if not rule_number:
+            return Response({'error': 'Rule number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # UFW's delete command can be non-interactive with --force or by echoing 'y'.
+        command = f"echo 'y' | sudo ufw delete {rule_number}"
+        success, output, exit_status = server.connect_ssh(command=command)
+
+        if not success or exit_status != 0:
+            error_message = f"Failed to delete rule on server. Exit code: {exit_status}, Output: {output}"
+            logger.error(error_message)
+            return Response({'error': error_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        log_action(user=request.user, action=f'Firewall rule deleted', request=request, details=f"Deleted rule number '{rule_number}' from server '{server.server_name}'.")
+        return Response({'status': 'success', 'message': 'Rule deleted successfully.'}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['patch'], url_path='recommendations/update-status')
     def update_recommendation_status(self, request, *args, **kwargs):
         server = self.get_object()
@@ -700,3 +891,55 @@ class ServerInfoView(AsyncAPIView):
         except Exception as e:
             logger.error(f"An unexpected error occurred in get_info for server {server.id}: {e}", exc_info=True)
             return Response({"error": "An unexpected error occurred during server info retrieval."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FirewallRuleViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing firewall rules for a specific server.
+    """
+    serializer_class = FirewallRuleSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the firewall rules
+        for the server specified in the URL.
+        """
+        server_pk = self.kwargs.get('server_pk')
+        try:
+            server = Server.objects.get(pk=server_pk)
+        except Server.DoesNotExist:
+            raise Http404("Server not found.")
+
+        # Check if the user has permission to access this server
+        if not self.request.user.is_staff and server.customer.owner != self.request.user:
+            raise PermissionDenied("You do not have permission to access this server's firewall rules.")
+
+        return FirewallRule.objects.filter(server=server)
+
+    def perform_create(self, serializer):
+        """
+        Associate the firewall rule with the server from the URL.
+        """
+        server_pk = self.kwargs.get('server_pk')
+        try:
+            server = Server.objects.get(pk=server_pk)
+        except Server.DoesNotExist:
+            raise Http404("Server not found.")
+
+        # Check permissions before creating
+        if not self.request.user.is_staff and server.customer.owner != self.request.user:
+            raise PermissionDenied("You do not have permission to create firewall rules for this server.")
+        
+        serializer.save(server=server)
+        log_action(self.request.user, 'Created firewall rule', f"Rule '{serializer.instance}' was created for server '{server.server_name}'.")
+
+    def perform_update(self, serializer):
+        serializer.save()
+        log_action(self.request.user, 'Updated firewall rule', f"Rule '{serializer.instance}' was updated for server '{serializer.instance.server.server_name}'.")
+
+
+    def perform_destroy(self, instance):
+        server = instance.server
+        log_action(self.request.user, 'Deleted firewall rule', f"Rule '{instance}' was deleted from server '{server.server_name}'.")
+        instance.delete()
