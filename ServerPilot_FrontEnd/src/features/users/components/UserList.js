@@ -445,8 +445,7 @@ export default function UserList() {
                                                     borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                                                 },
                                                 '&:hover': {
-                                                    background: 'rgba(254,107,139,0.08)', // subtle glassy pink
-                                                    cursor: 'pointer',
+                                                    background: 'rgba(254,107,139,0.08)',
                                                     transition: 'background 0.2s',
                                                 }
                                             }}

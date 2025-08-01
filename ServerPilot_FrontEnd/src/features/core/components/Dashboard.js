@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
-import { NavLink, useNavigate } from 'react-router-dom'; // Use NavLink for active link styling
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
 import { styled } from '@mui/material/styles';
@@ -34,6 +34,29 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const [systemSettingsOpen, setSystemSettingsOpen] = React.useState(false);
   const [administrationOpen, setAdministrationOpen] = React.useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [pageTitle, setPageTitle] = React.useState('System Overview');
+
+  const pageTitles = {
+    '/dashboard': 'Dashboard',
+    '/profile': 'Profile',
+    '/users': 'Users',
+    '/customers': 'Customers',
+    '/applications': 'Applications',
+    '/admin/settings': 'System Settings',
+    '/password-policy': 'Password Policy',
+    '/audit-logs': 'Audit Logs',
+    '/database-management': 'Database Management',
+    '/security-risk-roles': 'Security Risk Roles',
+    '/settings': 'Settings'
+  };
+
+  React.useEffect(() => {
+    const path = location.pathname;
+    const title = pageTitles[path] || 'System Overview'; // Default title
+    setPageTitle(title);
+  }, [location]);
 
   // When screen size changes, force open on desktop, close on mobile
   React.useEffect(() => {
@@ -107,7 +130,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
               Admin Dashboard
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              System Overview
+              {pageTitle}
             </Typography>
           </Box>
           <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">

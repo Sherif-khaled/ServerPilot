@@ -59,42 +59,42 @@ export const ThemeProvider = ({ children }) => {
                 }
               }
             : {
-                // Enhanced light mode palette
+                // Modern light mode palette
                 primary: {
-                  main: '#1976d2', // Material Blue 700
-                  contrastText: '#fff',
+                  main: '#007BFF', // A modern, vibrant blue
+                  contrastText: '#ffffff',
                 },
                 secondary: {
-                  main: '#9c27b0', // Material Purple 500
-                  contrastText: '#fff',
+                  main: '#6c757d', // A neutral gray for secondary actions
+                  contrastText: '#ffffff',
                 },
                 background: {
-                  default: '#f4f6f8', // Soft gray background
-                  paper: '#ffffff',   // Cards, dropdowns, menus
+                  default: '#f8f9fa', // A very light gray for the background
+                  paper: '#ffffff',   // White for cards and surfaces
                 },
                 text: {
-                  primary: '#1a1a1a',   // Main text, almost black
-                  secondary: '#4f5b62', // Subtext, dark gray
-                  disabled: '#b0b8c1',  // Placeholder, disabled
+                  primary: '#212529',   // Dark gray for primary text for better readability
+                  secondary: '#6c757d', // Lighter gray for secondary text
+                  disabled: '#adb5bd',  // A suitable shade for disabled text
                 },
                 error: {
-                  main: '#d32f2f', // Material Red 700
+                  main: '#dc3545', // A standard, clear red for errors
                 },
                 success: {
-                  main: '#388e3c', // Material Green 700
+                  main: '#28a745', // A clear green for success states
                 },
                 warning: {
-                  main: '#fbc02d', // Material Yellow 700
+                  main: '#ffc107', // A standard warning yellow
                 },
                 info: {
-                  main: '#0288d1', // Material Blue 700
+                  main: '#17a2b8', // A calm blue for informational messages
                 },
-                divider: '#e0e0e0', // Light gray divider
+                divider: '#dee2e6', // A light divider color
                 action: {
-                  hover: '#f0f0f0', // Subtle hover background
-                  selected: '#e3f2fd', // Selected item background
-                  disabled: '#f5f5f5', // Disabled background
-                  disabledOpacity: 0.38,
+                  hover: 'rgba(0, 0, 0, 0.04)', // A subtle hover effect
+                  selected: 'rgba(0, 123, 255, 0.08)', // Light blue for selected items
+                  disabled: 'rgba(0, 0, 0, 0.06)',
+                  disabledBackground: 'rgba(0, 0, 0, 0.12)',
                 }
               }),
         },
