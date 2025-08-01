@@ -1,5 +1,6 @@
 import logging
 import re
+import shlex
 import asyncio
 import asyncssh
 from asgiref.sync import async_to_sync, sync_to_async
@@ -11,11 +12,16 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from .models import Server, FirewallRule
 from ServerPilot_API.Customers.models import Customer
-from .serializers import ServerSerializer, SecurityScanSerializer, SecurityRecommendationSerializer, FirewallRuleSerializer
+from .serializers import (
+    ServerSerializer, SecurityScanSerializer, 
+    SecurityRecommendationSerializer, FirewallRuleSerializer, 
+    InstalledApplicationSerializer
+)
 from .models import SecurityScan, SecurityRecommendation
 from .permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
 from ServerPilot_API.audit_log.services import log_action
 from ServerPilot_API.security.models import SecurityRisk
+from ServerPilot_API.server_applications.models import Application
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +84,8 @@ class ServerViewSet(viewsets.ModelViewSet):
     queryset = Server.objects.all()
     serializer_class = ServerSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+
+
     
     def get_serializer_context(self):
         """
@@ -435,6 +443,39 @@ class ServerViewSet(viewsets.ModelViewSet):
             logger.error(f'Error fixing recommendation {recommendation_id} for server {pk}: {e}', exc_info=True)
             return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=True, methods=['post'], url_path='execute-fix')
+    def execute_fix(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        commands = request.data.get('commands', [])
+        if not commands:
+            return Response({'error': 'Commands are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        async def run_commands():
+            async with asyncssh.connect(
+                server.server_ip,
+                port=server.ssh_port,
+                username='root',
+                password=server.ssh_root_password,
+                known_hosts=None
+            ) as conn:
+                results = []
+                for command in commands:
+                    result = await conn.run(command, check=False)
+                    results.append({
+                        'command': command,
+                        'stdout': result.stdout,
+                        'stderr': result.stderr,
+                        'exit_code': result.exit_status
+                    })
+                return results
+
+        try:
+            results = asyncio.run(run_commands())
+            return Response({'results': results})
+        except Exception as e:
+            logger.error(f"Error executing fix on server {server.id}: {e}", exc_info=True)
+            return Response({'error': f'Failed to execute commands: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['get'], url_path='latest-security-scan')
     def latest_security_scan(self, request, *args, **kwargs):
         server = self.get_object()
@@ -635,7 +676,235 @@ class ServerViewSet(viewsets.ModelViewSet):
         log_action(user=request.user, action=f'Firewall rule deleted', request=request, details=f"Deleted rule number '{rule_number}' from server '{server.server_name}'.")
         return Response({'status': 'success', 'message': 'Rule deleted successfully.'}, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['patch'], url_path='recommendations/update-status')
+    @action(detail=True, methods=['get'], url_path='installed-applications')
+    def get_installed_applications(self, request, pk=None, customer_pk=None):
+        """
+        Retrieves a list of installed applications from the server.
+        """
+        return async_to_sync(self._get_installed_applications_async)(request, pk, customer_pk)
+
+    async def _get_installed_applications_async(self, request, pk, customer_pk):
+        server = await sync_to_async(self.get_object)()
+
+        is_allowed = await sync_to_async(self.get_queryset().filter(pk=server.pk).exists)()
+        if not is_allowed:
+            return Response({"error": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            # Determine credentials based on login method
+            username = 'root' if server.login_using_root else server.ssh_user
+            password = server.ssh_root_password if server.login_using_root else server.ssh_password
+            client_keys = [server.ssh_key] if server.ssh_key else None
+
+            async with asyncssh.connect(
+                server.server_ip,
+                port=server.ssh_port,
+                username=username,
+                password=password,
+                client_keys=client_keys,
+                known_hosts=None
+            ) as conn:
+                cmd = "systemctl list-units --type=service --all --no-pager"
+                result = await conn.run(cmd, check=True)
+                output = result.stdout.strip()
+
+                services = []
+                lines = output.split('\n')
+                # Skip header and footer lines
+                for line in lines[1:]:
+                    if not line.strip() or line.startswith('LEGEND:') or 'loaded units listed' in line:
+                        continue
+                    
+                    # Handle the optional leading dot character
+                    if line.startswith(('●', '○')):
+                        line = line[2:].strip()
+
+                    parts = re.split(r'\s{2,}', line, maxsplit=4)
+                    # Ensure we have exactly 5 parts and the unit name is not blank
+                    if len(parts) == 5 and parts[0].strip():
+                        services.append({
+                            'unit': parts[0].strip(),
+                            'load': parts[1].strip(),
+                            'active': parts[2].strip(),
+                            'sub': parts[3].strip(),
+                            'description': parts[4].strip()
+                        })
+
+                serializer = InstalledApplicationSerializer(data=services, many=True)
+                serializer.is_valid(raise_exception=True)
+                return Response(serializer.data)
+
+        except asyncssh.Error as e:
+            logger.error(f"SSH connection failed for server {server.id}: {e}", exc_info=True)
+            return Response({"error": f"SSH connection failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logger.error(f"An unexpected error occurred for server {server.id}: {e}", exc_info=True)
+            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'], url_path='scan-applications')
+    def scan_applications(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        defined_apps = Application.objects.all()
+        results = []
+
+        for app in defined_apps:
+            if not app.check_command:
+                continue
+
+            success, output, exit_status = server.connect_ssh(command=app.check_command)
+            version = 'N/A'
+            if app.detect_version:
+                if success and ('/usr/bin/' in output or '/usr/sbin/' in output or '/bin/' in output):
+                    ver_success, ver_output, ver_exit_status = server.connect_ssh(command=f'{output.strip()} --version')
+                    if ver_success and ver_output:
+                        # Use regex to find version numbers like X.Y.Z
+                        match = re.search(r'(\d+\.\d+(\.\d+)*)', ver_output)
+                        if match:
+                            version = match.group(1)
+                        else:
+                            # Fallback to the first line of output if no specific version pattern is found
+                            version = ver_output.strip().split('\n')[0]
+            else:
+                version = app.version or 'N/A'
+
+            if 'systemctl status' in app.check_command:
+                # Exit code 0: active, 3: inactive, 4: not found
+                if success:
+                    if exit_status == 0:
+                        status_val = 'active'
+                    elif exit_status == 3:
+                        status_val = 'inactive'
+                    elif exit_status == 4:
+                        continue  # Service not found, skip
+                    else:
+                        status_val = 'unknown'
+
+                    results.append({
+                        'id': app.id,
+                        'name': app.name,
+                        'check_command': app.check_command,
+                        'status': status_val,
+                        'version': version,
+                        'icon': app.icon,
+                        'description': app.description,
+                        'details': output.strip()
+                    })
+
+            else:
+                # Generic: exit_status 0 = found (e.g., path or binary exists)
+                if success and exit_status == 0:
+                    results.append({
+                        'id': app.id,
+                        'name': app.name,
+                        'check_command': app.check_command,
+                        'status': 'found',
+                        'version': version,
+                        'icon': app.icon,
+                        'description': app.description,
+                        'details': output.strip()
+                    })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='monitor-application')
+    def monitor_application(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        app_name = request.data.get('name')
+
+        if not app_name:
+            return Response({'error': 'Application name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # The app_name can be 'nginx', 'mysql', etc. We use a grep trick to avoid matching the grep process itself.
+        # For example, for 'nginx', the command becomes: ps aux | grep '[n]ginx' | awk '{print $3, $4}'
+        if len(app_name) < 1:
+            return Response({'error': 'Invalid application name.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Sanitize app_name to prevent command injection
+        
+        sanitized_app_name = shlex.quote(app_name)
+        
+        # Construct a more robust grep pattern
+        # This finds the process without matching the 'grep' command itself.
+        command = f"ps aux | grep '[{sanitized_app_name[0]}]{sanitized_app_name[1:]}' | head -n 1 | awk '{{print $3, $4}}'"
+
+        success, output, exit_status = server.connect_ssh(command=command)
+
+        if not success or not output.strip():
+            return Response({'error': f'Failed to get stats for {app_name}. The process might not be running or is inaccessible.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            parts = output.strip().split()
+            if len(parts) >= 2:
+                cpu_usage = float(parts[0])
+                memory_usage = float(parts[1])
+            else:
+                raise ValueError("Could not parse CPU and Memory usage from command output.")
+        except (ValueError, IndexError) as e:
+            return Response({'error': f'Error parsing stats for {app_name}: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'app_name': app_name,
+            'cpu_usage': cpu_usage,
+            'memory_usage': memory_usage
+        }, status=status.HTTP_200_OK)
+
+# ... (rest of the code remains the same)
+    @action(detail=True, methods=['post'], url_path='manage-application')
+    def manage_application(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        application_name = request.data.get('name')
+        action = request.data.get('action') # 'start', 'stop', 'restart'
+
+        if not all([application_name, action]):
+            return Response({'error': 'Application name and action are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if action not in ['start', 'stop', 'restart']:
+            return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # We assume the application name corresponds to a systemd service name
+        command = f"sudo systemctl {action} {application_name}"
+
+        success, output, exit_status = server.connect_ssh(command=command)
+
+        if success and exit_status == 0:
+            return Response({'status': f'Application {action}ed successfully.', 'details': output}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': f'Failed to {action} application.', 'details': output}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='application-logs')
+    def application_logs(self, request, pk=None, customer_pk=None):
+        server = self.get_object()
+        app_name = request.data.get('name')
+
+        if not app_name:
+            return Response({"error": "Application name is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            safe_app_name = shlex.quote(app_name)
+            commands_to_try = [
+                f"sudo journalctl -u {safe_app_name}.service -n 200 --no-pager",
+                f"sudo journalctl -u {safe_app_name} -n 200 --no-pager"
+            ]
+
+            last_error = ""
+            for command in commands_to_try:
+                success, output, exit_status = server.connect_ssh(command=command)
+                if success and exit_status == 0 and output.strip():
+                    return Response({"logs": output})
+                elif success and exit_status != 0:
+                    last_error = output
+
+            error_message = f"No logs found for '{app_name}'."
+            if last_error:
+                error_message += f" Server response: {last_error}"
+            
+            logger.error(f"Failed to fetch logs for {app_name} on server {server.id}: {error_message}")
+            return Response({"error": error_message}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred while fetching logs for {app_name} on server {server.id}: {e}", exc_info=True)
+            return Response({"error": f"An unexpected error occurred: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def update_recommendation_status(self, request, *args, **kwargs):
         server = self.get_object()
         recommendation_id = request.data.get('recommendation_id')
@@ -893,6 +1162,77 @@ class ServerInfoView(AsyncAPIView):
             return Response({"error": "An unexpected error occurred during server info retrieval."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class InstalledApplicationViewSet(viewsets.ViewSet):
+    """
+    API endpoint for listing installed applications on a server.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    serializer_class = InstalledApplicationSerializer
+
+    def get_queryset(self):
+        # This method is required for DRF's generic views, but we're overriding list.
+        # We don't have a model, so we return an empty queryset.
+        return None
+
+    @async_to_sync
+    async def list(self, request, *args, **kwargs):
+        server_pk = self.kwargs.get('server_pk')
+        try:
+            server = await sync_to_async(Server.objects.get)(pk=server_pk)
+        except Server.DoesNotExist:
+            raise Http404("Server not found.")
+
+        # Reuse the permission checking logic from ServerViewSet
+        self.check_object_permissions(self.request, server)
+
+        try:
+            async with asyncssh.connect(
+                server.server_ip, 
+                port=server.ssh_port,
+                username='root' if server.login_using_root else server.ssh_user,
+                password=server.ssh_root_password if server.login_using_root else server.ssh_password,
+                client_keys=[server.ssh_key] if server.ssh_key else None,
+                known_hosts=None
+            ) as conn:
+                cmd = "systemctl list-units --type=service --all --no-pager"
+                result = await conn.run(cmd, check=True)
+                output = result.stdout.strip()
+                print(output)
+
+                services = []
+                lines = output.split('\n')
+                # Skip header and footer lines
+                for line in lines[1:]:
+                    print(line)
+                    if not line.strip() or line.startswith('LEGEND:') or 'loaded units listed' in line:
+                        continue
+                    
+                    # Handle the optional leading dot character
+                    if line.startswith(('●', '○')):
+                        line = line[2:].strip()
+
+                    # Split into parts, being careful about the description
+                    parts = line.split(None, 4)
+                    if len(parts) == 5 and parts[0].strip():
+                        services.append({
+                            'unit': parts[0],
+                            'load': parts[1],
+                            'active': parts[2],
+                            'sub': parts[3],
+                            'description': parts[4]
+                        })
+
+                serializer = self.serializer_class(data=services, many=True)
+                serializer.is_valid(raise_exception=True)
+                return Response(serializer.data)
+
+        except asyncssh.Error as e:
+            logger.error(f"SSH connection failed for server {server.id} while fetching apps: {e}", exc_info=True)
+            return Response({"error": f"SSH connection failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logger.error(f"An unexpected error occurred while fetching apps for server {server.id}: {e}", exc_info=True)
+            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class FirewallRuleViewSet(viewsets.ModelViewSet):
     """
     API endpoint for managing firewall rules for a specific server.
@@ -916,6 +1256,8 @@ class FirewallRuleViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You do not have permission to access this server's firewall rules.")
 
         return FirewallRule.objects.filter(server=server)
+
+
 
     def perform_create(self, serializer):
         """

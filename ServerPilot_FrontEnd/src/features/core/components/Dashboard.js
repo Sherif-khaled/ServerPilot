@@ -243,6 +243,13 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                         </ListItemButton>
                         <Collapse in={systemSettingsOpen} timeout="auto" unmountOnExit>
                           <List component="div" disablePadding>
+                            {/* Applications */}
+                            <ListItem component={NavLink} to="/applications" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                              <ListItemIcon sx={{ minWidth: '40px' }}><StorageIcon /></ListItemIcon>
+                              <ListItemText primary="Applications" />
+                            </ListItem>
+                          </List>
+                          <List component="div" disablePadding>
                             {/* Settings */}
                             <ListItem component={NavLink} to="/admin/settings" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><SettingsIcon /></ListItemIcon>

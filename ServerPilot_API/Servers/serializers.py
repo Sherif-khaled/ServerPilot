@@ -118,6 +118,17 @@ class FirewallRuleSerializer(serializers.ModelSerializer):
         fields = ('id', 'server', 'port', 'protocol', 'source_ip', 'action', 'description', 'created_at')
         read_only_fields = ('created_at', 'server')
 
+class InstalledApplicationSerializer(serializers.Serializer):
+    """
+    Serializer for representing a systemd service. This is not a model serializer
+    as the data is fetched live from the server.
+    """
+    unit = serializers.CharField()
+    load = serializers.CharField()
+    active = serializers.CharField()
+    sub = serializers.CharField()
+    description = serializers.CharField()
+
 class SecurityScanSerializer(serializers.ModelSerializer):
     recommendations = SecurityRecommendationSerializer(many=True, read_only=True)
 
@@ -125,3 +136,4 @@ class SecurityScanSerializer(serializers.ModelSerializer):
         model = SecurityScan
         fields = ('id', 'server', 'scanned_at', 'status', 'recommendations')
         read_only_fields = ('scanned_at', 'server')
+

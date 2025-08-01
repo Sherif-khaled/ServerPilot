@@ -65,6 +65,50 @@ const deleteSecurityRisk = (riskId) => {
   return apiClient.delete(`/security/risks/${riskId}/`);
 };
 
+const toggleFirewall = (customerId, serverId) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/toggle-firewall/`);
+};
+
+const getFirewallRules = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/firewall-rules/`);
+};
+
+const createFirewallRule = (customerId, serverId, ruleData) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall-rules/`, ruleData);
+};
+
+const updateFirewallRule = (customerId, serverId, ruleId, ruleData) => {
+  return apiClient.put(`/customers/${customerId}/servers/${serverId}/firewall-rules/${ruleId}/`, ruleData);
+};
+
+const deleteFirewallRule = (customerId, serverId, ruleId) => {
+  return apiClient.delete(`/customers/${customerId}/servers/${serverId}/firewall-rules/${ruleId}/`);
+};
+
+const getUfwRules = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/ufw-rules/`);
+};
+
+const getFirewallStatus = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/firewall-status/`);
+};
+
+const addUfwRule = (customerId, serverId, ruleData) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/add-ufw-rule/`, ruleData);
+};
+
+const deleteUfwRule = (customerId, serverId, ruleId) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/delete-ufw-rule/`, { id: ruleId });
+};
+
+const editUfwRule = (customerId, serverId, ruleData) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/edit-ufw-rule/`, ruleData);
+};
+
+const getInstalledApplications = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/get-installed-applications/`);
+};
+
 export {
   getServers,
   getServerDetails,
@@ -82,4 +126,15 @@ export {
   updateSecurityRisk,
   createSecurityRisk,
   deleteSecurityRisk,
+  toggleFirewall,
+  getFirewallRules,
+  createFirewallRule,
+  updateFirewallRule,
+  deleteFirewallRule,
+  getUfwRules,
+  getFirewallStatus,
+  addUfwRule,
+  deleteUfwRule,
+  editUfwRule,
+  getInstalledApplications,
 };

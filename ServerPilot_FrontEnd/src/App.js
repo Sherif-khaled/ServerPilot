@@ -24,6 +24,7 @@ import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
 import AdminSettingsPage from './features/administration/pages/AdminSettingsPage';
 import ForgotPassword from './features/users/components/ForgotPassword';
 import ResetPassword from './features/users/components/ResetPassword';
+import ApplicationsPage from './features/applications/pages/ApplicationsPage';
 
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
@@ -62,6 +63,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/database-management" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode} overrideBackground><DatabaseManagementPage /></Dashboard>} />
         <Route path="/security-risk-roles" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SecurityRiskRolesPage /></Dashboard>} />
         <Route path="/admin/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AdminSettingsPage /></Dashboard>} />
+        <Route path="/applications" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ApplicationsPage /></Dashboard>} />
       </Route>
     </Routes>
   );

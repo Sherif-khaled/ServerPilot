@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/stats/', include('ServerPilot_API.stats.urls')),
     path('api/configuration/', include('ServerPilot_API.configuration.urls')),
     path('api/ai/', include('ServerPilot_API.ai_handler.urls')),
+    path('api/applications/', include('ServerPilot_API.server_applications.urls')),
 ]
 
 if settings.DEBUG:

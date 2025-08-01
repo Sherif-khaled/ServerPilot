@@ -1,0 +1,745 @@
+[
+    {
+        "model": "server_applications.application",
+        "pk": 1,
+        "fields": {
+            "name": "postgresql",
+            "description": "A powerful, open-source object-relational database system.",
+            "check_command": "systemctl status postgresql",
+            "detect_version": false,
+            "version": "16",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/303301/postgresql-logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 2,
+        "fields": {
+            "name": "mysql",
+            "description": "An open-source relational database management system.",
+            "check_command": "systemctl status mysql",
+            "detect_version": false,
+            "version": "8.0.32",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/303251/mysql-logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 3,
+        "fields": {
+            "name": "python",
+            "description": "A high-level, general-purpose programming language.",
+            "check_command": "command -v python3",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/452091/python.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 4,
+        "fields": {
+            "name": "php",
+            "description": "A popular general-purpose scripting language especially suited to web development.",
+            "check_command": "command -v php",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/452088/php.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 5,
+        "fields": {
+            "name": "nginx",
+            "description": "A web server that can also be used as a reverse proxy, load balancer, mail proxy and HTTP cache.",
+            "check_command": "systemctl status nginx",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/373924/nginx.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 6,
+        "fields": {
+            "name": "apache2",
+            "description": "A free and open-source cross-platform web server software.",
+            "check_command": "systemctl status apache2",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353400/apache.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 7,
+        "fields": {
+            "name": "nodejs",
+            "description": "A JavaScript runtime built on Chrome's V8 JavaScript engine.",
+            "check_command": "command -v node",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/303360/nodejs-logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 8,
+        "fields": {
+            "name": "ruby",
+            "description": "A dynamic, open source programming language with a focus on simplicity and productivity.",
+            "check_command": "command -v ruby",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/349494/ruby.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 9,
+        "fields": {
+            "name": "java",
+            "description": "A high-level, class-based, object-oriented programming language.",
+            "check_command": "command -v java",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/303388/java-4-logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 10,
+        "fields": {
+            "name": "go",
+            "description": "An open-source programming language that makes it easy to build simple, reliable, and efficient software.",
+            "check_command": "command -v go",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://upload.wikimedia.org/wikipedia/commons/0/05/Go_Logo_Blue.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 11,
+        "fields": {
+            "name": "perl",
+            "description": "A family of two high-level, general-purpose, interpreted, dynamic programming languages.",
+            "check_command": "command -v perl",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://avatars.githubusercontent.com/u/3585411?s=200&v=4"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 12,
+        "fields": {
+            "name": "docker",
+            "description": "A set of platform as a service products that use OS-level virtualization to deliver software in packages called containers.",
+            "check_command": "systemctl status docker",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/452192/docker.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 13,
+        "fields": {
+            "name": "redis",
+            "description": "An in-memory data structure store, used as a database, cache, and message broker.",
+            "check_command": "systemctl status redis",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/303460/redis-logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 14,
+        "fields": {
+            "name": "memcached",
+            "description": "A general-purpose distributed memory-caching system.",
+            "check_command": "systemctl status memcached",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/354056/memcached.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 15,
+        "fields": {
+            "name": "varnish",
+            "description": "An HTTP accelerator designed for content-heavy dynamic web sites and APIs.",
+            "check_command": "systemctl status varnish",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.vectorlogo.zone/logos/varnish-cache/varnish-cache-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 16,
+        "fields": {
+            "name": "git",
+            "description": "A free and open source distributed version control system designed to handle everything from small to very large projects with speed and efficiency.",
+            "check_command": "command -v git",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://git-scm.com/images/logos/downloads/Git-Icon-1788C.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 17,
+        "fields": {
+            "name": "composer",
+            "description": "A dependency manager for PHP.",
+            "check_command": "command -v composer",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353594/composer.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 18,
+        "fields": {
+            "name": "wp-cli",
+            "description": "The command-line interface for WordPress.",
+            "check_command": "command -v wp",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://upload.wikimedia.org/wikipedia/commons/a/ab/WordPress_logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 19,
+        "fields": {
+            "name": "fail2ban",
+            "description": "An intrusion prevention software framework that protects computer servers from brute-force attacks.",
+            "check_command": "systemctl status fail2ban",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Fail2ban_logo.png/120px-Fail2ban_logo.png"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 20,
+        "fields": {
+            "name": "ufw",
+            "description": "The Uncomplicated Firewall, a user-friendly front-end for managing iptables firewall rules.",
+            "check_command": "systemctl status ufw",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/987/firewall.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 21,
+        "fields": {
+            "name": "certbot",
+            "description": "A free, open source software tool for automatically using Let's Encrypt certificates on manually-administrated websites to enable HTTPS.",
+            "check_command": "command -v certbot",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353542/certbot.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 22,
+        "fields": {
+            "name": "supervisor",
+            "description": "A client/server system that allows its users to monitor and control a number of processes on UNIX-like operating systems.",
+            "check_command": "systemctl status supervisor",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/499847/process.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 23,
+        "fields": {
+            "name": "chrony",
+            "description": "A versatile implementation of the Network Time Protocol (NTP).",
+            "check_command": "systemctl status chrony",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/530652/clock.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 24,
+        "fields": {
+            "name": "ssh",
+            "description": "A cryptographic network protocol for operating network services securely over an unsecured network.",
+            "check_command": "systemctl status sshd",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://uxwing.com/wp-content/themes/uxwing/download/web-app-development/ssh-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 25,
+        "fields": {
+            "name": "vsftpd",
+            "description": "A GPL licensed FTP server for UNIX-like systems, including Linux.",
+            "check_command": "systemctl status vsftpd",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/448206/ftp.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 26,
+        "fields": {
+            "name": "mongodb",
+            "description": "A source-available cross-platform document-oriented database program.",
+            "check_command": "systemctl status mongod",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/mongodb-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 27,
+        "fields": {
+            "name": "mariadb",
+            "description": "A community-developed, commercially supported fork of the MySQL relational database management system.",
+            "check_command": "systemctl status mariadb",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/373824/mariadb.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 28,
+        "fields": {
+            "name": "sqlite",
+            "description": "A relational database management system contained in a C library.",
+            "check_command": "command -v sqlite3",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://upload.wikimedia.org/wikipedia/commons/3/38/SQLite370.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 29,
+        "fields": {
+            "name": "elasticsearch",
+            "description": "A distributed, free and open search and analytics engine for all types of data, including textual, numerical, geospatial, structured, and unstructured.",
+            "check_command": "systemctl status elasticsearch",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353688/elasticsearch.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 30,
+        "fields": {
+            "name": "kibana",
+            "description": "A free and open user interface that lets you visualize your Elasticsearch data and navigate the Elastic Stack.",
+            "check_command": "systemctl status kibana",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://techicons.dev/icons/kibana.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 31,
+        "fields": {
+            "name": "logstash",
+            "description": "A free and open server-side data processing pipeline that ingests data from a multitude of sources, transforms it, and then sends it to your favorite 'stash'.",
+            "check_command": "systemctl status logstash",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://techicons.dev/icons/logstash.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 32,
+        "fields": {
+            "name": "clickhouse",
+            "description": "An open-source, high performance columnar OLAP database management system for real-time analytics.",
+            "check_command": "systemctl status clickhouse-server",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://brandfetch.com/_next/image?url=https%3A%2F%2Fasset.brandfetch.io%2FidS-4_2e_s%2FidL4I174aI.svg&w=1200&q=75"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 33,
+        "fields": {
+            "name": "beats",
+            "description": "A platform for single-purpose data shippers. They send data from hundreds or thousands of machines and systems to Logstash or Elasticsearch.",
+            "check_command": "systemctl status filebeat metricbeat heartbeat auditbeat journalbeat packetbeat",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://techicons.dev/icons/beats.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 34,
+        "fields": {
+            "name": "grafana",
+            "description": "A multi-platform open source analytics and interactive visualization web application.",
+            "check_command": "systemctl status grafana-server",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/grafana-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 35,
+        "fields": {
+            "name": "prometheus",
+            "description": "A free software application used for event monitoring and alerting.",
+            "check_command": "systemctl status prometheus",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://upload.wikimedia.org/wikipedia/commons/3/38/Prometheus_software_logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 36,
+        "fields": {
+            "name": "alertmanager",
+            "description": "Handles alerts sent by client applications such as the Prometheus server.",
+            "check_command": "systemctl status alertmanager",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/330319/alertmanager.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 37,
+        "fields": {
+            "name": "rabbitmq",
+            "description": "A message broker that gives your applications a common platform to send and receive messages.",
+            "check_command": "systemctl status rabbitmq-server",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/303576/rabbitmq-logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 38,
+        "fields": {
+            "name": "celery",
+            "description": "A distributed task queue based on message passing.",
+            "check_command": "command -v celery",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/475179/celery.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 39,
+        "fields": {
+            "name": "gunicorn",
+            "description": "A Python Web Server Gateway Interface HTTP Server.",
+            "check_command": "command -v gunicorn",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353846/gunicorn.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 40,
+        "fields": {
+            "name": "uwsgi",
+            "description": "A software application that 'talks' to other processes from web servers.",
+            "check_command": "command -v uwsgi",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://techicons.dev/icons/uwsgi.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 41,
+        "fields": {
+            "name": "tomcat",
+            "description": "An open source web server and servlet container developed by the Apache Software Foundation.",
+            "check_command": "systemctl status tomcat",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/354454/tomcat.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 42,
+        "fields": {
+            "name": "jenkins",
+            "description": "An open source automation server which enables developers around the world to reliably build, test, and deploy their software.",
+            "check_command": "systemctl status jenkins",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353929/jenkins.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 43,
+        "fields": {
+            "name": "gitlab-runner",
+            "description": "A workhorse, written in Go, that runs jobs and sends the results back to GitLab.",
+            "check_command": "systemctl status gitlab-runner",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://about.gitlab.com/images/press/logo/logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 44,
+        "fields": {
+            "name": "ansible",
+            "description": "A software tool that provides simple configuration management, application deployment, and task automation.",
+            "check_command": "command -v ansible",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/341603/ansible.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 45,
+        "fields": {
+            "name": "puppet",
+            "description": "A software configuration management tool which includes its own declarative language to describe system configuration.",
+            "check_command": "command -v puppet",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/354230/puppet-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 46,
+        "fields": {
+            "name": "chef",
+            "description": "A configuration management tool that provides a way to manage infrastructure as code.",
+            "check_command": "command -v chef",
+            "detect_version": true,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.svgrepo.com/show/353549/chef.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 47,
+        "fields": {
+            "name": "nagios",
+            "description": "A popular open-source computer-software application that monitors systems, networks and infrastructure.",
+            "check_command": "systemctl status nagios",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.vectorlogo.zone/logos/nagios/nagios-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 48,
+        "fields": {
+            "name": "zabbix",
+            "description": "An open-source monitoring software tool for diverse IT components, including networks, servers, virtual machines and cloud services.",
+            "check_command": "systemctl status zabbix-server",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://techministry.blog/wp-content/uploads/2024/07/zabbix.png"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 49,
+        "fields": {
+            "name": "caddy",
+            "description": "A powerful, enterprise-ready, open source web server with automatic HTTPS written in Go.",
+            "check_command": "systemctl status caddy",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://caddyserver.com/resources/images/caddy-logo-light-512.png"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 50,
+        "fields": {
+            "name": "haproxy",
+            "description": "HAProxy is a free, open source software implementation of a load balancer and proxy server.",
+            "check_command": "systemctl status haproxy",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.vectorlogo.zone/logos/haproxy/haproxy-icon.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 51,
+        "fields": {
+            "name": "openlitespeed",
+            "description": "An open-source HTTP server developed by LiteSpeed Technologies.",
+            "check_command": "systemctl status lsws",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://openlitespeed.org/wp-content/uploads/2022/11/openlitespeed-logo-stack-light-400x300-1-300x225.png"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 52,
+        "fields": {
+            "name": "php-fpm",
+            "description": "An alternative PHP FastCGI implementation with some additional features useful for sites of any size, especially busier sites.",
+            "check_command": "systemctl status php-fpm",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://www.php.net/images/logo.svg"
+        }
+    },
+    {
+        "model": "server_applications.application",
+        "pk": 53,
+        "fields": {
+            "name": "postfix",
+            "description": "A free and open-source mail transfer agent that routes and delivers electronic mail.",
+            "check_command": "systemctl status postfix",
+            "detect_version": false,
+            "version": "",
+            "created_at": "2025-07-30T12:08:09+03:00",
+            "updated_at": "2025-07-30T12:08:09+03:00",
+            "icon": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Postfix-logo.svg"
+        }
+    }
+]
+  

@@ -6,6 +6,7 @@ import SecurityAdvisorTab from '../components/details/SecurityAdvisorTab';
 import DetailsTab from '../components/details/DetailsTab';
 import ApplicationsTab from '../components/details/ApplicationsTab';
 import MonitoringTab from '../components/details/MonitoringTab';
+import FirewallTab from '../components/details/FirewallTab';
 
 const RootContainer = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -76,7 +77,7 @@ export default function ServerDetailsPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress  sx={{ color: '#FE6B8B' }} /></Box>;
   }
 
   if (error) {
@@ -111,19 +112,23 @@ export default function ServerDetailsPage() {
               <Tab label="Applications" />
               <Tab label="Monitoring" />
               <Tab label="Security Advisor" />
+              <Tab label="Firewall" />
             </Tabs>
           </Box>
           <TabPanel value={tabValue} index={0}>
             <DetailsTab server={server} customerId={customerId} />
           </TabPanel>
           <TabPanel value={tabValue} index={1}>
-            <ApplicationsTab />
+            <ApplicationsTab customerId={customerId} serverId={serverId} />
           </TabPanel>
           <TabPanel value={tabValue} index={2}>
             <MonitoringTab customerId={customerId} serverId={serverId} />
           </TabPanel>
           <TabPanel value={tabValue} index={3}>
             <SecurityAdvisorTab customerId={customerId} serverId={serverId} />
+          </TabPanel>
+          <TabPanel value={tabValue} index={4}>
+            <FirewallTab server={server} customerId={customerId} serverId={serverId} />
           </TabPanel>
         </GlassCard>
       </RootContainer>

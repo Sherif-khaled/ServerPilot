@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, CircularProgress, Alert, Card, CardContent, Divider } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Divider } from '@mui/material';
 import { getServerInfo } from '../../../../api/serverService';
 import CpuUsage from '../monitoring/CpuUsage';
 import MemoryUsage from '../monitoring/MemoryUsage';
