@@ -165,9 +165,11 @@ class AnalyzeLogView(APIView):
             system_prompt = f"""
             You are an expert sysadmin. Analyze the following logs for an application named '{app_name}' and provide a solution.
             The user is not an expert, so explain the issue and your proposed solution clearly.
-            Format your response as a valid JSON object with two keys:
+            Format your response as a valid JSON object with four keys:
             1. "recommendation": A markdown-formatted string explaining the issue and the fix. This is for the human user.
             2. "commands": A JSON array of strings. Each string MUST be a complete, non-interactive, and directly executable shell command.
+            3. "error_code": A short, machine-readable string identifying the specific error (e.g., "port_conflict", "permission_denied", "out_of_memory"). If the error is generic or cannot be identified, return an empty string.
+            4. "doc_link": A fully qualified URL to a relevant documentation page that helps explain the error or solution. If no relevant link is found, return an empty string.
 
             IMPORTANT RULES FOR THE 'recommendation' FIELD:
             - Structure your explanation as a step-by-step guide. If using a numbered list, ensure each item is on a new line (e.g., '1. First, do this.\n2. Then, do that.').
@@ -204,8 +206,10 @@ class AnalyzeLogView(APIView):
                 data = json.loads(content)
                 recommendation = data.get('recommendation', '')
                 commands = data.get('commands', [])
-                logger.info("Successfully parsed AI response.")
-                return Response({'recommendation': recommendation, 'commands': commands})
+                error_code = data.get('error_code', '') # Extract the error code
+                doc_link = data.get('doc_link', '') # Extract the documentation link
+                logger.info(f"Successfully parsed AI response. Error code: {error_code}, Doc Link: {doc_link}")
+                return Response({'recommendation': recommendation, 'commands': commands, 'error_code': error_code, 'doc_link': doc_link})
             except json.JSONDecodeError:
                 logger.error(f"AI returned invalid JSON: {content}")
                 return Response({'recommendation': 'The AI returned an invalid response. Please try again.', 'commands': []}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

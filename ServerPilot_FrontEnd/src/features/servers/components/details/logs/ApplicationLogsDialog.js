@@ -13,6 +13,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '../../../../../api/apiClient';
 
+
+
 const getLogLineInfo = (line) => {
     const lowerLine = line.toLowerCase();
     const iconSx = { fontSize: '1.1rem', verticalAlign: 'middle', marginRight: '8px' };
@@ -49,6 +51,8 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
     const [analyzing, setAnalyzing] = useState(false);
     const [summary, setSummary] = useState('');
     const [recommendation, setRecommendation] = useState('');
+    const [errorCode, setErrorCode] = useState(null);
+    const [docLink, setDocLink] = useState(null);
     const [isAnalysisExpanded, setAnalysisExpanded] = useState(false);
     const [analysisError, setAnalysisError] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -148,6 +152,8 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         setRecommendation('');
         setCommands([]);
         setFixResult(null);
+        setErrorCode(null);
+        setDocLink(null);
         try {
             const response = await api.post(`/ai/analyze-logs/`, { logs, app_name: appName });
             const recommendationText = response.data.recommendation || '';
@@ -157,6 +163,8 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
             setRecommendation(recommendationText);
             setCommands(commandsList);
+            setErrorCode(response.data.error_code || null);
+            setDocLink(response.data.doc_link || null);
 
             if (recommendationText) {
                 // Generate a summary from the first line of the recommendation
@@ -321,7 +329,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                                     <ExpandMoreIcon sx={{ transform: isAnalysisExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }} />
                                 </IconButton>
                             </Box>
-                            <Collapse in={isAnalysisExpanded}>
+                            <Collapse in={isAnalysisExpanded} timeout="auto" unmountOnExit>
                                 <Divider sx={{ my: 1 }} />
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
@@ -329,6 +337,13 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                                 >
                                     {recommendation}
                                 </ReactMarkdown>
+                                {docLink && (
+                                    <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid #333' }}>
+                                        <Typography variant="body2">
+                                            📖 Learn more: <a href={docLink} target="_blank" rel="noopener noreferrer" style={{ color: '#64b5f6' }}>{docLink}</a>
+                                        </Typography>
+                                    </Box>
+                                )}
                             </Collapse>
                         </Paper>
                     )}
