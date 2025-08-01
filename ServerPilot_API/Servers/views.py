@@ -4,7 +4,9 @@ import shlex
 import asyncio
 import asyncssh
 from asgiref.sync import async_to_sync, sync_to_async
+from django.core.mail import send_mail
 from django.http import Http404
+from django.conf import settings
 from rest_framework import viewsets, permissions, status, serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -870,6 +872,29 @@ class ServerViewSet(viewsets.ModelViewSet):
             return Response({'status': f'Application {action}ed successfully.', 'details': output}, status=status.HTTP_200_OK)
         else:
             return Response({'error': f'Failed to {action} application.', 'details': output}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _fetch_application_logs(self, server, app_name):
+        # This is a synchronous helper method to be called by other methods.
+        # It's a simplified, non-async version for direct use.
+        try:
+            command = f"journalctl -u {shlex.quote(app_name)}.service --no-pager -n 100"
+            # This part needs to run in an async context if you use asyncssh
+            # For simplicity, let's assume a synchronous ssh library or a wrapper
+            # Since we are in an async view, we can call the async version
+            return async_to_sync(self._get_logs_async)(server, command)
+        except Exception as e:
+            logger.error(f"Error fetching logs for {app_name} on server {server.id}: {e}")
+            raise
+
+    async def _get_logs_async(self, server, command):
+        async with asyncssh.connect(
+            server.ip_address,
+            username=server.ssh_user,
+            password=server.ssh_password,
+            known_hosts=None
+        ) as conn:
+            result = await conn.run(command, check=False)
+            return result.stdout or result.stderr
 
     @action(detail=True, methods=['post'], url_path='application-logs')
     def application_logs(self, request, pk=None, customer_pk=None):

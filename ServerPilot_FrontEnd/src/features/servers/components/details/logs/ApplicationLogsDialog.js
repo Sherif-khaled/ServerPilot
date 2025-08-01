@@ -51,11 +51,11 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
     const [analyzing, setAnalyzing] = useState(false);
     const [summary, setSummary] = useState('');
     const [recommendation, setRecommendation] = useState('');
-    const [errorCode, setErrorCode] = useState(null);
     const [docLink, setDocLink] = useState(null);
     const [isAnalysisExpanded, setAnalysisExpanded] = useState(false);
     const [analysisError, setAnalysisError] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
     const [commands, setCommands] = useState([]);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [fixing, setFixing] = useState(false);
@@ -128,6 +128,24 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         }
         setSnackbarOpen(false);
     };
+
+    const handleCopyAll = () => {
+        navigator.clipboard.writeText(logs);
+        setCopySnackbarOpen(true);
+    };
+
+    const handleDownload = () => {
+        const blob = new Blob([logs], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${appName}-logs.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
 
     const handleAttemptFix = async () => {
         setConfirmOpen(false);
@@ -386,6 +404,12 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
             </DialogContent>
             <DialogActions sx={{ borderTop: '1px solid #444', pt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
+                    <Button onClick={handleCopyAll} disabled={!logs || loading} sx={{ color: '#f1f1f1' }}>
+                        Copy All
+                    </Button>
+                    <Button onClick={handleDownload} disabled={!logs || loading} sx={{ color: '#f1f1f1' }}>
+                        Download
+                    </Button>
                     <Button onClick={handleAnalyze} disabled={!logs || analyzing || loading || fixing} sx={{ color: '#f1f1f1' }}>
                         Analyze Logs with AI
                     </Button>
@@ -412,6 +436,19 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                 action={
                     <IconButton size="small" aria-label="close" color="inherit" onClick={handleCloseSnackbar}>
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                }
+            />
+
+            <Snackbar
+                open={copySnackbarOpen}
+                autoHideDuration={3000}
+                onClose={() => setCopySnackbarOpen(false)}
+                message="Logs copied to clipboard!"
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                action={
+                    <IconButton size="small" aria-label="close" color="inherit" onClick={() => setCopySnackbarOpen(false)}>
                         <CloseIcon fontSize="small" />
                     </IconButton>
                 }
