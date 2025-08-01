@@ -52,6 +52,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
     const [summary, setSummary] = useState('');
     const [recommendation, setRecommendation] = useState('');
     const [docLink, setDocLink] = useState(null);
+    const [errorCode, setErrorCode] = useState(null);
     const [isAnalysisExpanded, setAnalysisExpanded] = useState(false);
     const [analysisError, setAnalysisError] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);

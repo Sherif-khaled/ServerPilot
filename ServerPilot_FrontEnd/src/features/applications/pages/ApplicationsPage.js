@@ -15,6 +15,21 @@ const GlassCard = styled(Card)(({ theme }) => ({
     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
     color: '#fff',
 }));
+const textFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
+    '&.Mui-focused fieldset': { borderColor: 'transparent' },
+    '&.Mui-focused': {
+      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
+      borderRadius: 1,
+    },
+    color: '#fff',
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+};
 
 const ApplicationForm = ({ open, handleClose, application, onSave }) => {
   const [appName, setAppName] = useState('');
@@ -93,7 +108,7 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
             fullWidth
             value={appName}
             onChange={(e) => setAppName(e.target.value)}
-            sx={{ mb: 3 }}
+            sx={{ mb: 3, ...textFieldSx }}
             helperText="Use Technical Name of the Application e.g., 'nginx' or 'node'"
             InputProps={{
               endAdornment: (
@@ -114,7 +129,7 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            sx={{ mb: 3 }}
+            sx={{ mb: 3, ...textFieldSx }}
             helperText="A brief description of the application"
           />
           <TextField
@@ -122,7 +137,7 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
             fullWidth
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            sx={{ mb: 3 }}
+            sx={{ mb: 3, ...textFieldSx }}
             helperText="URL for the application's icon"
           />
           <FormControlLabel
@@ -130,6 +145,23 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
               <Checkbox
                 checked={detectVersion}
                 onChange={(e) => setDetectVersion(e.target.checked)}
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&.Mui-checked': {
+                    color: '#FE6B8B',
+                    '& .MuiSvgIcon-root': {
+                      border: '2px solid #FE6B8B',
+                      borderRadius: '3px',
+                    }
+                  },
+                  '&.Mui-checked:hover': {
+                    backgroundColor: 'rgba(254, 107, 139, 0.1)',
+                  },
+                  '& .MuiSvgIcon-root': {
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '3px',
+                  }
+                }} 
               />
             }
             label="Detect Application Version"
@@ -140,7 +172,7 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
               fullWidth
               value={version}
               onChange={(e) => setVersion(e.target.value)}
-              sx={{ mt: 2, mb: 3 }}
+              sx={{ mt: 2, mb: 3, ...textFieldSx }}
             />
           )}
           <TextField
@@ -148,15 +180,32 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
             fullWidth
             value={checkCommand}
             onChange={(e) => setCheckCommand(e.target.value)}
-            sx={{ mb: 3 }}
+            sx={{ mb: 3, ...textFieldSx }}
             error={!!validationError}
             helperText={validationError || "e.g., 'command -v node' or 'systemctl status nginx'"}
           />
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained">Save</Button>
+        <Button 
+          onClick={handleClose}
+          variant="outlined"
+          color="error"
+          disabled={isGenerating}
+          sx={{ flex: 1, borderRadius: 25, p: '10px 25px' }}
+          >Cancel</Button>
+        <Button 
+          onClick={handleSave} 
+          variant="contained"
+          disabled={isGenerating}
+          sx={{
+            flex: 1,
+            background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
+            boxShadow: '0 3px 5px 2px rgba(255,105,135,.3)',
+            borderRadius: 25,
+            p: '10px 25px',
+          }}
+          >Save</Button>
       </DialogActions>
     </Dialog>
   );
@@ -285,7 +334,16 @@ const ApplicationsPage = () => {
                     }
                 }}
             />
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+            <Button variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={() => handleOpenDialog()}
+            sx={{
+              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+              boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
+              color: 'white',
+              borderRadius: '25px',
+              padding: '10px 25px',
+          }}>
                 Add Application
             </Button>
         </Box>
