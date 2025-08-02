@@ -8,6 +8,17 @@ from ServerPilot_API.Users.models import SingletonModel
 
 
 
+class Favicon(SingletonModel):
+    icon = models.ImageField(upload_to='favicons/', blank=True, null=True)
+
+    def __str__(self):
+        return "Favicon"
+
+    class Meta:
+        verbose_name = "Favicon"
+        verbose_name_plural = "Favicon"
+
+
 class EmailSettings(SingletonModel):
     send_from = models.EmailField(max_length=255)
     alias_name = models.CharField(max_length=255, blank=True)

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'; // Use NavLink for active link styling
@@ -6,7 +6,8 @@ import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
 import { styled } from '@mui/material/styles';
 import { Avatar, Collapse } from '@mui/material';
-import Footer from './Footer'; // Import the new Footer component
+import Footer from './Footer';
+import axios from 'axios'; // Import the new Footer component
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -36,6 +37,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const navigate = useNavigate();
   const location = useLocation();
 
+    const [favicon, setFavicon] = useState(null);
   const [pageTitle, setPageTitle] = React.useState('System Overview');
 
   const pageTitles = {
@@ -52,11 +54,32 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
     '/settings': 'Settings'
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const path = location.pathname;
     const title = pageTitles[path] || 'System Overview'; // Default title
     setPageTitle(title);
   }, [location]);
+
+  useEffect(() => {
+    axios.get('/api/configuration/favicon/')
+      .then(res => {
+        if (res.data.icon) {
+          const faviconUrl = `http://127.0.0.1:8000${res.data.icon}`;
+          setFavicon(faviconUrl);
+          let faviconLink = document.getElementById('favicon');
+          if (!faviconLink) {
+            faviconLink = document.createElement('link');
+            faviconLink.id = 'favicon';
+            faviconLink.rel = 'shortcut icon';
+            document.head.appendChild(faviconLink);
+          }
+          faviconLink.href = faviconUrl;
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load favicon', err);
+      });
+  }, []);
 
   // When screen size changes, force open on desktop, close on mobile
   React.useEffect(() => {
@@ -186,7 +209,8 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
             },
           }}
         >
-          <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: [1] }}>
+                    <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: [1] }}>
+              {favicon && <img src={favicon} alt="Favicon" style={{ width: 24, height: 24, marginRight: '8px', borderRadius: '4px' }} />}
               <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', color: '#fff' }}>
                   ServerPilot
               </Typography>

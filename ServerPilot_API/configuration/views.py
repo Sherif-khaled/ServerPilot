@@ -1,9 +1,27 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
-from .models import EmailSettings
-from .serializers import EmailSettingsSerializer
+from rest_framework import status, permissions, parsers
+from .models import EmailSettings, Favicon
+from .serializers import EmailSettingsSerializer, FaviconSerializer
 import smtplib
+
+class FaviconView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    def get(self, request):
+        favicon = Favicon.load()
+        serializer = FaviconSerializer(favicon)
+        return Response(serializer.data)
+
+    def put(self, request):
+        favicon = Favicon.load()
+        serializer = FaviconSerializer(favicon, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class EmailSettingsView(APIView):
     permission_classes = [permissions.IsAdminUser]

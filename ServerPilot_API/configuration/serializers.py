@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import EmailSettings
+from .models import EmailSettings, Favicon
+
+
+class FaviconSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favicon
+        fields = ['icon']
 from .utils import apply_email_settings
 
 class EmailSettingsSerializer(serializers.ModelSerializer):
