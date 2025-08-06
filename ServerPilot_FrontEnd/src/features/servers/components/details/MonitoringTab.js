@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Paper, CircularProgress, Alert, Divider } from '@mui/material';
-import { getServerInfo } from '../../../../api/serverService';
+import { getServerHealth } from '../../../../api/serverService';
 import CpuUsage from '../monitoring/CpuUsage';
 import MemoryUsage from '../monitoring/MemoryUsage';
 import DiskUsage from '../monitoring/DiskUsage';
@@ -18,7 +18,7 @@ const MonitoringTab = ({ customerId, serverId }) => {
     if (!customerId || !serverId) return;
     try {
       // No need to set loading to true on every interval fetch
-      const response = await getServerInfo(customerId, serverId);
+      const response = await getServerHealth(customerId, serverId);
       setStats(response.data.data);
       setError(null);
     } catch (err) {

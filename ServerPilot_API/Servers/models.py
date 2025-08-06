@@ -3,6 +3,7 @@ from django.conf import settings
 from ServerPilot_API.Customers.models import Customer
 import paramiko # Added import
 import io      # Added import
+import asyncssh
 
 class SecurityScan(models.Model):
     server = models.ForeignKey('Server', related_name='security_scans', on_delete=models.CASCADE)
@@ -189,6 +190,19 @@ class Server(models.Model):
         finally:
             if client:
                 client.close()
+    
+    @staticmethod
+    def async_connect_ssh(server):
+        """
+        Reusable method to establish an SSH connection.
+        """
+        if server.login_using_root:
+            return asyncssh.connect(server.server_ip, username='root', password=server.ssh_root_password)
+        elif server.ssh_key:
+            return asyncssh.connect(server.server_ip, username=server.ssh_user, pkey=server.ssh_key)
+        else:
+            return asyncssh.connect(server.server_ip, username=server.ssh_user, password=server.ssh_password)
+
 
     def change_user_password(self, new_password):
         """

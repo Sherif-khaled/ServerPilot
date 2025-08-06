@@ -54,7 +54,7 @@ function ApplicationsTab() {
         setMonitorError(null);
         setMonitorData(null);
         try {
-            const response = await api.post(`/customers/${customerId}/servers/${serverId}/monitor-application/`, { name: appName });
+            const response = await api.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${selectedApp.id}/monitor-application/`);
             setMonitorData(response.data);
         } catch (err) {
             setMonitorError(err.response?.data?.error || 'Failed to fetch monitoring data.');
@@ -81,9 +81,9 @@ function ApplicationsTab() {
         handleMenuClose();
         setActionLoading(true);
         try {
-            await api.post(`/customers/${customerId}/servers/${serverId}/manage-application/`, { name: appName, action });
+            await api.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${selectedApp.id}/manage-application/`, { action });
             // Refresh the list to show the updated status
-            const response = await api.get(`/customers/${customerId}/servers/${serverId}/scan-applications/`);
+            const response = await api.get(`/customers/${customerId}/servers/${serverId}/installed-applications/`);
             setApplications(response.data);
         } catch (err) {
             setError(err.response?.data?.error || `Failed to ${action} ${appName}`);
@@ -101,7 +101,7 @@ function ApplicationsTab() {
             }
             try {
                 setLoading(true);
-                const response = await api.get(`/customers/${customerId}/servers/${serverId}/scan-applications/`);
+                const response = await api.get(`/customers/${customerId}/servers/${serverId}/installed-applications/`);
                 setApplications(response.data);
             } catch (err) {
                 setError(err.response?.data?.detail || 'Failed to fetch application statuses.');

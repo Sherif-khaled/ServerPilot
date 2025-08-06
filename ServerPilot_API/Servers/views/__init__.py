@@ -1,0 +1,5 @@
+from .server_views import ServerViewSet
+from .firewall_rules_view import FirewallRuleViewSet
+from .installed_applications_view import InstalledApplicationViewSet
+from .server_info_view import ServerInfoViewSet
+from .security_advisor_view import SecurityAdvisorViewSet

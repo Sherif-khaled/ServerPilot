@@ -7,7 +7,7 @@
 
 from django.urls import path, include
 from rest_framework_nested import routers
-from .views import ServerViewSet, FirewallRuleViewSet, InstalledApplicationViewSet
+from .views import ServerViewSet
 from ServerPilot_API.Customers.views import CustomerViewSet
 
 # Using drf-nested-routers to create nested URLs like /customers/{customer_pk}/servers/
@@ -19,22 +19,13 @@ router.register(r'customers', CustomerViewSet, basename='customer')
 servers_router = routers.NestedDefaultRouter(router, r'customers', lookup='customer')
 servers_router.register(r'servers', ServerViewSet, basename='customer-servers')
 
-# Nested router for firewall rules, under servers
-firewall_rules_router = routers.NestedDefaultRouter(servers_router, r'servers', lookup='server')
-firewall_rules_router.register(r'firewall/rules', FirewallRuleViewSet, basename='server-firewall-rules')
-
-# Nested router for installed applications, under servers
-applications_router = routers.NestedDefaultRouter(servers_router, r'servers', lookup='server')
-applications_router.register(r'installed-applications', InstalledApplicationViewSet, basename='server-applications')
+# Server info endpoint
 
 # The basename 'customer-servers' is important for URL reversing.
 
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(servers_router.urls)),
-    path('', include(firewall_rules_router.urls)),
-    path('', include(applications_router.urls)),
-    
     # Add the credentials endpoint to the nested router
     path('customers/<int:customer_pk>/servers/<int:pk>/credentials/', 
          ServerViewSet.as_view({'get': 'get_credentials'}), 

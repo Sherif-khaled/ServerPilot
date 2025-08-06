@@ -77,7 +77,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         }
         setError(null);
         try {
-            const response = await api.post(`/customers/${customerId}/servers/${serverId}/application-logs/`, { name: appName });
+            const response = await api.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${appName}/application-logs/`, { name: appName });
             if (response.data.logs) {
                 setLogs(response.data.logs);
             } else {

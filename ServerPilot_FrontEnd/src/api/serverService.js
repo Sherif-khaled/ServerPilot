@@ -25,8 +25,12 @@ const testServerConnection = (customerId, serverId, command = null) => {
   return apiClient.post(`/customers/${customerId}/servers/${serverId}/test_connection/`, payload);
 };
 
-const getServerInfo = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/get-info/`);
+const getServerHealth = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/server-info/health/`);
+};
+
+const getServerMetrics = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/server-info/metrics/`);
 };
 
 const changeServerPassword = (customerId, serverId, password) => {
@@ -34,19 +38,19 @@ const changeServerPassword = (customerId, serverId, password) => {
 };
 
 const runSecurityScan = (customerId, serverId) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/run-security-scan/`);
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/security-advisor/run-security-scan/`);
 };
 
 const getLatestSecurityScan = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/latest-security-scan/`);
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/security-advisor/latest-security-scan/`);
 };
 
 const updateRecommendationStatus = (customerId, serverId, recommendation_id, status) => {
-  return apiClient.patch(`/customers/${customerId}/servers/${serverId}/recommendations/update-status/`, { recommendation_id, status });
+  return apiClient.patch(`/customers/${customerId}/servers/${serverId}/security-advisor/recommendations/update-status/`, { recommendation_id, status });
 };
 
 const fixRecommendation = (customerId, serverId, recommendationId) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/fix_recommendation/`, { recommendation_id: recommendationId });
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/security-advisor/fix_recommendation/`, { recommendation_id: recommendationId });
 };
 
 const getSecurityRisks = () => {
@@ -66,47 +70,31 @@ const deleteSecurityRisk = (riskId) => {
 };
 
 const toggleFirewall = (customerId, serverId) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/toggle-firewall/`);
-};
-
-const getFirewallRules = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/firewall-rules/`);
-};
-
-const createFirewallRule = (customerId, serverId, ruleData) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall-rules/`, ruleData);
-};
-
-const updateFirewallRule = (customerId, serverId, ruleId, ruleData) => {
-  return apiClient.put(`/customers/${customerId}/servers/${serverId}/firewall-rules/${ruleId}/`, ruleData);
-};
-
-const deleteFirewallRule = (customerId, serverId, ruleId) => {
-  return apiClient.delete(`/customers/${customerId}/servers/${serverId}/firewall-rules/${ruleId}/`);
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall/toggle/`);
 };
 
 const getUfwRules = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/ufw-rules/`);
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/firewall/rules/`);
 };
 
 const getFirewallStatus = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/firewall-status/`);
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/firewall/status/`);
 };
 
 const addUfwRule = (customerId, serverId, ruleData) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/add-ufw-rule/`, ruleData);
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall/rules/add/`, ruleData);
 };
 
 const deleteUfwRule = (customerId, serverId, ruleId) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/delete-ufw-rule/`, { id: ruleId });
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall/rules/delete/`, { id: ruleId });
 };
 
 const editUfwRule = (customerId, serverId, ruleData) => {
-  return apiClient.post(`/customers/${customerId}/servers/${serverId}/edit-ufw-rule/`, ruleData);
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall/rules/edit/`, ruleData);
 };
 
-const getInstalledApplications = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/get-installed-applications/`);
+const scanApplications = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/scan-applications/`);
 };
 
 export {
@@ -116,7 +104,6 @@ export {
   updateServer,
   deleteServer,
   testServerConnection,
-  getServerInfo,
   changeServerPassword,
   runSecurityScan,
   getLatestSecurityScan,
@@ -127,14 +114,12 @@ export {
   createSecurityRisk,
   deleteSecurityRisk,
   toggleFirewall,
-  getFirewallRules,
-  createFirewallRule,
-  updateFirewallRule,
-  deleteFirewallRule,
   getUfwRules,
   getFirewallStatus,
   addUfwRule,
   deleteUfwRule,
   editUfwRule,
-  getInstalledApplications,
+  scanApplications,
+  getServerHealth,
+  getServerMetrics,
 };

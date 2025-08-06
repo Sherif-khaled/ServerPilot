@@ -30,7 +30,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
 } from 'recharts';
 
-import { getServers, deleteServer, testServerConnection, getServerInfo, changeServerPassword } from '../../../api/serverService';
+import { getServers, deleteServer, getServerHealth, getServerMetrics, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
 import CpuUsage from './monitoring/CpuUsage';
 import MemoryUsage from './monitoring/MemoryUsage';
@@ -175,7 +175,7 @@ export default function ServerList({ customerId: propCustomerId }) {
 
     const checkAllServerStatus = async (serversToCheck) => {
     const statusPromises = serversToCheck.map(server => 
-      testServerConnection(customerId, server.id)
+      getServerHealth(customerId, server.id)
         .then(() => ({ [server.id]: 'Online' }))
         .catch(() => ({ [server.id]: 'Offline' }))
     );
@@ -252,7 +252,7 @@ export default function ServerList({ customerId: propCustomerId }) {
     setInfoLoading(true);
     setServerInfo({ serverName: server.server_name, data: null, error: null });
     try {
-      const res = await getServerInfo(customerId, server.id);
+      const res = await getServerHealth(customerId, server.id);
       setServerInfo({ serverName: server.server_name, data: res.data, error: null });
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to fetch server info.';
@@ -287,7 +287,7 @@ export default function ServerList({ customerId: propCustomerId }) {
       [serverId]: { testing: true, status: null, message: '' }
     }));
     try {
-      const response = await testServerConnection(customerId, serverId);
+      const response = await getServerHealth(customerId, serverId);
       setTestConnectionStatus(prev => ({ 
         ...prev, 
         [serverId]: { testing: false, status: 'success', message: response.data.output || 'Connection successful!' }

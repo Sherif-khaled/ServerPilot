@@ -5,7 +5,7 @@ from .views import ApplicationViewSet
 router = DefaultRouter()
 router.register(r'', ApplicationViewSet, basename='application')
 
-app_name = 'server_applications'
+app_name = 'Aserver_applications'
 
 urlpatterns = [
     path('', include(router.urls)),
