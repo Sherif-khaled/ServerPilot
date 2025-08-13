@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, CircularProgress, Alert, FormControlLabel, Checkbox, Paper } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { createServer, getServerDetails, updateServer } from '../../../api/serverService';
+import { Box, Button, TextField,Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Alert, FormControlLabel, 
+  Checkbox,Typography} from '@mui/material';
+import {getServerDetails, testServerConnection, testServerConnectionWithPayload } from '../../../api/serverService';
 import { IMaskInput } from 'react-imask';
 import PropTypes from 'prop-types';
+import { Save as SaveIcon } from '@mui/icons-material';
+import { textFieldSx, gradientButtonSx, glassDialogSx, checkBoxSx, CancelButton } from '../../../common';
 
 const TextMaskAdapter = React.forwardRef(function TextMaskAdapter(props, ref) {
   const { onChange, ...other } = props;
@@ -42,107 +44,71 @@ const initialFormData = {
   is_active: true,
 };
 
-    /*********************  STYLED COMPONENTS  ************************/
-const RootContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
-  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-  backdropFilter: 'blur(8px) saturate(160%)',
-  WebkitBackdropFilter: 'blur(8px) saturate(160%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-  color: '#fff',
-}));
 
-const GlassCard = styled(Box)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.06)',
-  backdropFilter: 'blur(8px) saturate(160%)',
-  WebkitBackdropFilter: 'blur(8px) saturate(160%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.2)',
-  padding: theme.spacing(3),
-  color: '#fff',
-}));
-
-// Common TextField styling
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-    color: 'white'
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-};
-/*********************  END OF STYLED COMPONENTS  ************************/
-
-export default function ServerForm({ customerId, serverData, onSaveSuccess, onClose }) {
+const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
   const isEditMode = Boolean(serverData && serverData.id);
   const serverId = isEditMode ? serverData.id : null;
 
   const [formData, setFormData] = useState(initialFormData);
-  const [loading, setLoading] = useState(false); // For form submission
-  const [pageLoading, setPageLoading] = useState(isEditMode); // For initial data load in edit mode
-  const [apiFormError, setApiFormError] = useState(''); // For general API errors
-  const [errors, setErrors] = useState({}); // For field-specific validation errors
+  const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(isEditMode);
+  const [apiFormError, setApiFormError] = useState('');
+  const [validationError, setValidationError] = useState({});
+  const [connectionTested, setConnectionTested] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionMessage, setConnectionMessage] = useState(null);
 
   useEffect(() => {
     const fetchServerDetails = async () => {
       try {
         const response = await getServerDetails(customerId, serverId);
-        // Passwords and keys are write-only, so they won't be in the response. 
-        // Keep them blank in the form for editing unless user provides new ones.
         setFormData({
           server_name: response.data.server_name || '',
           server_ip: response.data.server_ip || '',
           ssh_port: response.data.ssh_port || 22,
           login_using_root: response.data.login_using_root || false,
-          ssh_user: response.data.ssh_user || '', // May be null if login_using_root
-          ssh_password: '', // Always blank on load for security
-          ssh_root_password: '', // Always blank on load
-          ssh_key: '', // Always blank on load
+          ssh_user: response.data.ssh_user || '',
+          ssh_password: '',
+          ssh_root_password: '',
+          ssh_key: '',
           is_active: response.data.is_active === undefined ? true : response.data.is_active,
         });
       } catch (err) {
-        console.error('Failed to fetch server details:', err);
-        setApiFormError('Failed to load server data. Please try again or go back.');
+        setApiFormError('Failed to load server data. Please try again.');
       }
       setPageLoading(false);
     };
+
     if (isEditMode && serverId) {
       fetchServerDetails();
-    }
-    // No fetch needed for create mode
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId, serverId, isEditMode]);
-
-  useEffect(() => {
-    if (isEditMode && serverData) {
-      // Pre-fill form for editing, passwords/keys remain blank for security
+    } else if (serverData) {
       setFormData({
         server_name: serverData.server_name || '',
         server_ip: serverData.server_ip || '',
         ssh_port: serverData.ssh_port || 22,
         login_using_root: serverData.login_using_root || false,
         ssh_user: serverData.ssh_user || '',
-        ssh_password: '', // Always blank on load
-        ssh_root_password: '', // Always blank on load
-        ssh_key: '', // Always blank on load
+        ssh_password: '',
+        ssh_root_password: '',
+        ssh_key: '',
         is_active: serverData.is_active === undefined ? true : serverData.is_active,
       });
-      setPageLoading(false); // Assuming data is passed directly, no separate fetch needed if serverData is complete
-                           // If serverData is just an ID, then fetchServerDetails would be called here.
-                           // For now, assuming serverData contains the necessary fields.
+      setPageLoading(false);
     } else {
-      setFormData(initialFormData); // Reset for create mode
+      // Reset form for new server
+      setFormData(initialFormData);
+      setPageLoading(false);
     }
-    setErrors({});
+    
+    setValidationError({});
     setApiFormError('');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, serverData]); // serverId is not needed here as serverData implies it
+  }, [customerId, serverId, isEditMode, serverData]);
+
+  useEffect(() => {
+    // Reset connection test status when dialog opens or context changes
+    setConnectionTested(false);
+    setConnectionMessage(null);
+  }, [open]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -150,146 +116,256 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
     
     setFormData(prevData => {
       const newData = { ...prevData, [name]: val };
-      // Logic based on login_using_root
       if (name === 'login_using_root') {
-        if (val === true) { // Switching to root login
-          newData.ssh_user = ''; // Clear non-root user
-          newData.ssh_password = ''; // Clear non-root password
-        } else { // Switching to non-root login
-          newData.ssh_root_password = ''; // Clear root password
+        if (val === true) {
+          newData.ssh_user = '';
+          newData.ssh_password = '';
+        } else {
+          newData.ssh_root_password = '';
         }
       }
       return newData;
     });
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+  
+    // Clear the error for the current field when user types
+    if (validationError[name]) {
+      setValidationError(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
-    if (apiFormError) setApiFormError('');
+
+    // If a credential-affecting field changed, invalidate previous connection test
+    if ([
+      'server_ip',
+      'ssh_port',
+      'login_using_root',
+      'ssh_user',
+      'ssh_password',
+      'ssh_root_password',
+      'ssh_key',
+    ].includes(name)) {
+      setConnectionTested(false);
+      setConnectionMessage(null);
+    }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.server_name.trim()) newErrors.server_name = 'Server name is required.';
+  const validateForConnection = () => {
+    const errors = {};
+
+    // Server IP validation
     if (!formData.server_ip.trim()) {
-      newErrors.server_ip = 'Server IP address is required.';
-    } else if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(formData.server_ip) && !/^[a-fA-F0-9:]+$/.test(formData.server_ip)) {
-        // Basic IPv4 and allows colons for IPv6, not a strict validation
-        newErrors.server_ip = 'Invalid IP address format.';
-    }
-    if (!formData.ssh_port || formData.ssh_port <= 0 || formData.ssh_port > 65535) {
-        newErrors.ssh_port = 'Invalid SSH port (must be 1-65535).';
-    }
-
-    if (formData.login_using_root) {
-        if (!formData.ssh_root_password && !formData.ssh_key) {
-            if(isEditMode && !formData.ssh_root_password && !formData.ssh_key) {
-                 // In edit mode, if neither is provided, it means user is not updating them
-            } else {
-                newErrors.ssh_root_password = 'For root login, root password or SSH key is required.';
-                newErrors.ssh_key = 'For root login, root password or SSH key is required.';
-            }
-        }
+      errors.server_ip = 'Please enter a server IP address first.';
     } else {
-        if (!formData.ssh_user.trim()) newErrors.ssh_user = 'SSH username is required for non-root login.';
-        if (!formData.ssh_password && !formData.ssh_key) {
-            if(isEditMode && !formData.ssh_password && !formData.ssh_key) {
-                // In edit mode, if neither is provided, it means user is not updating them
-            } else {
-                newErrors.ssh_password = 'For non-root login, password or SSH key is required.';
-                newErrors.ssh_key = 'For non-root login, password or SSH key is required.';
-            }
-        }
+      const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const ipv6Pattern = /^[a-fA-F0-9:]+$/;
+      if (!ipv4Pattern.test(formData.server_ip) && !ipv6Pattern.test(formData.server_ip)) {
+        errors.server_ip = 'Invalid IP address format.';
+      }
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // SSH Port validation
+    if (!formData.ssh_port) {
+      errors.ssh_port = 'Please enter an SSH port.';
+    } else {
+      const port = parseInt(formData.ssh_port, 10);
+      if (isNaN(port) || port <= 0 || port > 65535) {
+        errors.ssh_port = 'Invalid SSH port (1-65535).';
+      }
+    }
+
+    // Authentication validation
+    if (formData.login_using_root) {
+      if (!formData.ssh_root_password && !formData.ssh_key) {
+        errors.root_auth = 'For root login, either root password or SSH key is required.';
+      }
+    } else {
+      if (!formData.ssh_user.trim()) {
+        errors.ssh_user = 'SSH username is required.';
+      }
+      if (!formData.ssh_password && !formData.ssh_key) {
+        errors.user_auth = 'Either password or SSH key is required.';
+      }
+    }
+
+    setValidationError(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!validateForm()) return;
+  const handleSave = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+    // Server name validation
+    if (!formData.server_name.trim()) {
+      setValidationError({ server_name: 'Please enter a server name first.' });
+      return false;
+    }
+    
+    // Server IP validation
+    if (!formData.server_ip.trim()) {
+      setValidationError({ server_ip: 'Please enter a server IP address first.' });
+      return false;
+    } else {
+      // IP format validation
+      const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const ipv6Pattern = /^[a-fA-F0-9:]+$/;
+      if (!ipv4Pattern.test(formData.server_ip) && !ipv6Pattern.test(formData.server_ip)) {
+        setValidationError({ server_ip: 'Invalid IP address format.' });
+        return false;
+      }
+    }
+    
+    // SSH Port validation
+    if (!formData.ssh_port) {
+      setValidationError({ ssh_port: 'Please enter an SSH port.' });
+      return false;
+    } else {
+      const port = parseInt(formData.ssh_port, 10);
+      if (isNaN(port) || port <= 0 || port > 65535) {
+        setValidationError({ ssh_port: 'Invalid SSH port (1-65535).' });
+        return false;
+      }
+    }
+    
+    // Authentication validation
+    if (formData.login_using_root) {
+      if (!formData.ssh_root_password && !formData.ssh_key) {
+        if (!isEditMode || (formData.ssh_root_password === '' && formData.ssh_key === '')) {
+          setValidationError({ root_auth: 'For root login, either root password or SSH key is required.' });
+          return false;
+        }
+      }
+    } else {
+      if (!formData.ssh_user.trim()) {
+        setValidationError({ ssh_user: 'SSH username is required.' });
+        return false;
+      }
+      
+      if (!formData.ssh_password && !formData.ssh_key) {
+        if (!isEditMode || (formData.ssh_password === '' && formData.ssh_key === '')) {
+          setValidationError({ user_auth: 'Either password or SSH key is required.' });
+          return false;
+        }
+      }
+    }
+    
+    // Prepare server data for saving
+    const serverData = {
+      server_name: formData.server_name,
+      server_ip: formData.server_ip,
+      ssh_port: formData.ssh_port,
+      login_using_root: formData.login_using_root,
+      ssh_user: formData.login_using_root ? null : formData.ssh_user,
+      ssh_password: formData.ssh_password || undefined,
+      ssh_root_password: formData.ssh_root_password || undefined,
+      ssh_key: formData.ssh_key || undefined,
+      is_active: formData.is_active
+    };
+    
+    // Call onSave with the server data and server ID if in edit mode
+    if (onSave) {
+      onSave(serverData, isEditMode ? serverId : null);
+    }
+    return true;
+  };
 
-    setLoading(true);
+  const handleClose = () => {
+    if (!loading) {
+      onClose();
+    }
+  };
+
+  const hasCredentialChanges = () => {
+    if (!isEditMode || !serverData) return true;
+    const base = serverData || {};
+    const compare = (a, b) => String(a ?? '') !== String(b ?? '');
+    if (compare(formData.server_ip, base.server_ip)) return true;
+    if (compare(formData.ssh_port, base.ssh_port || 22)) return true;
+    if (formData.login_using_root !== (base.login_using_root || false)) return true;
+    if (formData.login_using_root) {
+      // Any provided root password/key implies change
+      if (formData.ssh_root_password || formData.ssh_key) return true;
+    } else {
+      if (compare(formData.ssh_user, base.ssh_user || '')) return true;
+      if (formData.ssh_password || formData.ssh_key) return true;
+    }
+    return false;
+  };
+
+  const buildConnectionPayload = () => ({
+    server_ip: formData.server_ip,
+    ssh_port: formData.ssh_port,
+    login_using_root: formData.login_using_root,
+    ssh_user: formData.login_using_root ? null : formData.ssh_user,
+    ssh_password: formData.login_using_root ? null : formData.ssh_password,
+    ssh_root_password: formData.login_using_root ? formData.ssh_root_password : null,
+    ssh_key: formData.ssh_key || null,
+  });
+
+  const handleTestConnection = async () => {
+    setConnectionMessage(null);
     setApiFormError('');
 
-    // Prepare data: only send password/key if they are provided (not empty)
-    // Backend serializer handles logic if they are required but missing for create.
-    // For update, if not provided, they are not changed.
-    const payload = { ...formData };
-    if (!payload.ssh_password) delete payload.ssh_password;
-    if (!payload.ssh_root_password) delete payload.ssh_root_password;
-    if (!payload.ssh_key) delete payload.ssh_key;
-    
-    // If login_using_root, nullify non-root credentials
-    if (payload.login_using_root) {
-        payload.ssh_user = null;
-        // ssh_password already handled by delete if empty
-    } else {
-        // ssh_root_password already handled by delete if empty
-    }
+    if (!validateForConnection()) return;
 
     try {
-      if (isEditMode) {
-        await updateServer(customerId, serverId, payload);
+      setTestingConnection(true);
+      let response;
+      if (isEditMode && serverId && !hasCredentialChanges()) {
+        response = await testServerConnection(customerId, serverId);
       } else {
-        await createServer(customerId, payload);
+        const payload = buildConnectionPayload();
+        response = await testServerConnectionWithPayload(customerId, payload);
       }
-      if (onSaveSuccess) onSaveSuccess();
-    } catch (err) {
-      console.error('Failed to save server:', err);
-      let errorMessage = 'An unexpected error occurred. Please try again.';
-      if (err.response?.data) {
-        const responseData = err.response.data;
-        if (typeof responseData === 'string') {
-          errorMessage = responseData;
-        } else if (responseData.detail) {
-            errorMessage = responseData.detail;
-        } else if (typeof responseData === 'object') {
-          const fieldSpecificErrors = {};
-          let hasFieldErrors = false;
-          for (const key in responseData) {
-            if (initialFormData.hasOwnProperty(key) && Array.isArray(responseData[key])) {
-              fieldSpecificErrors[key] = responseData[key].join(' ');
-              hasFieldErrors = true;
-            }
-          }
-          if (hasFieldErrors) {
-            setErrors(prev => ({ ...prev, ...fieldSpecificErrors }));
-            errorMessage = 'Please correct the highlighted errors.';
-          } else {
-            const messages = Object.values(responseData).flat().join(' ');
-            if (messages) errorMessage = messages;
-          }
-        }
-      }
-      setApiFormError(errorMessage);
+      setConnectionTested(true);
+      setConnectionMessage({ type: 'success', text: response?.data?.message || 'Connection successful.' });
+    } catch (error) {
+      setConnectionTested(false);
+      const msg = error?.response?.data?.details || error?.response?.data?.message || error.message || 'Connection failed.';
+      setConnectionMessage({ type: 'error', text: msg });
+    } finally {
+      setTestingConnection(false);
     }
-    setLoading(false);
   };
 
-  if (pageLoading) {
-    return (
-      <RootContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-          <CircularProgress sx={{ color: '#FE6B8B' }} />
-        </Box>
-      </RootContainer>
-    );
-  }
-
-  if (!isEditMode && apiFormError && !pageLoading && !Object.keys(errors).length) {
-    // If it's create mode and there's a general API error not related to fields (e.g. initial load error)
-    // This condition might need refinement based on how pageError is used for create mode
-  }
-
   return (
-    <RootContainer>
-      <GlassCard>
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {apiFormError && <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{apiFormError}</Alert>}
-            
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth PaperComponent={glassDialogSx}>
+      <DialogTitle fontSize={24} fontWeight="bold">{isEditMode ? 'Edit Server' : 'Add New Server'}</DialogTitle>
+      <Box component="div" noValidate autoComplete="off" sx={{ mt: 2 }}>
+        <DialogContent dividers>
+          <Box>
+          {connectionMessage && (
+              <Alert severity={connectionMessage.type === 'success' ? 'success' : 'error'} sx={{ mb: 2 }}>
+                {connectionMessage.text}
+              </Alert>
+            )}
+            {apiFormError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {apiFormError}
+              </Alert>
+            )}
+            {validationError.is_active && (
+              <Typography variant="body2" color="error" sx={{ ml: 2 }}>
+                {validationError.is_active}
+              </Typography>
+            )}
+
+            {/* Display auth validation errors */}
+            {validationError.root_auth && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {validationError.root_auth}
+              </Alert>
+            )}
+            {validationError.user_auth && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {validationError.user_auth}
+              </Alert>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+
             <TextField
               required
               fullWidth
@@ -298,9 +374,10 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
               name="server_name"
               value={formData.server_name}
               onChange={handleChange}
-              error={!!errors.server_name}
-              helperText={errors.server_name}
+              error={!!validationError.server_name}
+              helperText={validationError.server_name || ''}
               sx={textFieldSx}
+              disabled={loading}
             />
 
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
@@ -312,12 +389,13 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                 id="server_ip"
                 value={formData.server_ip}
                 onChange={handleChange}
-                error={!!errors.server_ip}
-                helperText={errors.server_ip}
+                error={!!validationError.server_ip}
+                helperText={validationError.server_ip || ''}
                 sx={{ flexGrow: 1, ...textFieldSx }}
                 InputProps={{
                   inputComponent: TextMaskAdapter,
                 }}
+                disabled={loading}
               />
               <TextField
                 required
@@ -327,10 +405,13 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                 type="number"
                 value={formData.ssh_port}
                 onChange={handleChange}
-                error={!!errors.ssh_port}
-                helperText={errors.ssh_port}
-                InputProps={{ inputProps: { min: 1, max: 65535 } }}
+                error={!!validationError.ssh_port}
+                helperText={validationError.ssh_port || ''}
+                InputProps={{ 
+                  inputProps: { min: 1, max: 65535 },
+                }}
                 sx={{ width: { xs: '100%', sm: '120px' }, ...textFieldSx }}
+                disabled={loading}
               />
             </Box>
 
@@ -339,28 +420,13 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                 <Checkbox 
                   checked={formData.login_using_root} 
                   onChange={handleChange} 
-                  name="login_using_root" 
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&.Mui-checked': {
-                      color: '#FE6B8B',
-                      '& .MuiSvgIcon-root': {
-                        border: '2px solid #FE6B8B',
-                        borderRadius: '3px',
-                      }
-                    },
-                    '&.Mui-checked:hover': {
-                      backgroundColor: 'rgba(254, 107, 139, 0.1)',
-                    },
-                    '& .MuiSvgIcon-root': {
-                      border: '2px solid rgba(255, 255, 255, 0.3)',
-                      borderRadius: '3px',
-                    }
-                  }} 
+                  name="login_using_root"
+                  disabled={loading}
+                  sx={{ ...checkBoxSx}} 
                 />
               }
               label="Login as root user"
-              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+              sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 1 }}
             />
 
             {!formData.login_using_root && (
@@ -372,10 +438,11 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                   name="ssh_user"
                   value={formData.ssh_user}
                   onChange={handleChange}
-                  error={!!errors.ssh_user}
-                  helperText={errors.ssh_user}
+                  error={!!validationError.ssh_user}
+                  helperText={validationError.ssh_user ? validationError.ssh_user : 'Leave blank to keep current or if using SSH key.'}
                   required={!formData.login_using_root}
                   sx={textFieldSx}
+                  disabled={loading}
                 />
                 <TextField
                   fullWidth
@@ -385,10 +452,11 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
                   type="password"
                   value={formData.ssh_password}
                   onChange={handleChange}
-                  error={!!errors.ssh_password}
-                  helperText={errors.ssh_password || 'Leave blank to keep current or if using SSH key.'}
+                  error={!!validationError.ssh_password}
+                  helperText={validationError.ssh_password ? validationError.ssh_password : 'Leave blank to keep current or if using SSH key.'}
                   autoComplete="new-password"
                   sx={textFieldSx}
+                  disabled={loading}
                 />
               </Box>
             )}
@@ -397,89 +465,96 @@ export default function ServerForm({ customerId, serverData, onSaveSuccess, onCl
               <TextField
                 fullWidth
                 id="ssh_root_password"
-                label="SSH Root Password"
+                label="Root Password *"
                 name="ssh_root_password"
                 type="password"
                 value={formData.ssh_root_password}
                 onChange={handleChange}
-                error={!!errors.ssh_root_password}
-                helperText={errors.ssh_root_password || 'Leave blank to keep current or if using SSH key.'}
+                error={!!validationError.ssh_root_password}
+                helperText={validationError.ssh_root_password ? validationError.ssh_root_password : 'Leave blank to keep current or if using SSH key.'}
                 autoComplete="new-password"
                 sx={textFieldSx}
+                disabled={loading}
               />
             )}
-            
+
             <TextField
               fullWidth
               id="ssh_key"
-              label="SSH Private Key (Optional)"
+              label="SSH Private Key"
               name="ssh_key"
-              multiline
-              rows={4}
               value={formData.ssh_key}
               onChange={handleChange}
-              error={!!errors.ssh_key}
-              helperText={errors.ssh_key || 'Paste your private SSH key here. Leave blank to keep current or if using password.'}
+              error={!!validationError.ssh_key}
+              helperText={
+                validationError.ssh_key ? validationError.ssh_key : 
+                (formData.login_using_root 
+                  ? 'Enter root private key (leave blank to use password authentication)'
+                  : 'Enter user private key (leave blank to use password authentication)')
+              }
+              multiline
+              rows={4}
               placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
               sx={textFieldSx}
+              disabled={loading}
             />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+               <Button 
+                  onClick={handleTestConnection}
+                  variant="outlined"
+                  disabled={testingConnection || loading}
+                >
+                  {testingConnection ? 'Testing...' : 'Test Connection'}
+                </Button>
             
+            </Box>
             <FormControlLabel
               control={
-                <Checkbox 
-                  checked={formData.is_active} 
-                  onChange={handleChange} 
-                  name="is_active" 
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&.Mui-checked': {
-                      color: '#FE6B8B',
-                      '& .MuiSvgIcon-root': {
-                        border: '2px solid #FE6B8B',
-                        borderRadius: '3px',
-                      }
-                    },
-                    '&.Mui-checked:hover': {
-                      backgroundColor: 'rgba(254, 107, 139, 0.1)',
-                    },
-                    '& .MuiSvgIcon-root': {
-                      border: '2px solid rgba(255, 255, 255, 0.3)',
-                      borderRadius: '3px',
-                    }
-                  }} 
+                <Checkbox
+                  checked={formData.is_active}
+                  onChange={handleChange}
+                  name="is_active"
+                  disabled={loading}
+                  sx={{ ...checkBoxSx}} 
                 />
               }
-              label="Server is Active"
-              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+              label="Active"
+              sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 1 }}
             />
-
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  onClick={onClose}
-                  variant="outlined"
-                  color="error"
-                  disabled={loading}
-                  sx={{ flex: 1, borderRadius: 25, p: '10px 25px' }}
-                                                    >
-                     Cancel
-                </Button>
-              <Button 
-                type="submit" 
-                variant="contained" 
-                disabled={loading} 
-                sx={{
-                  flex: 1,
-                  background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
-                  boxShadow: '0 3px 5px 2px rgba(255,105,135,.3)',
-                  borderRadius: 25,
-                  p: '10px 25px',
-                }} >
-                {loading ? <CircularProgress size={24} /> : (isEditMode ? 'Update Server' : 'Create Server')}
-              </Button>
-            </Box>
+            
           </Box>
-        </Box>
-      </GlassCard>
-    </RootContainer>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <CancelButton 
+              onClick={handleClose}
+              variant="outlined"
+            >
+              Cancel
+            </CancelButton>
+           
+          </Box>
+          
+          <Box>
+            <Button 
+              onClick={handleSave}
+              variant="contained"
+              disabled={loading || !connectionTested}
+              startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+              sx={{...gradientButtonSx}}
+            >
+              {loading ? (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                  {isEditMode ? 'Updating...' : 'Creating...'}
+                </Box>
+              ) : isEditMode ? 'Update Server' : 'Create Server'}
+            </Button>
+          </Box>
+        </DialogActions>
+      </Box>
+    </Dialog>
   );
-}
+};
+
+export default ServerForm;

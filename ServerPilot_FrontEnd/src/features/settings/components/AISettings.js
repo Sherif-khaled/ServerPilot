@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {Box,Button,CircularProgress,FormControl,InputLabel,MenuItem,Select,TextField,Typography,Alert, Paper} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import api from '../../../api/axiosConfig';
+import { CustomSnackbar, useSnackbar } from '../../../common';
+
 
 const GlassPaper = styled(Paper)(({ theme }) => ({
     background: 'rgba(255, 255, 255, 0.08)',
@@ -15,22 +17,17 @@ const GlassPaper = styled(Paper)(({ theme }) => ({
 }));
 
 const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-    '&.Mui-focused fieldset': { borderColor: 'transparent' },
-    '&.Mui-focused': {
-      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-      borderRadius: 1,
+    '& .MuiOutlinedInput-root': {
+      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+      '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
+      '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
+      color: 'white',
+      borderRadius: '12px',
     },
-    color: '#fff',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.7)' },
-};
+    '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
+    '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
+  };
 
 const AISettings = () => {
     const [provider, setProvider] = useState('OpenAI');
@@ -41,6 +38,7 @@ const AISettings = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -93,12 +91,12 @@ const AISettings = () => {
                 model,
             });
             if (response.status === 200) {
-                setSuccess('AI settings saved successfully!');
+                showSuccess('AI settings saved successfully!');
             } else {
-                setError(response.data.error || 'Failed to save AI settings.');
+                showError(response.data.error || 'Failed to save AI settings.');
             }
         } catch (err) {
-            setError(err.response?.data?.error || 'An error occurred while saving settings.');
+            showError(err.response?.data?.error || 'An error occurred while saving settings.');
         } finally {
             setLoading(false);
         }
@@ -112,8 +110,6 @@ const AISettings = () => {
             <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255,255,255,0.7)' }}>
                 Configure the AI provider and model for generating explanations of security risks.
             </Typography>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
             
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
@@ -182,6 +178,12 @@ const AISettings = () => {
                     </Box>
                 </Box>
             )}
+            <CustomSnackbar
+                open={snackbar.open}
+                onClose={hideSnackbar}
+                severity={snackbar.severity}
+                message={snackbar.message}
+            />
         </GlassPaper>
     );
 };

@@ -1,40 +1,21 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import {
-  Box, Button, Typography, Card, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, IconButton, CircularProgress,
-  Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip,
-  Grid, TextField, InputAdornment, CardContent, Chip, TablePagination, Paper
-} from '@mui/material';
+import {Box, Button, Typography, Table, TableBody, TableCell,TableContainer, TableHead, TableRow, IconButton, CircularProgress,
+  Alert, Tooltip,Grid, TextField, InputAdornment, CardContent, Chip, TablePagination, Paper} from '@mui/material';
 import { styled } from '@mui/material/styles';
-import {
-  Add as AddIcon,
-  Refresh as RefreshIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  Dns as DnsIcon, // Servers icon
-  PeopleAltOutlined as PeopleAltOutlinedIcon, // Total customers icon
-  CheckCircleOutline as CheckCircleOutlineIcon, // Active customers icon
-  HighlightOffOutlined as HighlightOffOutlinedIcon // Inactive customers icon
-} from '@mui/icons-material';
+import {Add as AddIcon,Refresh as RefreshIcon,Edit as EditIcon,Delete as DeleteIcon,Search as SearchIcon,Dns as DnsIcon, // Servers icon
+  PeopleAltOutlined as PeopleAltOutlinedIcon, CheckCircleOutline as CheckCircleOutlineIcon, HighlightOffOutlined as HighlightOffOutlinedIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getCustomers, deleteCustomer, getCustomerTypes } from '../../../api/customerService';
 import { useAuth } from '../../../AuthContext';
+import CustomerForm from './CustomerForm';
+import { CustomSnackbar, useSnackbar, gradientButtonSx, textFieldSx, CircularProgressSx, ConfirmDialog, GlassCard } from '../../../common';
 
 // Styled root component for the background
 const RootContainer = styled(Box)(({ theme }) => ({
     padding: theme.spacing(3),
 }));
 
-// Glassmorphism Card
-const GlassCard = styled(Card)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-}));
+// Using shared GlassCard from common
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState([]);
@@ -52,7 +33,11 @@ export default function CustomerList() {
   const [orderBy, ] = useState('company_name');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
+  const [customerFormOpen, setCustomerFormOpen] = useState(false);
+  const [editingCustomerId, setEditingCustomerId] = useState(null);
+  
+  // Use the custom snackbar hook
+  const { snackbar, showSuccess, hideSnackbar } = useSnackbar();
 
   const descendingComparator = (a, b, orderBy) => {
     if (b[orderBy] < a[orderBy]) {
@@ -146,9 +131,27 @@ export default function CustomerList() {
     return stableSort(filtered, getComparator(order, orderBy));
   }, [customers, searchTerm, typeFilter, statusFilter, yearFilter, monthFilter, order, orderBy, getComparator]);
 
+  const handleAddCustomer = () => {
+    setEditingCustomerId(null);
+    setCustomerFormOpen(true);
+  };
 
   const handleEditCustomer = (customerId) => {
-    navigate(`/customers/${customerId}/edit`);
+    setEditingCustomerId(customerId);
+    setCustomerFormOpen(true);
+  };
+
+  const handleCustomerFormClose = () => {
+    setCustomerFormOpen(false);
+    setEditingCustomerId(null);
+  };
+
+  const handleCustomerFormSuccess = (message) => {
+    fetchCustomers();
+    handleCustomerFormClose();
+    if (message) {
+      showSuccess(message);
+    }
   };
 
   const openDeleteDialog = (customer) => {
@@ -173,7 +176,6 @@ export default function CustomerList() {
     }
   };
 
-
   if (!user) {
     return <Typography>Please log in to manage customers.</Typography>;
   }
@@ -197,14 +199,8 @@ export default function CustomerList() {
                   <Button
                       variant="contained"
                       startIcon={<AddIcon />}
-                      onClick={() => navigate('/customers/new')}
-                      sx={{
-                          background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                          boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                          color: 'white',
-                          borderRadius: '25px',
-                          padding: '10px 25px',
-                      }}
+                      onClick={handleAddCustomer}
+                      sx={{...gradientButtonSx}}
                   >
                       Add Customer
                   </Button>
@@ -248,23 +244,14 @@ export default function CustomerList() {
           </Grid>
           <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
               <CardContent sx={{ p: 3 }}>
-                      <box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                           <TextField
                               fullWidth
                               variant="outlined"
                               placeholder="Search Customers..."
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
-                              sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                                      '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                                      '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                                      color: 'white'
-                                  },
-                                  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-                                  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' }
-                              }}
+                              sx={{...textFieldSx}}
                               InputProps={{
                                   startAdornment: (
                                       <InputAdornment position="start">
@@ -273,13 +260,12 @@ export default function CustomerList() {
                                   ),
                               }}
                           />
-                      </box>
-                      {/* Filters with updated styling */}
+                      </Box>
               </CardContent>
 
               {loading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-                      <CircularProgress sx={{ color: '#FE6B8B' }} />
+                      <CircularProgress sx={CircularProgressSx} />
                   </Box>
               ) : !error && filteredCustomers.length === 0 ? (
                   <Typography sx={{ textAlign: 'center', p: 3, color: 'rgba(255, 255, 255, 0.7)' }}>
@@ -366,20 +352,31 @@ export default function CustomerList() {
                   </TableContainer>
               )}
           </GlassCard>
-          <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog} PaperProps={{ sx: { background: 'rgba(30, 40, 57, 0.9)', color: '#fff', backdropFilter: 'blur(5px)' } }}>
-              <DialogTitle>Confirm Delete</DialogTitle>
-              <DialogContent>
-                  <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                      Are you sure you want to delete this customer? This action cannot be undone.
-                  </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                  <Button onClick={closeDeleteDialog} sx={{ color: '#fff' }}>Cancel</Button>
-                  <Button onClick={handleDeleteCustomer} color="error" autoFocus>
-                      Delete
-                  </Button>
-              </DialogActions>
-          </Dialog>
+          
+          {/* Customer Form Modal */}
+          <CustomerForm
+            open={customerFormOpen}
+            onClose={handleCustomerFormClose}
+            customerId={editingCustomerId}
+            onSuccess={handleCustomerFormSuccess}
+          />
+          <ConfirmDialog
+                    open={deleteDialogOpen}
+                    onClose={closeDeleteDialog}
+                    onConfirm={deleteDialogOpen}
+                    title="Confirm Deletion"
+                    message={`Are you sure you want to delete this customer? This action cannot be undone.`}
+                    confirmText="Yes, Delete"
+                    cancelText="Cancel"
+                    severity="info"
+            />
+
+          <CustomSnackbar
+            open={snackbar.open}
+            onClose={hideSnackbar}
+            severity={snackbar.severity}
+            message={snackbar.message}
+          />
       </RootContainer>
   );
 }

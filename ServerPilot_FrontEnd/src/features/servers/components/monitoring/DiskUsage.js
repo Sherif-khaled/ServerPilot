@@ -2,9 +2,9 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { GlassCard } from '../../../../common';
 import {
   ResponsiveContainer,
   BarChart,
@@ -16,23 +16,14 @@ import {
   Legend,
 } from 'recharts';
 
-const GlassCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  padding: theme.spacing(3),
-  color: '#fff',
-}));
+// Using shared GlassCard from common
 
 const DiskUsage = ({ disks, width }) => {
   if (!disks || disks.length === 0) {
     return (
         <Box sx={{ p: 1, mt: 2,width:{...width}, height: '100%' }}>
             <GlassCard>
-                <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
+                <Typography variant="h6" pl={2} gutterBottom>Disk Usage (GB)</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
                     <Typography variant="body2" color="text.secondary">Not available</Typography>
                 </Box>
@@ -44,7 +35,7 @@ const DiskUsage = ({ disks, width }) => {
   return (
     <Box sx={{ p: 1, mt: 2,width:{...width}, height: '100%' }}>
       <GlassCard>
-        <Typography variant="h6" gutterBottom>Disk Usage (GB)</Typography>
+        <Typography variant="h6" pl={2} gutterBottom>Disk Usage (GB)</Typography>
         <ResponsiveContainer width="100%" height={disks.length * 80}>
           <BarChart
             data={disks}

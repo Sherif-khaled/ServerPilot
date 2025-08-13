@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, CircularProgress, Chip, Card } from '@mui/material';
+import { Typography, Box, CircularProgress, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
 import { getServerHealth, getServerMetrics } from '../../../../api/serverService';
+import { GlassCard, CircularProgressSx } from '../../../../common';
 
 const SectionHeader = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1, 2),
@@ -19,16 +20,7 @@ const SectionHeader = styled(Box)(({ theme }) => ({
   boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
 }));
 
-const GlassCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  color: '#fff',
-  padding: theme.spacing(2),
-}));
+// Using shared GlassCard from common
 
 const DetailItem = ({ label, value }) => (
   <Box sx={{ width: { xs: '100%', sm: '50%' }, display: 'flex', py: 0.5, px: 0.5 }}>
@@ -81,8 +73,8 @@ function DetailsTab({ server, customerId }) {
         {/* Server Section */}
         <Box sx={{ width: '100%', p: 1.5 }}>
           <SectionHeader>Server</SectionHeader>
-          <GlassCard>
-            {infoLoading ? <CircularProgress sx={{ color: '#FE6B8B' }} /> : (
+          <GlassCard sx={{ p: 2 }}>
+            {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
               <DetailItem label="Server Name" value={server.server_name} />
               <DetailItem label="Status" value={renderStatusChip(isOnline ? 'Online' : 'Offline', isOnline)} />
@@ -95,8 +87,8 @@ function DetailsTab({ server, customerId }) {
         </Box>
         <Box sx={{ width: { xs: '100%', md: '100%' }, p: 1.5 }}>
           <SectionHeader>Resource</SectionHeader>
-          <GlassCard sx={{ minHeight: 150 }}>
-            {infoLoading ? <CircularProgress sx={{ color: '#FE6B8B' }} /> : (
+          <GlassCard sx={{ minHeight: 150, p: 2 }}>
+            {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
                 <DetailItem label="CPU Usage" value={`${serverMetrics?.cpu?.cpu_usage_percent?.toFixed(1) || 'N/A'} %`} />
                 <DetailItem label="CPU Cores" value={`${serverMetrics?.cpu?.cores || 'N/A'} Cores`} />
@@ -112,8 +104,8 @@ function DetailsTab({ server, customerId }) {
         </Box>
         <Box sx={{ width: { xs: '100%', md: '100%' }, p: 1.5 }}>
           <SectionHeader>SWAP Details</SectionHeader>
-          <GlassCard sx={{ minHeight: 150 }}>
-          {infoLoading ? <CircularProgress sx={{ color: '#FE6B8B' }} /> : (
+          <GlassCard sx={{ minHeight: 150, p: 2 }}>
+          {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
                     <DetailItem label="Enable Swap" value={serverMetrics?.swap ? (serverMetrics.swap.enabled ? 'Enabled' : 'Disabled') : 'N/A'} />
           <DetailItem label="Total Swap" value={`${serverMetrics?.swap?.total_gb || 'N/A'} GB`} />

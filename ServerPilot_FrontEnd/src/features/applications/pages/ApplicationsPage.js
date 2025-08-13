@@ -1,32 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Avatar, Typography, Box, FormControl, InputLabel, Select, MenuItem, CircularProgress, Button, ButtonGroup, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Paper, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip, InputAdornment, TablePagination, FormControlLabel, Checkbox, Menu } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon, Add as AddIcon, AutoFixHigh as AutoFixHighIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
+import { Avatar, Typography, Box, MenuItem, CircularProgress, Button, Alert, Paper, Table, TableBody,Tooltip,
+   TableCell, TableContainer, TableHead, TableRow, IconButton, InputAdornment, TablePagination, Menu, TextField } from '@mui/material';
+import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon, Add as AddIcon, MoreVert as MoreVertIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { getAllApplications, createApplication, updateApplication, deleteApplication } from '../../../api/applicationService';
 import ApplicationForm from '../components/ApplicationForm';
+import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx, MenuActionsSx, ConfirmDialog } from '../../../common';
 
-const GlassCard = styled(Card)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    color: '#fff',
-}));
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-    color: 'white',
-    borderRadius: '12px',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-};
 
 const ApplicationsPage = () => {
   const { customerId } = useParams();
@@ -35,12 +15,14 @@ const ApplicationsPage = () => {
   const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingApp, setEditingApp] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedApp, setSelectedApp] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [appToDelete, setAppToDelete] = useState(null);
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const handleMenuOpen = (event, app) => {
     setAnchorEl(event.currentTarget);
@@ -52,21 +34,22 @@ const ApplicationsPage = () => {
     setSelectedApp(null);
   };
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      setLoading(true);
-      try {
-        const apps = await getAllApplications();
-        setApplications(apps);
-      } catch (err) {
-        setError(`Failed to fetch applications: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchApplications();
+  const fetchApplications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const apps = await getAllApplications();
+      setApplications(apps);
+      setError(null);
+    } catch (err) {
+      setError(`Failed to fetch applications: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
 
   const handleOpenDialog = (app = null) => {
@@ -84,33 +67,40 @@ const ApplicationsPage = () => {
       let response;
       if (appId) {
         response = await updateApplication(appId, appData);
-        setSnackbar({ open: true, message: 'Application updated successfully!', severity: 'success' });
+        showSuccess('Application updated successfully!');
       } else {
         response = await createApplication(appData);
-        setSnackbar({ open: true, message: 'Application created successfully!', severity: 'success' });
+        showSuccess('Application created successfully!');
       }
       const updatedApps = await getAllApplications();
       setApplications(updatedApps);
       handleCloseDialog();
     } catch (err) {
-      setSnackbar({ open: true, message: `Failed to save application: ${err.message}`, severity: 'error' });
+      showError(`Failed to save application: ${err.message}`);
     }
   };
 
-  const handleDeleteApplication = async (appId) => {
-    if (window.confirm('Are you sure you want to delete this application?')) {
-        try {
-            await deleteApplication(appId);
-            setApplications(prev => prev.filter(app => app.id !== appId));
-            setSnackbar({ open: true, message: 'Application deleted successfully!', severity: 'success' });
-        } catch (err) {
-            setSnackbar({ open: true, message: `Failed to delete application: ${err.message}`, severity: 'error' });
-        }
+  const handleDeleteApplication = (app) => {
+    setAppToDelete(app);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteApplication(appToDelete.id);
+      setApplications(prev => prev.filter(app => app.id !== appToDelete.id));
+      showSuccess('Application deleted successfully!');
+    } catch (err) {
+      showError(`Failed to delete application: ${err.message}`);
+    } finally {
+      setDeleteConfirmOpen(false);
+      setAppToDelete(null);
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setAppToDelete(null);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -137,26 +127,28 @@ const ApplicationsPage = () => {
       
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
         <Typography variant="h3" component="h1" sx={{p: 3, fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>Applications Management</Typography>
-        <Button variant="contained" 
-              startIcon={<AddIcon />} 
-              onClick={() => handleOpenDialog()}
-              sx={{
-                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                color: 'white',
-                borderRadius: '25px',
-                padding: '10px 25px',
-            }}>
-                  Add Application
-              </Button>
+        <Box>
+          <Tooltip title="Refresh Applications">
+              <IconButton onClick={fetchApplications} sx={{ color: 'white', mr: 1 }}>
+              <RefreshIcon />
+              </IconButton>
+          </Tooltip>
+          <Button variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={() => handleOpenDialog()}
+                sx={{
+                ...gradientButtonSx
+              }}>
+                    Add Application
+          </Button>
+        </Box>
       </Box>
       <GlassCard sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <TextField
-                variant="outlined"
                 fullWidth
                 placeholder="Search Applications..."
-                sx={{ mb: 3, ...textFieldSx }}
+                sx={{...textFieldSx }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                InputProps={{
@@ -170,7 +162,7 @@ const ApplicationsPage = () => {
 
         </Box>
 
-        {loading && <CircularProgress />}
+        {loading && <CircularProgress  sx={CircularProgressSx}/>}
         {error && <Alert severity="error">{error}</Alert>}
 
         {!loading && !error && (
@@ -252,26 +244,7 @@ const ApplicationsPage = () => {
         onClose={handleMenuClose}
         PaperProps={{
           sx: {
-            background: 'rgba(40, 50, 70, 0.95)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '8px',
-            color: '#fff',
-            minWidth: '180px',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-            marginTop: '4px',
-            '& .MuiMenuItem-root': {
-              padding: '12px 16px',
-              fontSize: '0.875rem',
-              '&:hover': {
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                margin: '2px 8px',
-                width: 'calc(100% - 16px)',
-              }
-            },
-            '& .MuiListItemIcon-root': {
-              minWidth: '36px',
-            }
+            ...MenuActionsSx
           }
         }}
       >
@@ -280,16 +253,28 @@ const ApplicationsPage = () => {
           handleMenuClose();
         }}><EditIcon sx={{ mr: 1 }} /> Edit</MenuItem>
         <MenuItem onClick={() => {
-          handleDeleteApplication(selectedApp.id);
+          handleDeleteApplication(selectedApp);
           handleMenuClose();
         }} sx={{ color: '#f44336' }}><DeleteIcon sx={{ mr: 1 }} /> Delete</MenuItem>
       </Menu>
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={hideSnackbar}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Application"
+        message={`Are you sure you want to delete "${appToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        severity="error"
+      />
     </Box>
   );
 };

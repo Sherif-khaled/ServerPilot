@@ -10,6 +10,7 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Avatar } from '@mui/material';
 import Footer from '../../core/components/Footer'; // Import the Footer component
+import { textFieldSx, gradientButtonSx, CircularProgressSx, glassCardSx } from '../../../common';
 
 const Background = styled('div')({
   position: 'fixed',
@@ -58,27 +59,6 @@ const IconWrapper = styled(Box)({
   '& .MuiAvatar-root': {
       width: '100%',
       height: '100%',
-  }
-});
-
-const StyledTextField = styled(TextField)({
-  marginBottom: '20px',
-  '& .MuiInputBase-root': {
-    background: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: '10px',
-    color: '#fff',
-    '&:hover': {
-        background: 'rgba(0, 0, 0, 0.4)',
-    }
-  },
-  '& .MuiOutlinedInput-notchedOutline': {
-    border: 'none',
-  },
-  '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  '& .MuiSvgIcon-root': {
-      color: 'rgba(255, 255, 255, 0.7)',
   }
 });
 
@@ -216,7 +196,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
           {error && <Alert severity="error" sx={{ mb: 2, background: 'transparent', color: '#ffcdd2' }}>{error}</Alert>}
           {!mfaRequired ? (
             <>
-              <StyledTextField
+              <TextField
                 label="Username"
                 variant="outlined"
                 fullWidth
@@ -224,6 +204,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
                 name="username"
                 autoComplete="username"
                 autoFocus
+                sx={{...textFieldSx}}
                 value={form.username}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -235,7 +216,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
                   ),
                 }}
               />
-              <StyledTextField
+              <TextField
                 label="Password"
                 type="password"
                 variant="outlined"
@@ -246,6 +227,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
                 value={form.password}
                 onChange={handleChange}
                 disabled={isLoading}
+                sx={{...textFieldSx}}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -273,7 +255,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
               </StyledButton>
             </>
           ) : (
-            <StyledTextField
+            <TextField
               label="MFA Code"
               variant="outlined"
               fullWidth
@@ -283,6 +265,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               disabled={isLoading}
+              sx={{...textFieldSx}}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

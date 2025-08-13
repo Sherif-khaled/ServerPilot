@@ -1,32 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Tooltip, InputAdornment, FormControlLabel, Checkbox, IconButton } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { AutoFixHigh as AutoFixHighIcon } from '@mui/icons-material';
-import api from '../../../api/axiosConfig';
-
-const GlassCard = styled(Box)(({ theme }) => ({
-  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-  backdropFilter: 'blur(8px) saturate(160%)',
-  WebkitBackdropFilter: 'blur(8px) saturate(160%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.2)',
-  padding: theme.spacing(3),
-  color: '#fff',
-}));
-
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-    color: 'white',
-    borderRadius: '12px',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-};
+import { Box, CircularProgress,TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, InputAdornment, FormControlLabel, Checkbox, IconButton } from '@mui/material';
+import { AutoFixHigh as AutoFixHighIcon, Save as SaveIcon} from '@mui/icons-material';
+import { generatApplicationInfo } from '../../../api/aiService';
+import { textFieldSx, glassDialogSx, checkBoxSx, gradientButtonSx, CancelButton } from '../../../common';
 
 const ApplicationForm = ({ open, handleClose, application, onSave }) => {
   const [appName, setAppName] = useState('');
@@ -94,32 +70,33 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
     setIsGenerating(true);
     setValidationError('');
     try {
-      const response = await api.post('/ai/generate-app-info/', { app_name: appName });
+      const response = await generatApplicationInfo(appName)
       if (response.data) {
         setDescription(response.data.description || '');
         setIcon(response.data.icon_url || '');
       }
     } catch (error) {
       console.error('Failed to generate app info:', error);
-      setValidationError('Failed to generate AI content. Please check console for details.');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to generate AI content.';
+      setValidationError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm" PaperComponent={GlassCard}>
-      <DialogTitle fontSize={24}>{application ? 'Edit Application' : 'Add Application'}</DialogTitle>
-      <DialogContent>
+    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm" PaperComponent={glassDialogSx}>
+      <DialogTitle fontSize={36} fontWeight="bold">{application ? 'Edit Application' : 'Add Application'}</DialogTitle>
+      <DialogContent dividers>
         <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
           <TextField
-            label="Application Name"
+            label="Application Name *"
             fullWidth
             value={appName}
             onChange={(e) => setAppName(e.target.value)}
-            sx={{ mb: 3, ...textFieldSx }}
             error={!!validationError}
             helperText={validationError || "Use Technical Name of the Application e.g., 'nginx' or 'node'"}
+            sx={{...textFieldSx}}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -139,16 +116,16 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            sx={{ mb: 3, ...textFieldSx }}
             helperText="A brief description of the application"
+            sx={{...textFieldSx}}
           />
           <TextField
             label="Icon URL"
             fullWidth
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
-            sx={{ mb: 3, ...textFieldSx }}
             helperText="URL for the application's icon"
+            sx={{...textFieldSx}}
           />
           <FormControlLabel
             control={
@@ -156,21 +133,7 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
                 checked={detectVersion}
                 onChange={(e) => setDetectVersion(e.target.checked)}
                 sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  '&.Mui-checked': {
-                    color: '#FE6B8B',
-                    '& .MuiSvgIcon-root': {
-                      border: '2px solid #FE6B8B',
-                      borderRadius: '3px',
-                    }
-                  },
-                  '&.Mui-checked:hover': {
-                    backgroundColor: 'rgba(254, 107, 139, 0.1)',
-                  },
-                  '& .MuiSvgIcon-root': {
-                    border: '2px solid rgba(255, 255, 255, 0.3)',
-                    borderRadius: '3px',
-                  }
+                  ...checkBoxSx
                 }} 
               />
             }
@@ -178,40 +141,44 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
           />
           {!detectVersion && (
             <TextField
-              label="Version"
+              label="Version *"
               fullWidth
               value={version}
+              error={!!validationError}
+              helperText={validationError || ''}
               onChange={(e) => setVersion(e.target.value)}
-              sx={{ mt: 2, mb: 3, ...textFieldSx }}
+              sx={{...textFieldSx}}
             />
           )}
           <TextField
-            label="Check Command"
+            label="Check Command *"
             fullWidth
             value={checkCommand}
             onChange={(e) => setCheckCommand(e.target.value)}
-            sx={{ mb: 3, ...textFieldSx }}
             error={!!validationError}
             helperText={validationError || "e.g., 'command -v node' or 'systemctl status nginx'"}
+            sx={{...textFieldSx}}
           />
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button 
-          onClick={handleClose}
-          variant="outlined"
-          color="error"
-          disabled={isGenerating}
-          sx={{ flex: 1, borderRadius: 25, p: '10px 25px' }}
-          >Cancel</Button>
-        <Button 
-          onClick={handleSave} 
-          variant="contained"
-          disabled={isGenerating}
-          sx={{ flex: 1, borderRadius: 25, p: '10px 25px', background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)', color: 'white', boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)' }}
-        >
-          {application ? 'Update' : 'Create'}
-        </Button>
+      <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+        <Box>
+          <CancelButton 
+            onClick={handleClose}
+            disabled={isGenerating}
+            >Cancel</CancelButton>
+        </Box>
+        <Box>
+          <Button 
+            onClick={handleSave}
+            startIcon={<SaveIcon />}
+            variant="contained"
+            disabled={isGenerating}
+            sx={{...gradientButtonSx}}
+          >
+            {application ? 'Update' : 'Create'}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

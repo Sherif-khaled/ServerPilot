@@ -195,6 +195,106 @@ class ServerViewSet(viewsets.ModelViewSet):
             logger.error(f"Error in create: {str(e)}", exc_info=True)
             raise
 
+    @action(detail=False, methods=['post'], url_path='test_connection')
+    def test_connection_with_payload(self, request, *args, **kwargs):
+        """
+        Tests SSH connection using credentials provided in the request body.
+        This is useful before creating a server or when testing unsaved edits.
+        Expected payload fields:
+          - server_ip (str)
+          - ssh_port (int, optional, default 22)
+          - login_using_root (bool, optional, default False)
+          - ssh_user (str, required if not login_using_root)
+          - ssh_password (str, optional)
+          - ssh_root_password (str, optional)
+          - ssh_key (str, optional)
+          - command (str, optional)
+        """
+        customer_pk = self.kwargs.get('customer_pk')
+
+        # Basic validation of presence
+        server_ip = request.data.get('server_ip')
+        if not server_ip:
+            return Response({
+                'status': 'error',
+                'message': 'Validation error.',
+                'details': 'server_ip is required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        ssh_port = request.data.get('ssh_port', 22)
+        login_using_root = request.data.get('login_using_root', False)
+        ssh_user = request.data.get('ssh_user')
+        ssh_password = request.data.get('ssh_password')
+        ssh_root_password = request.data.get('ssh_root_password')
+        ssh_key = request.data.get('ssh_key')
+        command = request.data.get('command', 'echo "Connection successful!"')
+
+        # Build a transient Server instance for connection testing
+        try:
+            # Customer is optional for transient object but attach if present and accessible
+            customer = None
+            if customer_pk:
+                try:
+                    customer = Customer.objects.get(pk=customer_pk)
+                except Customer.DoesNotExist:
+                    customer = None
+
+            transient_server = Server(
+                customer=customer,
+                server_name=f"transient-test-{server_ip}",
+                server_ip=server_ip,
+                ssh_port=ssh_port,
+                login_using_root=login_using_root,
+                ssh_user=ssh_user,
+                ssh_password=ssh_password,
+                ssh_root_password=ssh_root_password,
+                ssh_key=ssh_key,
+                is_active=True,
+            )
+
+            success, output, exit_status = transient_server.connect_ssh(command=command)
+
+            if success and exit_status == 0:
+                log_action(
+                    request.user,
+                    'server_test_connection',
+                    request,
+                    f'Successfully tested connection to server IP {server_ip} (transient)'
+                )
+                return Response({
+                    'status': 'success',
+                    'message': 'Connection test successful.',
+                    'output': output
+                }, status=status.HTTP_200_OK)
+            else:
+                log_action(
+                    request.user,
+                    'server_test_connection_failed',
+                    request,
+                    f'Failed to test connection to server IP {server_ip} (transient). Error: {output}'
+                )
+                return Response({
+                    'status': 'error',
+                    'message': 'Connection test failed.',
+                    'details': output
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during transient connection test for IP {server_ip}: {str(e)}",
+                exc_info=True
+            )
+            log_action(
+                request.user,
+                'server_test_connection_error',
+                request,
+                f'Error testing connection to server IP {server_ip} (transient). Error: {str(e)}'
+            )
+            return Response({
+                'status': 'error',
+                'message': 'An unexpected error occurred.',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['post'])
     def test_connection(self, request, *args, **kwargs):
         """

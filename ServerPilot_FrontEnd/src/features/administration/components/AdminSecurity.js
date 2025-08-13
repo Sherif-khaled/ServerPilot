@@ -2,33 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Paper, Box, TextField, Button, FormControlLabel, Switch, CircularProgress, Link, Alert, Collapse } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import api from '../../../api/axiosConfig';
+import { textFieldSx, glassPaperSx, gradientButtonSx, blueGradientButtonSx, CircularProgressSx } from '../../../common';
 
-const GlassPaper = styled(Paper)(({ theme }) => ({
-    background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(12px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    padding: theme.spacing(3),
-    color: '#fff',
-}));
 
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-    '&.Mui-focused fieldset': { borderColor: 'transparent' },
-    '&.Mui-focused': {
-      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-      borderRadius: 1,
-    },
-    color: '#fff',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-};
 
 const AdminSecurity = () => {
   const [settings, setSettings] = useState({
@@ -82,12 +58,12 @@ const AdminSecurity = () => {
   };
 
   if (isLoading) {
-    return <CircularProgress />;
+    return <CircularProgress sx={CircularProgressSx} />;
   }
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      <GlassPaper sx={{ mt: 2 }}>
+      <Paper sx={{ ...glassPaperSx }}>
         <Collapse in={alert.open}>
           <Alert
             severity={alert.severity}
@@ -135,10 +111,10 @@ const AdminSecurity = () => {
               label="Site Key"
               name="recaptcha_site_key"
               value={settings.recaptcha_site_key}
+              sx={{...textFieldSx}}
               onChange={handleChange}
               disabled={!settings.recaptcha_enabled}
               helperText="The site key used in your frontend code."
-              sx={textFieldSx}
             />
             <TextField
               fullWidth
@@ -146,10 +122,10 @@ const AdminSecurity = () => {
               name="recaptcha_secret_key"
               type="password"
               value={settings.recaptcha_secret_key}
+              sx={{...textFieldSx}}
               onChange={handleChange}
               disabled={!settings.recaptcha_enabled}
               helperText="The secret key used for communication between your site and Google."
-              sx={textFieldSx}
             />
           </Box>
         </Box>
@@ -162,29 +138,19 @@ const AdminSecurity = () => {
           name="session_expiration_hours"
           type="number"
           value={settings.session_expiration_hours}
+          sx={{...textFieldSx}}
           onChange={handleChange}
           helperText="The number of hours before an inactive session expires."
-          sx={textFieldSx}
         />
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Button 
             type="submit" 
             variant="contained" 
-            sx={{
-              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-              boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-              color: 'white',
-              borderRadius: '25px',
-              padding: '10px 25px',
-              '&:disabled': {
-                background: 'rgba(255, 255, 255, 0.3)',
-              },
-              mt: 3,
-            }}>
+            sx={{...gradientButtonSx}}>
             Save Settings
           </Button>
         </Box>
-      </GlassPaper>
+      </Paper>
     </Box>
   );
 };

@@ -1,85 +1,54 @@
 import React, { useState } from 'react';
 import {
-    Box, TextField, Button, Typography, Alert, CircularProgress, LinearProgress
+    Box, TextField, Button, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { styled, useTheme } from '@mui/material/styles';
-import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import PasswordStrengthMeter from '../../../common/PasswordStrengthMeter';
 import GeneratePasswordButton from '../../../common/GeneratePasswordButton';
 import ShowPasswordIconButton from '../../../common/ShowPasswordIconButton';
+import {glassDialogSx, textFieldSx, gradientButtonSx, CancelButton, CircularProgressSx} from '../../../common';
 
-
-export default function SetPasswordForm({ onSubmit, onCancel, username, error, loading }) {
+export default function SetPasswordForm({ open, onClose, onSubmit, username, error, loading }) {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [formError, setFormError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    /*********************  STYLED COMPONENTS  ************************/
-    const RootContainer = styled(Box)(({ theme }) => ({
-        padding: theme.spacing(3),
-        background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-        backdropFilter: 'blur(8px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(8px) saturate(160%)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-        color: '#fff',
-    }));
-
-    const GlassCard = styled(Box)(({ theme }) => ({
-        background: 'rgba(255, 255, 255, 0.06)',
-        backdropFilter: 'blur(8px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(8px) saturate(160%)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.2)',
-        padding: theme.spacing(3),
-        color: '#fff',
-    }));
-    // Common TextField sx with gradient focus ring
-    const textFieldSx = {
-    '& .MuiOutlinedInput-root': {
-        '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-        '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-        '&.Mui-focused fieldset': { borderColor: 'transparent' },
-        '&.Mui-focused': {
-        boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-        borderRadius: 1,
-        },
-        color: '#fff',
-    },
-    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-    '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-    '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        if (newPassword !== confirmPassword) {
+            setFormError('Passwords do not match.');
+            return;
+        }
+        if (!newPassword) {
+            setFormError('Password cannot be empty.');
+            return;
+        }
+        setFormError('');
+        onSubmit(newPassword);
     };
 
-    /*********************  END OF STYLED COMPONENTS  ************************/
-
-const handleSubmit = (event) => {
-    event.preventDefault();
-    if (newPassword !== confirmPassword) {
-        setFormError('Passwords do not match.');
-        return;
-    }
-    if (!newPassword) {
-        setFormError('Password cannot be empty.');
-        return;
-    }
-    setFormError('');
-    onSubmit(newPassword);
-};
-
+    const handleClose = () => {
+        if (loading) return;
+        setNewPassword('');
+        setConfirmPassword('');
+        setFormError('');
+        setShowPassword(false);
+        setShowConfirm(false);
+        onClose();
+    };
 
     return (
-        <RootContainer>
-            <GlassCard>
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth PaperComponent={glassDialogSx}>
+            <DialogTitle fontSize={36} fontWeight="bold">
+                Set Password for {username}
+            </DialogTitle>
+            <DialogContent sx={{ 
+                color: '#fff',
+                padding: '0 24px 16px 24px',
+            }}>
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ p: 1 }}>
-
                     <TextField
                         margin="normal"
                         required
@@ -112,7 +81,7 @@ const handleSubmit = (event) => {
                         }}
                     />
                     <PasswordStrengthMeter password={newPassword} />
-  
+      
                     <TextField
                         margin="normal"
                         required
@@ -138,40 +107,37 @@ const handleSubmit = (event) => {
                     />
                     {formError && <Alert severity="error" sx={{ mt: 2, mb: 1 }}>{formError}</Alert>}
                     {error && <Alert severity="error" sx={{ mt: 2, mb: 1 }}>{error}</Alert>}
-                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                         <Button
-                            onClick={onCancel}
-                            variant="outlined"
-                            color="error"
-                            disabled={loading}
-                            sx={{ flex: 1, borderRadius: 25, p: '10px 25px' }}
-                                      >
-                                Cancel
-                        </Button>
-                        <Button 
-                            type="submit" 
-                            variant="contained" 
-                            disabled={
-                              loading ||
-                              !newPassword ||
-                              !confirmPassword ||
-                              newPassword !== confirmPassword
-                            } 
-                            sx={{
-                                flex: 1,
-                                background: 'linear-gradient(45deg,#FE6B8B 30%,#FF8E53 90%)',
-                                boxShadow: '0 3px 5px 2px rgba(255,105,135,.3)',
-                                borderRadius: 25,
-                                p: '10px 25px',
-                                }} 
-                            size="large">
-                            {loading ? <CircularProgress size={24}
-                            
-                            color="inherit" /> : 'Set Password'}
-                        </Button>
-                    </Box>
                 </Box>
-            </GlassCard>
-        </RootContainer>
+            </DialogContent>
+            <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                <Box>
+                    <CancelButton
+                        onClick={handleClose}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </CancelButton>
+                </Box>
+                <Box>
+                    <Button 
+                        type="submit" 
+                        variant="contained" 
+                        disabled={
+                        loading ||
+                        !newPassword ||
+                        !confirmPassword ||
+                        newPassword !== confirmPassword
+                        } 
+                        sx={{
+                        ...gradientButtonSx
+                            }} 
+                        size="large"
+                        onClick={handleSubmit}
+                    >
+                        {loading ? <CircularProgress sx={CircularProgressSx} /> : 'Set Password'}
+                    </Button>
+                </Box>
+            </DialogActions>
+        </Dialog>
     );
 }

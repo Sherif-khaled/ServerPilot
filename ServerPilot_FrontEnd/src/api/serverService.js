@@ -25,6 +25,11 @@ const testServerConnection = (customerId, serverId, command = null) => {
   return apiClient.post(`/customers/${customerId}/servers/${serverId}/test_connection/`, payload);
 };
 
+// Test connection using provided credentials without persisting a server (pre-create/update)
+const testServerConnectionWithPayload = (customerId, data) => {
+  return apiClient.post(`/customers/${customerId}/servers/test_connection/`, data);
+};
+
 const getServerHealth = (customerId, serverId) => {
   return apiClient.get(`/customers/${customerId}/servers/${serverId}/server-info/health/`);
 };
@@ -52,6 +57,20 @@ const updateRecommendationStatus = (customerId, serverId, recommendation_id, sta
 const fixRecommendation = (customerId, serverId, recommendationId) => {
   return apiClient.post(`/customers/${customerId}/servers/${serverId}/security-advisor/fix_recommendation/`, { recommendation_id: recommendationId });
 };
+
+const scanApplications = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/installed-applications/`);
+};
+
+
+const monitorApplication = (customerId, serverId, appName) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${appName}/monitor-application/`);
+};
+
+const manageApplication = (customerId, serverId, appName, action) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${appName}/manage-application/`, { action });
+};
+
 
 const getSecurityRisks = () => {
   return apiClient.get('/security/risks/');
@@ -93,8 +112,12 @@ const editUfwRule = (customerId, serverId, ruleData) => {
   return apiClient.post(`/customers/${customerId}/servers/${serverId}/firewall/rules/edit/`, ruleData);
 };
 
-const scanApplications = (customerId, serverId) => {
-  return apiClient.get(`/customers/${customerId}/servers/${serverId}/scan-applications/`);
+const getServerLogs = (customerId, serverId, appName) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${appName}/application-logs/`, { name: appName });
+};
+
+const executeFix = (customerId, serverId, commands) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/installed-applications/execute-fix/`, { commands });
 };
 
 export {
@@ -104,11 +127,15 @@ export {
   updateServer,
   deleteServer,
   testServerConnection,
+  testServerConnectionWithPayload,
   changeServerPassword,
   runSecurityScan,
   getLatestSecurityScan,
   updateRecommendationStatus,
   fixRecommendation,
+  scanApplications,
+  monitorApplication,
+  manageApplication,
   getSecurityRisks,
   updateSecurityRisk,
   createSecurityRisk,
@@ -119,7 +146,8 @@ export {
   addUfwRule,
   deleteUfwRule,
   editUfwRule,
-  scanApplications,
   getServerHealth,
   getServerMetrics,
+  getServerLogs,
+  executeFix,
 };

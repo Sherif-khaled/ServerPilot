@@ -19,11 +19,11 @@ import {
   DialogContentText,
   DialogTitle,
   Tooltip,
-  Snackbar,
 } from '@mui/material';
 import { Computer as ComputerIcon, TabletMac as TabletMacIcon, PhoneIphone as PhoneIphoneIcon } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MuiAlert from '@mui/material/Alert';
+import { CustomSnackbar, useSnackbar } from '../../../common';
 
 // Helper to guess device type from user agent
 const getDeviceIcon = (userAgent) => {
@@ -45,13 +45,9 @@ const WebSessions = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [revokeLoading, setRevokeLoading] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  // Snackbar close handler
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') return;
-    setSnackbarOpen(false);
-  };
+  // Use the custom snackbar hook
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -82,9 +78,9 @@ const WebSessions = () => {
       try {
         await revokeUserSession(selectedSessionId);
         fetchSessions(); // Refresh the list
-        setSnackbarOpen(true); // Show snackbar on success
+        showSuccess('Session revoked successfully');
       } catch (err) {
-        setError('Failed to revoke session. Please try again.');
+        showError('Failed to revoke session. Please try again.');
         console.error(err);
       } finally {
         setOpenDialog(false);
@@ -102,7 +98,7 @@ const WebSessions = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: '#FE6B8B' }} />
       </Box>
     );
   }
@@ -210,16 +206,12 @@ const WebSessions = () => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <MuiAlert onClose={handleSnackbarClose} severity="success" elevation={6} variant="filled" sx={{ width: '100%' }}>
-          Session revoked successfully
-        </MuiAlert>
-      </Snackbar>
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={hideSnackbar}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </Box>
   );
 };

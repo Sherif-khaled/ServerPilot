@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Button, Grid, Paper, CircularProgress, Alert, Snackbar, Tooltip, IconButton, Tabs, Tab, Collapse, Link, Dialog, DialogTitle, DialogContent, DialogActions, useTheme, Card, CardContent } from '@mui/material';
+import { Box, Typography, Button, Grid, Alert, CircularProgress, Tooltip, IconButton, Tabs, Tab, Collapse, Link, useTheme, CardContent } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DangerousOutlinedIcon from '@mui/icons-material/DangerousOutlined';
@@ -13,38 +13,11 @@ import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
 import 'prismjs/components/prism-bash';
 import ExplainRiskDialog from './ExplainRiskDialog';
+import { GlassCard, glassDialogSx, CircularProgressSx, ConfirmDialog, CustomSnackbar } from '../../../../common';
 
 //Enable / Disable Animation
 const dashboardAnimations = JSON.parse(localStorage.getItem('dashboardAnimations')) ?? false;
 
-const GlassPaper = styled(Paper)(({ theme }) => ({
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-  '&:hover': dashboardAnimations
-      ? {
-          transform: 'translateY(-10px) scale(1.03)',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-      }
-      : {
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-      },
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(10px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(10px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  color: '#fff',
-}));
-
-const GlassCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  color: '#fff',
-  textAlign: 'center',
-}));
 
 const RISK_LEVELS = [
   { key: 'critical', label: 'Critical Risks', color: 'error' },
@@ -210,24 +183,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     );
   }
 
-  // Helper for tooltips
-  const TECH_TERM_TOOLTIPS = {
-    'sshd_config': 'The sshd_config file is the main configuration file for the SSH server. It controls how SSH connections are handled.',
-    'PermitRootLogin': 'PermitRootLogin is an SSH configuration option that controls whether the root user can log in directly via SSH. Disabling it improves security.',
-    // Add more terms as needed
-  };
-
-  function renderWithTooltips(text) {
-    // Replace technical terms with tooltip-wrapped elements
-    return Object.keys(TECH_TERM_TOOLTIPS).reduce((acc, term) => {
-      const regex = new RegExp(`\\b(${term})\\b`, 'g');
-      return acc.replace(
-        regex,
-        `<span class="tech-term-tooltip" data-term="${term}">${term}</span>`
-      );
-    }, text);
-  }
-
   // Helper to filter recommendations by risk
   const getRecsByRisk = (riskLevel) => {
     if (!scan || !scan.recommendations) return [];
@@ -291,54 +246,30 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             Fix All Critical Issues
           </Button>
           <Button variant="contained" color="primary" onClick={handleRescan} disabled={scanning || loading}>
-            {scanning ? <CircularProgress size={24}  sx={{ color: '#FE6B8B' }}/> : 'Re-Scan Server'}
+            {scanning ? <CircularProgress sx={CircularProgressSx}/> : 'Re-Scan Server'}
           </Button>
         </Box>
       </Box>
 
       {/* Confirmation Dialog */}
-      {confirmBatch && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            bgcolor: 'rgba(0,0,0,0.3)',
-            zIndex: 1300,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Paper sx={{ p: 4, minWidth: 320, textAlign: 'center' }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Confirm Batch Fix
-            </Typography>
-            <Typography sx={{ mb: 3 }}>
-              Are you sure you want to execute <b>all critical fixes</b>? This action cannot be undone.
-            </Typography>
-            <Button
-              variant="contained"
-              color="error"
-              sx={{ mr: 2 }}
-              onClick={handleBatchFixCritical}
-              disabled={scanning}
-            >
-              Yes, Fix All
-            </Button>
-            <Button variant="outlined" onClick={() => setConfirmBatch(false)}>
-              Cancel
-            </Button>
-          </Paper>
-        </Box>
-      )}
+      <ConfirmDialog
+        open={confirmBatch}
+        onClose={() => setConfirmBatch(false)}
+        onConfirm={handleBatchFixCritical}
+        title="Confirm Batch Fix"
+        message="Are you sure you want to execute all critical fixes? This action cannot be undone."
+        confirmText="Yes, Fix All"
+        cancelText="Cancel"
+        severity="error"
+        confirmButtonProps={{
+          disabled: scanning
+        }}
+      />
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={4}>
-          <GlassCard>
+          <GlassCard sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h4" sx={{ color: '#ff5252', fontWeight: 'bold' }}>{summary.critical}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
@@ -349,7 +280,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
           </GlassCard>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <GlassCard>
+          <GlassCard sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h4" sx={{ color: '#ffab40', fontWeight: 'bold' }}>{summary.medium}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
@@ -360,7 +291,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
           </GlassCard>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <GlassCard>
+          <GlassCard sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h4" sx={{ color: '#69f0ae', fontWeight: 'bold' }}>{summary.passed}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
@@ -372,7 +303,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
         </Grid>
       </Grid>
 
-      {/* Tabs for risk grouping */}
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
@@ -424,7 +354,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
               </Alert>
             ) : (
               getRecsByRisk(level.key).map((rec) => (
-                <GlassPaper
+                <GlassCard
                   key={rec.id}
                   sx={{
                     p: 2,
@@ -437,7 +367,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                         ? theme.palette.warning.main
                         : theme.palette.success.main
                     }`,
-                    // Override background to be transparent to allow glass effect
                     backgroundColor: 'transparent',
                   }}
                 >
@@ -454,45 +383,14 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                           Why is this risky?
                         </Link>
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ my: 1 }}
-                        component="span"
-                      >
-                        {/* Render description with tooltips */}
-                        {rec.description.split(' ').map((word, idx) => {
-                          const cleanWord = word.replace(/[^a-zA-Z0-9_]/g, '');
-                          if (TECH_TERM_TOOLTIPS[cleanWord]) {
-                            return (
-                              <Tooltip key={idx} title={TECH_TERM_TOOLTIPS[cleanWord]} arrow>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'help' }}>
-                                  {word}
-                                  <IconButton size="small" sx={{ ml: 0.2, p: 0 }}>
-                                    <InfoOutlinedIcon fontSize="inherit" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            );
-                          }
+                      <Typography variant="body2" sx={{ my: 1 }} component="span">
+                        {rec.description.split(' ').map((word) => {
                           return word + ' ';
                         })}
                       </Typography>
                       <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
                         {/* Same tooltip logic for solution */}
-                        {rec.solution.split(' ').map((word, idx) => {
-                          const cleanWord = word.replace(/[^a-zA-Z0-9_]/g, '');
-                          if (TECH_TERM_TOOLTIPS[cleanWord]) {
-                            return (
-                              <Tooltip key={idx} title={TECH_TERM_TOOLTIPS[cleanWord]} arrow>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'help' }}>
-                                  {word}
-                                  <IconButton size="small" sx={{ ml: 0.2, p: 0 }}>
-                                    <InfoOutlinedIcon fontSize="inherit" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            );
-                          }
+                        {rec.solution.split(' ').map((word) => {
                           return word + ' ';
                         })}
                       </Typography>
@@ -506,10 +404,10 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                             fontFamily: 'monospace',
                             fontSize: '0.95rem',
                             color: '#f8f8f2',
-                            overflowX: 'auto', // Ensures horizontal scroll on small screens
+                            overflowX: 'auto',
                             position: 'relative',
                             maxWidth: '100%',
-                            whiteSpace: 'pre', // Prevents line wrapping
+                            whiteSpace: 'pre',
                           }}
                         >
                           <IconButton
@@ -677,20 +575,20 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                       </Button>
                     </Grid>
                   </Grid>
-                </GlassPaper>
+                </GlassCard>
               ))
             )}
           </Collapse>
         </Box>
       ))}
 
-
-
-      <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleCloseNotification}>
-        <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
-          {notification.message}
-        </Alert>
-      </Snackbar>
+      <CustomSnackbar
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={handleCloseNotification}
+        autoHideDuration={6000}
+      />
     </Box>
   );
 };

@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
 from .tasks import backup_db
 import os
 from django.conf import settings
@@ -17,9 +19,15 @@ class BackupListView(APIView):
     """
     API View to list all available database backups.
     """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, *args, **kwargs):
         backup_dir = os.path.join(settings.BASE_DIR, 'backups')
         if not os.path.exists(backup_dir):
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Backup directory does not exist: {backup_dir}")
             return Response([], status=status.HTTP_200_OK)
 
         try:
@@ -35,8 +43,16 @@ class BackupListView(APIView):
                     })
             # Sort backups by creation date, newest first
             backups.sort(key=lambda x: x['created_at'], reverse=True)
+            
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Found {len(backups)} backup files")
+            
             return Response(backups, status=status.HTTP_200_OK)
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error listing backups: {str(e)}")
             return Response(
                 {'error': f'Failed to list backups: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -47,9 +63,13 @@ class DatabaseBackupDownloadView(APIView):
     """
     API View to download a specific database backup file.
     """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, filename, *args, **kwargs):
         # Sanitize filename to prevent directory traversal.
-        if not re.match(r'^serverpilot_db_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
+        # Updated pattern to match the actual backup filename format: {db_name}_backup_YYYY-MM-DD_HH-MM-SS.sqlc
+        if not re.match(r'^[a-zA-Z0-9_]+_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
             return Response({'error': 'Invalid filename format.'}, status=status.HTTP_400_BAD_REQUEST)
 
         backup_dir = os.path.join(settings.BASE_DIR, 'backups')
@@ -61,9 +81,17 @@ class DatabaseBackupDownloadView(APIView):
 
         if os.path.exists(file_path):
             try:
-                response = FileResponse(open(file_path, 'rb'), as_attachment=True)
-                return response
+                # Open file in binary mode and create FileResponse
+                with open(file_path, 'rb') as file:
+                    response = FileResponse(file, as_attachment=True)
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    response['Content-Type'] = 'application/octet-stream'
+                    response['Content-Length'] = os.path.getsize(file_path)
+                    return response
             except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error reading backup file {filename}: {str(e)}")
                 return Response(
                     {'error': 'An error occurred while trying to read the file.'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -77,6 +105,8 @@ class BackupScheduleView(APIView):
     API View to manage the scheduled database backup task.
     A single periodic task named 'daily-database-backup' is managed here.
     """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
     task_name = 'daily-database-backup'
     task_function = 'db_management.tasks.backup_db'
 
@@ -141,6 +171,9 @@ class DatabaseBackupView(APIView):
     """
     API View to trigger a database backup task.
     """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def _start_backup(self):
         try:
             task = backup_db.delay()
@@ -171,9 +204,13 @@ class DatabaseBackupDeleteView(APIView):
     """
     API View to delete a specific database backup file.
     """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     def delete(self, request, filename, *args, **kwargs):
         # Sanitize filename to prevent directory traversal.
-        if not re.match(r'^serverpilot_db_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
+        # Updated pattern to match the actual backup filename format: {db_name}_backup_YYYY-MM-DD_HH-MM-SS.sqlc
+        if not re.match(r'^[a-zA-Z0-9_]+_backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sqlc$', filename):
             return Response({'error': 'Invalid filename format.'}, status=status.HTTP_400_BAD_REQUEST)
 
         backup_dir = os.path.join(settings.BASE_DIR, 'backups')

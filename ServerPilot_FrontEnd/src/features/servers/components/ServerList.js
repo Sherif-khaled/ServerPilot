@@ -1,95 +1,32 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
-import {
-  Box, Button, Typography, ListItemText,
-  ListItemIcon, IconButton, CircularProgress, Alert, Dialog,
-  DialogActions, DialogContent, DialogContentText, DialogTitle, Chip,
-  Tooltip, Menu, MenuItem, Grid, Card, CardContent, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Collapse, TextField, Paper,
-  InputAdornment, Snackbar
-} from '@mui/material';
+import { createServer, updateServer } from '../../../api/serverService';
+import {Box, Button, Typography, ListItemText,ListItemIcon, IconButton, CircularProgress, Alert, Tooltip, Menu, MenuItem, Grid, 
+  CardContent, Table, TableBody,TableCell, TableContainer, TableHead, TableRow, TextField,InputAdornment} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DnsIcon from '@mui/icons-material/Dns';
-import PowerIcon from '@mui/icons-material/Power';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
-import {
-  ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
-} from 'recharts';
-
-import { getServers, deleteServer, getServerHealth, getServerMetrics, changeServerPassword } from '../../../api/serverService';
+import { getServers, deleteServer, getServerHealth, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
-import CpuUsage from './monitoring/CpuUsage';
-import MemoryUsage from './monitoring/MemoryUsage';
-import DiskUsage from './monitoring/DiskUsage';
+import { CustomSnackbar, useSnackbar } from '../../../common';
+import { textFieldSx, gradientButtonSx, CircularProgressSx, ConfirmDialog, MenuActionsSx, GlassCard } from '../../../common';
+import ChangeServerPasswordDialog from './ChangeServerPasswordDialog';
+import ServerInfoDialog from './ServerInfoDialog';
 
-const COLORS = ['#0088FE', '#FF8042']; // Blue for Used, Orange for Available 
-
-// Styled root component for the background
 const RootContainer = styled(Box)(({ theme }) => ({
     padding: theme.spacing(3),
 }));
 
-// Glassmorphism Card
-const GlassCard = styled(Card)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    padding: theme.spacing(3),
-    color: '#fff',
-}));
-
-const StyledDialog = styled(Dialog)({
-  '& .MuiDialog-paper': {
-    background: 'rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    color: '#fff',
-  },
-  '& .MuiDialogTitle-root': {
-    color: '#fff',
-  },
-  '& .MuiDialogContent-root': {
-    color: '#fff',
-  },
-  '& .MuiDialogContentText-root': {
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  '& .MuiTextField-root': {
-    '& .MuiInputBase-root': {
-      background: 'rgba(0, 0, 0, 0.3)',
-      borderRadius: '10px',
-      color: '#fff',
-      '&:hover': {
-        background: 'rgba(0, 0, 0, 0.4)',
-      }
-    },
-    '& .MuiOutlinedInput-notchedOutline': {
-      border: 'none',
-    },
-    '& .MuiInputLabel-root': {
-      color: 'rgba(255, 255, 255, 0.7)',
-    },
-  },
-});
 
 export default function ServerList({ customerId: propCustomerId }) {
   const { customerId: paramCustomerId } = useParams(); 
@@ -103,7 +40,6 @@ export default function ServerList({ customerId: propCustomerId }) {
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [serverInfo, setServerInfo] = useState({ data: null, error: null, serverName: '' });
   const [infoLoading, setInfoLoading] = useState(false);
-  const [testConnectionStatus, setTestConnectionStatus] = useState({});
   const [onlineStatus, setOnlineStatus] = useState({}); 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -115,11 +51,10 @@ export default function ServerList({ customerId: propCustomerId }) {
 
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   const [serverForPasswordChange, setServerForPasswordChange] = useState(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [changePasswordError, setChangePasswordError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  // Use the custom snackbar hook
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const handleMenuOpen = (event, server) => {
     setMenuAnchorEl(event.currentTarget);
@@ -134,42 +69,24 @@ export default function ServerList({ customerId: propCustomerId }) {
   const handleOpenChangePasswordDialog = (server) => {
     setServerForPasswordChange(server);
     setChangePasswordDialogOpen(true);
-    setNewPassword('');
-    setChangePasswordError('');
   };
 
   const handleCloseChangePasswordDialog = () => {
     setChangePasswordDialogOpen(false);
     setServerForPasswordChange(null);
-    setNewPassword('');
-    setChangePasswordError('');
   };
 
-  const generateComplexPassword = () => {
-    const length = 16;
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=<>?~";
-    let retVal = "";
-    for (let i = 0, n = charset.length; i < length; ++i) {
-        retVal += charset.charAt(Math.floor(Math.random() * n));
-    }
-    setNewPassword(retVal);
-  };
-
-  const handleChangePassword = async () => {
-    if (!serverForPasswordChange || !newPassword) {
-      setChangePasswordError('Password cannot be empty.');
-      return;
-    }
-    setChangePasswordError('');
+  const submitServerPasswordChange = async (password) => {
+    if (!serverForPasswordChange) return { ok: false, error: 'No server selected.' };
     try {
-      await changeServerPassword(customerId, serverForPasswordChange.id, newPassword);
-      handleCloseChangePasswordDialog();
+      await changeServerPassword(customerId, serverForPasswordChange.id, password);
       setSuccessMessage(`Password for server '${serverForPasswordChange.server_name}' has been changed successfully.`);
-      setSnackbar({ open: true, message: `Password for server '${serverForPasswordChange.server_name}' has been changed successfully.`, severity: 'success' });
+      showSuccess(`Password for server '${serverForPasswordChange.server_name}' has been changed successfully.`);
+      return { ok: true };
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to change password.';
-      setChangePasswordError(errorMsg);
-      setSnackbar({ open: true, message: errorMsg, severity: 'error' });
+      showError(errorMsg);
+      return { ok: false, error: errorMsg };
     }
   };
 
@@ -191,16 +108,26 @@ export default function ServerList({ customerId: propCustomerId }) {
     setSuccessMessage('');
     try {
       const response = await getServers(customerId);
-      const fetchedServers = response.data;
-      setServers(fetchedServers);
-      if (fetchedServers.length > 0) {
-        checkAllServerStatus(fetchedServers);
+      const fetchedServers = Array.isArray(response.data.results) ? response.data.results : (Array.isArray(response.data) ? response.data : []);
+      
+      const uniqueServersMap = new Map();
+      fetchedServers.forEach(server => {
+        if (server && typeof server.id !== 'undefined') {
+          uniqueServersMap.set(server.id, server);
+        }
+      });
+      const uniqueServerList = Array.from(uniqueServersMap.values());
+      setServers(uniqueServerList);
+      
+      if (uniqueServerList.length > 0) {
+        checkAllServerStatus(uniqueServerList);
       }
     } catch (err) {
-      console.error('Failed to fetch servers:', err);
-      setError('Failed to load servers. Please try again.');
+      setError('Failed to load servers. ' + (err.response?.data?.detail || err.message));
+      setServers([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [customerId]);
 
   useEffect(() => {
@@ -228,12 +155,12 @@ export default function ServerList({ customerId: propCustomerId }) {
       await deleteServer(customerId, serverToDelete.id);
       setServers(servers.filter(server => server.id !== serverToDelete.id));
       handleCloseDeleteDialog();
-      setSnackbar({ open: true, message: `Server '${serverToDelete.server_name}' deleted successfully.`, severity: 'success' });
+      showSuccess(`Server '${serverToDelete.server_name}' deleted successfully.`);
     } catch (err) {
       console.error('Failed to delete server:', err);
       setError(`Failed to delete server ${serverToDelete.server_name}. Please try again.`);
       handleCloseDeleteDialog(); 
-      setSnackbar({ open: true, message: `Failed to delete server ${serverToDelete.server_name}. Please try again.`, severity: 'error' });
+      showError(`Failed to delete server ${serverToDelete.server_name}. Please try again.`);
     }
   };
 
@@ -276,28 +203,25 @@ export default function ServerList({ customerId: propCustomerId }) {
     setIsModalOpen(false);
   };
 
-  const handleSaveSuccess = () => {
-    fetchServers(); 
-    handleCloseModal();
-  };
-
-  const handleTestConnection = async (serverId) => {
-    setTestConnectionStatus(prev => ({ 
-      ...prev, 
-      [serverId]: { testing: true, status: null, message: '' }
-    }));
+  const handleSaveSuccess = async (serverData, serverId = null) => {
     try {
-      const response = await getServerHealth(customerId, serverId);
-      setTestConnectionStatus(prev => ({ 
-        ...prev, 
-        [serverId]: { testing: false, status: 'success', message: response.data.output || 'Connection successful!' }
-      }));
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Connection test failed.';
-      setTestConnectionStatus(prev => ({ 
-        ...prev, 
-        [serverId]: { testing: false, status: 'error', message: errorMessage }
-      })); 
+      setLoading(true);
+      if (serverId) {
+        // Update existing server
+        await updateServer(customerId, serverId, serverData);
+        showSuccess('Server updated successfully!');
+      } else {
+        // Create new server
+        await createServer(customerId, serverData);
+        showSuccess('Server created successfully!');
+      }
+      fetchServers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving server:', error);
+      showError(error.response?.data?.detail || 'Failed to save server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -314,7 +238,7 @@ export default function ServerList({ customerId: propCustomerId }) {
   if (loading) {
     return (
       <RootContainer sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
-        <CircularProgress sx={{ color: '#FE6B8B' }} />
+        <CircularProgress sx={CircularProgressSx} />
       </RootContainer>
     );
   }
@@ -340,13 +264,7 @@ export default function ServerList({ customerId: propCustomerId }) {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenModal()}
-            sx={{
-              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-              boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-              color: 'white',
-              borderRadius: '25px',
-              padding: '10px 25px',
-            }}
+            sx={{...gradientButtonSx}}
           >
             Add Server
           </Button>
@@ -357,7 +275,7 @@ export default function ServerList({ customerId: propCustomerId }) {
       {successMessage && <Alert severity="success" sx={{ mb: 2, background: 'rgba(76, 175, 80, 0.8)', color: '#fff' }} onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
 
       <Grid container spacing={4} sx={{ mb: 4, position: 'relative', zIndex: 2 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={6}>
           <GlassCard>
             <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
               <Box sx={{ flexGrow: 1 }}>
@@ -408,21 +326,12 @@ export default function ServerList({ customerId: propCustomerId }) {
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  background: 'rgba(0,0,0,0.2)',
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                  '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-              }}
+              sx={{...textFieldSx}}
             />
           </Box>
 
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress sx={{ color: 'white' }} /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress sx={CircularProgressSx} /></Box>
           ) : filteredServers.length === 0 ? (
             <Box sx={{ textAlign: 'center', p: 5, color: 'rgba(255,255,255,0.7)' }}>
               <DnsIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
@@ -445,7 +354,7 @@ export default function ServerList({ customerId: propCustomerId }) {
                       <TableCell component="th" scope="row">
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           {onlineStatus[server.id] === undefined ? (
-                            <CircularProgress size={12} sx={{ mr: 1.5, color: 'white' }} />
+                            <CircularProgress sx={CircularProgressSx} />
                           ) : (
                             <Box
                               sx={{
@@ -496,34 +405,16 @@ export default function ServerList({ customerId: propCustomerId }) {
         onClose={handleMenuClose}
         slotProps={{
           paper: {
-            sx: {
-              background: 'rgba(40, 50, 70, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '8px',
-              color: '#fff',
-              minWidth: '180px',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-              marginTop: '4px',
-              '& .MuiMenuItem-root': {
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                '&:hover': {
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '4px',
-                  margin: '2px 8px',
-                  width: 'calc(100% - 16px)',
-                }
-              },
-              '& .MuiListItemIcon-root': {
-                minWidth: '36px',
-                color: 'inherit'
-              }
-            }
+            sx: {...MenuActionsSx}
           }
         }}
       >
         {currentServerForMenu && [
-          <MenuItem key="info" onClick={() => { handleOpenInfoModal(currentServerForMenu); handleMenuClose(); }}>
+          <MenuItem
+            key="info"
+            onClick={() => { handleOpenInfoModal(currentServerForMenu); handleMenuClose(); }}
+            disabled={onlineStatus[currentServerForMenu.id] === 'Offline'}
+          >
             <ListItemIcon><InfoIcon fontSize="small" /></ListItemIcon>
             <ListItemText>View Stats</ListItemText>
           </MenuItem>,
@@ -531,7 +422,11 @@ export default function ServerList({ customerId: propCustomerId }) {
             <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Edit</ListItemText>
           </MenuItem>,
-          <MenuItem key="change-password" onClick={() => { handleOpenChangePasswordDialog(currentServerForMenu); handleMenuClose(); }}>
+          <MenuItem
+            key="change-password"
+            onClick={() => { handleOpenChangePasswordDialog(currentServerForMenu); handleMenuClose(); }}
+            disabled={onlineStatus[currentServerForMenu.id] === 'Offline'}
+          >
             <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Change Password</ListItemText>
           </MenuItem>,
@@ -542,142 +437,48 @@ export default function ServerList({ customerId: propCustomerId }) {
         ]}
       </Menu>
 
-      <StyledDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
-      >
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete the server "{serverToDelete?.server_name}"? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} sx={{ color: 'white' }}>Cancel</Button>
-          <Button onClick={handleDelete} sx={{ color: '#f44336' }} autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </StyledDialog>
+        onConfirm={handleDelete}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete the server "${serverToDelete?.server_name}"? This action cannot be undone.`}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        severity="info"
+      />
 
-      <StyledDialog open={changePasswordDialogOpen} onClose={handleCloseChangePasswordDialog}>
-        <DialogTitle>Change Server Password</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Enter a new password for the server "{serverForPasswordChange?.server_name}".
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="password"
-            label="New Password"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            error={!!changePasswordError}
-            helperText={changePasswordError}
-          />
-          <Button onClick={generateComplexPassword} sx={{ mt: 2, color: 'white' }}>
-            Generate Complex Password
-          </Button>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseChangePasswordDialog} sx={{ color: 'white' }}>Cancel</Button>
-          <Button onClick={handleChangePassword} sx={{ color: 'white' }}>Change Password</Button>
-        </DialogActions>
-      </StyledDialog>
+      <ChangeServerPasswordDialog
+        open={changePasswordDialogOpen}
+        onClose={handleCloseChangePasswordDialog}
+        serverName={serverForPasswordChange?.server_name || ''}
+        onSubmit={submitServerPasswordChange}
+      />
 
       {infoModalOpen && (
-        <StyledDialog
+        <ServerInfoDialog
           open={infoModalOpen}
           onClose={handleCloseInfoModal}
-          maxWidth="lg"
-          fullWidth
-        >
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-            <InfoIcon sx={{ mr: 1 }} /> Server Information: {serverInfo.serverName}
-          </DialogTitle>
-          <DialogContent>
-            {infoLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress sx={{ color: 'white' }} /></Box>
-            ) : serverInfo?.error ? (
-              <Alert severity="error">{serverInfo.error}</Alert>
-            ) : serverInfo?.data?.data ? (() => {
-              const { cpu, memory, disks } = serverInfo.data.data;
-              return (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', p: 1 }}>
-                  {cpu && cpu.cpu_usage_percent !== undefined ? (
-                    <CpuUsage cpu={cpu} width={{ xs: '100%', md: '50%' }} />
-                  ) : (
-                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
-                      <GlassCard>
-                        <Typography variant="h6" gutterBottom>CPU Usage (%)</Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                          <Typography variant="body2" color="text.secondary">Not available</Typography>
-                        </Box>
-                      </GlassCard>
-                    </Box>
-                  )}
-
-                  {memory && memory.used_gb !== undefined ? (
-                    <MemoryUsage memory={memory} width={{ xs: '100%', md: '50%' }} />
-                  ) : (
-                    <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
-                      <GlassCard>
-                        <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                          <Typography variant="body2" color="text.secondary">Not available</Typography>
-                        </Box>
-                      </GlassCard>
-                    </Box>
-                  )}
-
-                  <DiskUsage disks={disks } width={{ xs: '100%', md: '100%' }} />
-                </Box>
-              );
-            })() : (
-              <Typography>No information available.</Typography>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseInfoModal} sx={{ color: 'white' }}>Close</Button>
-          </DialogActions>
-        </StyledDialog>
+          serverName={serverInfo.serverName}
+          loading={infoLoading}
+          error={serverInfo?.error}
+          metrics={serverInfo?.data?.data || null}
+        />
       )}
 
-      <StyledDialog
-          open={isModalOpen}
-          onClose={handleCloseModal}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>{editingServer ? 'Edit Server' : 'Add New Server'}</DialogTitle>
-          <DialogContent>
-            {isModalOpen && (
-              <ServerForm
-                customerId={customerId}
-                serverData={editingServer}
-                onSaveSuccess={handleSaveSuccess}
-                onClose={handleCloseModal}
-              />
-            )}
-          </DialogContent>
-      </StyledDialog>
-
-      <Snackbar
+      {/* Add/Edit Server Dialog */}
+      <ServerForm
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        customerId={customerId}
+        serverData={editingServer}
+        onSave={handleSaveSuccess}
+      />
+      <CustomSnackbar
         open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={hideSnackbar}
         message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        ContentProps={{
-          sx: {
-            background: snackbar.severity === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(211, 47, 47, 0.9)',
-            color: '#fff'
-          }
-        }}
+        severity={snackbar.severity}
       />
     </RootContainer>
   );

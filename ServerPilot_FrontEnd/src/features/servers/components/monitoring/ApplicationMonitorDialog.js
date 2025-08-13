@@ -1,10 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, CircularProgress, Alert } from '@mui/material';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { monitorApplication } from '../../../../api/serverService';
+
+import { CircularProgressSx, glassDialogSx } from '../../../../common';
 
 const COLORS = ['#0088FE', '#FFBB28'];
 
-const ApplicationMonitorDialog = ({ open, onClose, appName, data, loading, error }) => {
+const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName, appId }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!open || !customerId || !serverId || !appName) return;
+      setLoading(true);
+      setError(null);
+      setData(null);
+      try {
+        const response = await monitorApplication(customerId, serverId, appId);
+        setData(response.data);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to fetch monitoring data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [open, customerId, serverId, appName]);
 
   const cpuData = data ? [
     { name: 'Used', value: data.cpu_usage },
@@ -17,12 +42,12 @@ const ApplicationMonitorDialog = ({ open, onClose, appName, data, loading, error
   ] : [];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { background: 'rgba(30, 40, 57, 0.9)', color: '#fff', backdropFilter: 'blur(5px)', borderRadius: '12px' } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperComponent={glassDialogSx}>
       <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem' }}>Application Monitoring {appName}</DialogTitle>
       <DialogContent>
         {loading && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', my: 4 }}>
-                <CircularProgress sx={{ color: '#FE6B8B' }} />
+                <CircularProgress sx={CircularProgressSx} />
                 <Typography sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.7)' }}>Fetching data...</Typography>
             </Box>
         )}
@@ -58,6 +83,11 @@ const ApplicationMonitorDialog = ({ open, onClose, appName, data, loading, error
               </ResponsiveContainer>
             </Box>
           </Box>
+        )}
+        {!loading && !error && !data && (
+          <Typography sx={{ mt: 2, textAlign: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
+            No monitoring data available.
+          </Typography>
         )}
       </DialogContent>
       <DialogActions>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../../../api/apiClient';
+import { explainRisk } from '../../../../api/aiService';
+
+import {glassDialogSx, CancelButton, CircularProgressSx} from '../../../../common';
 import {
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button,
     Typography,
     CircularProgress,
     Alert,
@@ -24,14 +25,11 @@ const ExplainRiskDialog = ({ open, onClose, recommendation }) => {
                 setError('');
                 setExplanation('');
                 try {
-                    const response = await apiClient.post('/ai/explain-risk/', { 
-                        risk_description: recommendation.description 
-                    });
+                    const response = await explainRisk(recommendation.description);
                     setExplanation(response.data.explanation);
                 } catch (err) {
                     const errorMessage = err.response?.data?.error || 'Failed to fetch explanation.';
                     setError(errorMessage);
-                    console.error(err);
                 } finally {
                     setLoading(false);
                 }
@@ -41,12 +39,12 @@ const ExplainRiskDialog = ({ open, onClose, recommendation }) => {
     }, [open, recommendation]);
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperComponent={glassDialogSx}>
             <DialogTitle>Why is this risky?</DialogTitle>
             <DialogContent dividers>
                 {loading && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                        <CircularProgress />
+                        <CircularProgress sx={CircularProgressSx} />
                     </Box>
                 )}
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -57,7 +55,9 @@ const ExplainRiskDialog = ({ open, onClose, recommendation }) => {
                 ))}
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Close</Button>
+                <Box>
+                <CancelButton onClick={onClose}>Close</CancelButton>
+                </Box>
             </DialogActions>
         </Dialog>
     );

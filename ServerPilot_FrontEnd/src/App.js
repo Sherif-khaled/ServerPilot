@@ -8,13 +8,11 @@ import UserProfile from './features/users/components/UserProfile';
 import DashboardPage from './features/core/components/DashboardPage'; // Import DashboardPage
 import UserList from './features/users/components/UserList';
 import CustomerList from './features/customers/components/CustomerList';
-import CustomerForm from './features/customers/components/CustomerForm';
 import SshTerminalPage from './features/servers/pages/SshTerminalPage';
 import ServerList from './features/servers/components/ServerList'; // Import ServerList
 import ServerForm from './features/servers/components/ServerForm'; // Import ServerForm
 import ServerDetailsPage from './features/servers/pages/ServerDetailsPage'; // Import ServerDetailsPage
 import SettingsPage from './features/settings/pages/SettingsPage';
-import UserCreateEditPage from './features/users/pages/UserCreateEditPage'; // Import the new page
 import ProtectedRoute from './features/core/components/ProtectedRoute'; // Import ProtectedRoute
 import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
@@ -43,12 +41,8 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/profile" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserProfile /></Dashboard>} />
         <Route path="/change-password" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ChangePasswordPage /></Dashboard>} />
         <Route path="/users" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserList /></Dashboard>} />
-        <Route path="/users/new" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserCreateEditPage /></Dashboard>} />
-        <Route path="/users/edit/:userId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><UserCreateEditPage /></Dashboard>} />
         {/* Customer Management Routes */}
         <Route path="/customers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerList /></Dashboard>} />
-        <Route path="/customers/new" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerForm /></Dashboard>} />
-        <Route path="/customers/:customerId/edit" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerForm /></Dashboard>} />
 
         {/* Server Management Routes (Nested under Customer) */}
         <Route path="/customers/:customerId/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerList /></Dashboard>} />

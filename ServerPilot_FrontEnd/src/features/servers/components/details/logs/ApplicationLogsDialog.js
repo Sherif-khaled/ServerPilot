@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import {Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Alert, Typography, Box, Divider, Paper,
+    IconButton, Snackbar, FormGroup, FormControlLabel, Checkbox, Switch, Collapse} from '@mui/material';
 import {
-    Dialog, DialogTitle, DialogContent, DialogActions, Button, 
-    CircularProgress, Alert, Typography, Box, Divider, Paper,
-    IconButton, Snackbar, FormGroup, FormControlLabel, Checkbox, Switch, Collapse
-} from '@mui/material';
-import {
-    ErrorOutline, WarningAmberOutlined, InfoOutlined,
-    ContentCopy, Close as CloseIcon, CheckCircleOutline as MuiCheckCircleOutline, Refresh as RefreshIcon,
-    ExpandMore as ExpandMoreIcon
-} from '@mui/icons-material';
+    ErrorOutline, WarningAmberOutlined, InfoOutlined,ContentCopy, Close as CloseIcon, CheckCircleOutline as MuiCheckCircleOutline, Refresh as RefreshIcon,
+    ExpandMore as ExpandMoreIcon} from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import api from '../../../../../api/apiClient';
-
+import { getServerLogs, executeFix } from '../../../../../api/serverService';
+import { analyzeLogs } from '../../../../../api/aiService';
+import { glassDialogSx, CircularProgressSx, CancelButton, checkBoxSx, switchSx, gradientButtonSx } from '../../../../../common';
 
 
 const getLogLineInfo = (line) => {
@@ -70,6 +66,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         info: true,
         other: true,
     });
+    
 
     const fetchLogs = React.useCallback(async (isInitialLoad = false) => {
         if (isInitialLoad) {
@@ -77,7 +74,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         }
         setError(null);
         try {
-            const response = await api.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${appName}/application-logs/`, { name: appName });
+            const response = await getServerLogs(customerId, serverId, appName);
             if (response.data.logs) {
                 setLogs(response.data.logs);
             } else {
@@ -153,7 +150,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         setFixing(true);
         setFixResult(null);
         try {
-            const response = await api.post(`/customers/${customerId}/servers/${serverId}/execute-fix/`, { commands });
+            const response = await executeFix(customerId, serverId, commands);
             setFixResult(response.data.results);
         } catch (err) {
             setFixResult([{ 
@@ -174,7 +171,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         setErrorCode(null);
         setDocLink(null);
         try {
-            const response = await api.post(`/ai/analyze-logs/`, { logs, app_name: appName });
+            const response = await analyzeLogs(logs, appName);
             const recommendationText = response.data.recommendation || '';
             const commandsList = response.data.commands || [];
 
@@ -264,7 +261,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg" PaperProps={{ sx: { backgroundColor: '#2d2d2d', color: '#f1f1f1' } }}>
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg" PaperComponent={glassDialogSx}>
             <DialogTitle sx={{ borderBottom: '1px solid #444' }}>Logs for {appName}</DialogTitle>
             <DialogContent>
                 {/* Application Logs Section */}
@@ -282,14 +279,24 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                             {Object.keys(severityFilter).map(level => (
                                 <FormControlLabel
                                     key={level}
-                                    control={<Checkbox checked={severityFilter[level]} onChange={handleFilterChange} name={level} size="small" />}
+                                    control={<Checkbox 
+                                                checked={severityFilter[level]} 
+                                                onChange={handleFilterChange} 
+                                                name={level} 
+                                                size="small" 
+                                                sx={{...checkBoxSx}} />}
                                     label={level.charAt(0).toUpperCase() + level.slice(1)}
                                     sx={{ textTransform: 'capitalize' }}
                                 />
                             ))}
                         </FormGroup>
                         <FormControlLabel
-                            control={<Switch checked={liveMode} onChange={(e) => setLiveMode(e.target.checked)} name="liveMode" />}
+                            control={<Switch 
+                                        checked={liveMode} 
+                                        onChange={(e) => setLiveMode(e.target.checked)} 
+                                        name="liveMode"
+                                            sx={{...switchSx}} 
+                                        />}
                             label="Live Mode"
                             sx={{ ml: 2 }}
                         />
@@ -308,7 +315,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                 }}>
                     {loading ? (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                            <CircularProgress />
+                            <CircularProgress  sx={CircularProgressSx}/>
                         </Box>
                     ) : error ? (
                         <Alert severity="error" sx={{
@@ -330,7 +337,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                     <Button
                         size="small"
                         onClick={() => setShowAllLogs(!showAllLogs)}
-                        sx={{ textTransform: 'none', mb: 2, alignSelf: 'flex-start' }}
+                        sx={{ textTransform: 'none', mb: 2, alignSelf: 'flex-start', color: '#FE6B8B' }}
                     >
                         {showAllLogs ? 'Show less' : `Show ${processedLogs.length - LOG_DISPLAY_LIMIT} more lines...`}
                     </Button>
@@ -341,7 +348,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
                 <Box sx={{ mt: 2 }}>
                     {summary && (
-                        <Paper elevation={3} sx={{ p: 2, mt: 2, backgroundColor: '#3c3c3c' }}>
+                        <Paper elevation={3} sx={{ p: 2, mt: 2, backgroundColor: 'transparent' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setAnalysisExpanded(!isAnalysisExpanded)}>
                                 <Typography variant="body1" sx={{ flexGrow: 1 }}><strong>🧠 AI Analysis:</strong> {summary}</Typography>
                                 <IconButton size="small">
@@ -369,7 +376,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
                     {analyzing && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, p: 2, backgroundColor: '#3c3c3c', borderRadius: 2 }}>
-                            <CircularProgress size={24} sx={{ mr: 2 }} />
+                            <CircularProgress sx={CircularProgressSx} />
                             <Typography>Analyzing logs, please wait...</Typography>
                         </Box>
                     )}
@@ -380,7 +387,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
                     {fixing && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, p: 2, backgroundColor: '#3c3c3c', borderRadius: 2 }}>
-                            <CircularProgress size={24} sx={{ mr: 2 }} />
+                            <CircularProgress sx={CircularProgressSx} />
                             <Typography>Attempting fix, please wait...</Typography>
                         </Box>
                     )}
@@ -426,7 +433,9 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                         </Button>
                     )}
                 </Box>
-                <Button onClick={onClose} sx={{ color: '#f1f1f1' }}>Close</Button>
+                <Box>
+                    <CancelButton onClick={onClose}>Close</CancelButton>
+                </Box>
             </DialogActions>
 
             <Snackbar
@@ -455,7 +464,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                 }
             />
 
-            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} PaperProps={{ sx: { backgroundColor: '#2d2d2d', color: '#f1f1f1' } }}>
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} PaperComponent={glassDialogSx}>
                 <DialogTitle>Confirm Fix</DialogTitle>
                 <DialogContent>
                     <Typography>The following commands will be executed on your server:</Typography>
@@ -469,8 +478,22 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                     </Alert>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAttemptFix} color="secondary" variant="contained">Execute</Button>
+                    <CancelButton 
+                        onClick={() => setConfirmOpen(false)}
+                        >Cancel
+                    </CancelButton>
+                    <Button 
+                        onClick={handleAttemptFix} 
+                        color="secondary" 
+                        variant="contained"
+                        sx={{
+                            ...gradientButtonSx,
+                            '&:disabled': {
+                                background: 'rgba(255, 255, 255, 0.3)',
+                            }
+                        }}
+                        
+                        >Execute</Button>
                 </DialogActions>
             </Dialog>
         </Dialog>

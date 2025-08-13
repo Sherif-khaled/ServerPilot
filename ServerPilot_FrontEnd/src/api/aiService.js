@@ -59,3 +59,21 @@ export const getAIConfigStatus = async () => {
         throw error;
     }
 };
+
+const analyzeLogs = (logs, appName) => {
+    return apiClient.post('/ai/analyze-logs/', { logs, app_name: appName });
+  };
+
+const explainRisk = (risk_description) => {
+   return apiClient.post('/ai/explain-risk/', {risk_description})
+}
+
+const generatApplicationInfo = (appName) => {
+    return apiClient.post('/ai/generate-app-info/', {app_name: appName})
+}
+
+export  {
+   analyzeLogs,
+   explainRisk,
+   generatApplicationInfo
+};

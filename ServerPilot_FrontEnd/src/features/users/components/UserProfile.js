@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, TextField, Button, Typography, Avatar, Paper, Container, CircularProgress, Snackbar, Alert as MuiAlert,
-    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader, styled, Dialog, DialogTitle,
-    DialogContent, DialogContentText, DialogActions
+    Chip, InputAdornment, FormControl, InputLabel, Select, MenuItem, ListSubheader, styled
 } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { getProfile, updateProfile } from '../../../api/userService';
+import { textFieldSx, gradientButtonSx, CircularProgressSx, glassCardSx, ConfirmDialog } from '../../../common';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -24,39 +24,13 @@ const dateFormats = [
 ];
 
 const RootContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(4),
-  background: 'rgba(38, 50, 56, 0.6)',
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
-  },
+  padding: theme.spacing(3),
 }));
 
-const GlassCard = styled(Paper)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  padding: theme.spacing(4)
-}));
 
- // Common TextField sx with gradient focus ring
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-  '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-  '&.Mui-focused fieldset': { borderColor: 'transparent' },
-  '&.Mui-focused': {
-  boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-  borderRadius: 1,
-        },
-  color: '#fff',
-    },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-};
+
+
+
 
 export default function UserProfile() {
   const [profile, setProfile] = useState(null);
@@ -156,7 +130,7 @@ export default function UserProfile() {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'rgba(38, 50, 56, 0.6)' }}>
-        <CircularProgress color="inherit" />
+        <CircularProgress sx={CircularProgressSx} />
       </Box>
     );
   }
@@ -171,11 +145,15 @@ export default function UserProfile() {
 
   return (
     <RootContainer>
-      <Container component="main" maxWidth="lg">
-        <GlassCard>
-          <Typography component="h1" variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', color: '#fff' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
+      <Typography component="h1" variant="h3" align="left" gutterBottom sx={{ fontWeight: 'bold', color: '#fff' }}>
             User Profile
           </Typography>
+      </Box>
+      <Container component="main" maxWidth="lg">
+
+        <Paper sx={{ ...glassCardSx }}>
+
           <Box component="form" onSubmit={handleFormSubmit} noValidate sx={{ mt: 3 }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 5, alignItems: 'flex-start' }}>
               <Box sx={{ width: { xs: '100%', md: '30%' }, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -346,48 +324,30 @@ export default function UserProfile() {
                     variant="contained"
                     disabled={saving}
                     size="large"
-                    sx={{
-                      background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                      boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                      color: 'white',
-                      borderRadius: '25px',
-                      padding: '10px 25px',
-                      '&:disabled': {
-                        background: 'rgba(255, 255, 255, 0.3)',
-                      }
-                    }}
+                    sx={{...gradientButtonSx}}
                   >
-                    {saving ? <CircularProgress size={24} color="inherit" /> : 'Save Changes'}
+                    {saving ? <CircularProgress sx={CircularProgressSx} /> : 'Save Changes'}
                   </Button>
                 </Box>
               </Box>
             </Box>
           </Box>
-        </GlassCard>
+        </Paper>
         <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
           <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
             {snackbar.message}
           </Alert>
         </Snackbar>
-        <Dialog
+        <ConfirmDialog
           open={confirmOpen}
           onClose={() => setConfirmOpen(false)}
-        >
-          <DialogTitle>Confirm Profile Update</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Are you sure you want to save these changes to your profile?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirmOpen(false)} color="secondary">
-              Cancel
-            </Button>
-            <Button onClick={handleConfirm} color="primary" variant="contained" autoFocus>
-              Yes, Save
-            </Button>
-          </DialogActions>
-        </Dialog>
+          onConfirm={handleConfirm}
+          title="Confirm Profile Update"
+          message="Are you sure you want to save these changes to your profile?"
+          confirmText="Yes, Save"
+          cancelText="Cancel"
+          severity="info"
+        />
       </Container>
     </RootContainer>
   );

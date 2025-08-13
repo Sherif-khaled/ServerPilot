@@ -1,23 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  CircularProgress,
-  MenuItem,
-  FormControlLabel,
-  Checkbox,
-  Alert,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import {
-  createSecurityRisk,
-  updateSecurityRisk,
-} from '../../../api/serverService';
+import {Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, CircularProgress,MenuItem, FormControlLabel, Checkbox, Alert,} from '@mui/material';
+import {createSecurityRisk, updateSecurityRisk} from '../../../api/serverService';
+import { checkBoxSx, CircularProgressSx, glassDialogSx, gradientButtonSx, textFieldSx, CancelButton } from '../../../common';
 
 const defaultFormData = {
   title: '',
@@ -31,29 +15,7 @@ const defaultFormData = {
   required_role: 'user',
 };
 
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-    color: 'white'
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-};
-
-const StyledFormControlLabel = styled(FormControlLabel)({
-  color: 'rgba(255, 255, 255, 0.7)',
-  '& .MuiCheckbox-root': {
-    color: 'rgba(255, 255, 255, 0.7)',
-    '&.Mui-checked': {
-      color: '#FE6B8B',
-    },
-  },
-});
-
-const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, setNotification }) => {
+const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, showSuccess, showError }) => {
   const [formData, setFormData] = useState(defaultFormData);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -79,37 +41,23 @@ const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, setNoti
     try {
       if (editingRisk) {
         await updateSecurityRisk(editingRisk.id, formData);
-        setNotification({ open: true, message: 'Risk updated successfully!', severity: 'success' });
+        showSuccess('Risk updated successfully!');
       } else {
         await createSecurityRisk(formData);
-        setNotification({ open: true, message: 'Risk created successfully!', severity: 'success' });
+        showSuccess('Risk created successfully!');
       }
       onSaveSuccess();
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message;
       setError(errorMessage);
+      showError(`Failed to save risk: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Dialog 
-        open={open} 
-        onClose={onClose} 
-        maxWidth="md" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-            backdropFilter: 'blur(8px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(8px) saturate(160%)',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.125)',
-            color: '#fff',
-          }
-        }}
-      >
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperComponent={glassDialogSx}>
       <DialogTitle sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.125)' }}>
         {editingRisk ? 'Edit Security Risk' : 'Add Security Risk'}
       </DialogTitle>
@@ -128,35 +76,33 @@ const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, setNoti
             <MenuItem value="critical">Critical</MenuItem>
           </TextField>
           <Box sx={{ mt: 1 }}>
-            <StyledFormControlLabel
-              control={<Checkbox checked={formData.is_enabled} onChange={handleChange} name="is_enabled" />}
+            <FormControlLabel
+              control={<Checkbox checked={formData.is_enabled} onChange={handleChange} name="is_enabled" sx={checkBoxSx}/>}
               label="Is Enabled"
             />
-            <StyledFormControlLabel
-              control={<Checkbox checked={formData.expect_non_zero_exit} onChange={handleChange} name="expect_non_zero_exit" />}
+            <FormControlLabel
+              control={<Checkbox checked={formData.expect_non_zero_exit} onChange={handleChange} name="expect_non_zero_exit" sx={checkBoxSx}/>}
               label="Expect Non-Zero Exit"
             />
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: '16px 24px' }}>
-        <Button onClick={onClose} sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Cancel</Button>
-        <Button 
-          onClick={handleSave} 
-          disabled={saving} 
-          variant="contained"
-          sx={{
-            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-            color: 'white',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #FE6B8B 40%, #FF8E53 100%)',
-            },
-            borderRadius: 25,
-            p: '10px 25px',
-          }}
-        >
-          {saving ? <CircularProgress size={24} color="inherit" /> : 'Save'}
-        </Button>   
+      <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+        <Box>
+          <CancelButton onClick={onClose}>Cancel</CancelButton>
+        </Box>
+        <Box>
+          <Button 
+            onClick={handleSave} 
+            disabled={saving} 
+            variant="contained"
+            sx={{
+              ...gradientButtonSx
+            }}
+          >
+            {saving ? <CircularProgress sx={CircularProgressSx} /> : 'Save'}
+          </Button>   
+        </Box>
       </DialogActions>
     </Dialog>
   );

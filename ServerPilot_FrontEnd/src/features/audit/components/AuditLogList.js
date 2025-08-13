@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../../../api/apiClient';
-import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-    CircularProgress, Typography, Alert, TablePagination, Box, FormControl,
-    InputLabel, Select, MenuItem, TextField, Button, Tabs, Tab
-} from '@mui/material';
+import {getAuditSystem, getAuditLogs, getAllUsers} from '../../../api/logsService';
+
+import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,CircularProgress, Typography, Alert, TablePagination, Box, FormControl,
+    InputLabel, Select, MenuItem, TextField, Button, Tabs, Tab} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
-import DescriptionIcon from '@mui/icons-material/Description'; // Icon for Audit Logs
-import ComputerIcon from '@mui/icons-material/Computer'; // Icon for System Logs
+import DescriptionIcon from '@mui/icons-material/Description';
+import ComputerIcon from '@mui/icons-material/Computer';
+import {CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx } from '../../../common';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
     '&:nth-of-type(odd)': {
@@ -27,15 +26,15 @@ const getLogLevelColor = (level) => {
     switch (level?.toUpperCase()) {
         case 'ERROR':
         case 'CRITICAL':
-            return 'error'; // Red
+            return 'error';
         case 'WARNING':
-            return 'warning'; // Yellow
+            return 'warning';
         case 'INFO':
-            return 'success'; // Green
+            return 'success';
         case 'DEBUG':
-            return 'primary'; // Blue
+            return 'primary';
         default:
-            return 'default'; // Default color
+            return 'default';
     }
 };
 
@@ -48,34 +47,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const GlassCard = styled(Box)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  padding: theme.spacing(4)
-}));
-
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-    '&.Mui-focused fieldset': { borderColor: 'transparent' },
-    '&.Mui-focused': {
-      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-      borderRadius: 1,
-    },
-    color: '#fff',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-};
-
 const AuditLogList = () => {
-    // State for Audit Logs
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -86,7 +58,6 @@ const AuditLogList = () => {
     const [filters, setFilters] = useState({ user: '', start_date: '', end_date: '' });
     const [activeFilters, setActiveFilters] = useState({});
 
-    // State for Tabs and System Logs
     const [currentTab, setCurrentTab] = useState(0);
     const [systemLogs, setSystemLogs] = useState([]);
     const [systemLogsLoading, setSystemLogsLoading] = useState(false);
@@ -97,11 +68,10 @@ const AuditLogList = () => {
     const [systemLogFilters, setSystemLogFilters] = useState({ level: '', start_date: '', end_date: '' });
     const [activeSystemLogFilters, setActiveSystemLogFilters] = useState({});
 
-    // Fetch users for the filter dropdown
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await api.get('/users/?all=true');
+                const response = await getAllUsers();
                 const userList = response.data.results || response.data;
                 if (Array.isArray(userList)) {
                     setUsers(userList);
@@ -116,7 +86,6 @@ const AuditLogList = () => {
         fetchUsers();
     }, []);
 
-    // Fetch system logs
     const fetchSystemLogs = useCallback(async () => {
         setSystemLogsLoading(true);
         setSystemLogsError(null);
@@ -131,7 +100,7 @@ const AuditLogList = () => {
         if (activeSystemLogFilters.end_date) params.append('end_date', activeSystemLogFilters.end_date);
 
         try {
-            const response = await api.get(`/audit/system/?${params.toString()}`);
+            const response = await getAuditSystem(params.toString());
             setSystemLogs(response.data.results || []);
             setSystemLogCount(response.data.count || 0);
         } catch (err) {
@@ -144,7 +113,6 @@ const AuditLogList = () => {
         setSystemLogsLoading(false);
     }, [systemLogPage, systemLogRowsPerPage, activeSystemLogFilters]);
 
-    // Effect to fetch data based on the current tab
     useEffect(() => {
         const fetchAuditLogs = async () => {
             setLoading(true);
@@ -159,7 +127,7 @@ const AuditLogList = () => {
             if (activeFilters.end_date) params.append('end_date', activeFilters.end_date);
 
             try {
-                const response = await api.get(`/audit/logs/?${params.toString()}`);
+                const response = await getAuditLogs(params.toString());
                 setLogs(response.data.results || []);
                 setCount(response.data.count || 0);
             } catch (err) {
@@ -240,8 +208,7 @@ const AuditLogList = () => {
                             aria-label="log tabs" 
                             sx={{
                                 '& .MuiTab-root': { color: 'text.secondary', fontWeight: 'bold' },
-                                //'& .Mui-selected': { color: '#FE6B8B' }, // Changed active tab color
-                                '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' }, // Changed indicator color
+                                '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' },
                             }}
                             >
                             <Tab icon={<DescriptionIcon />} iconPosition="start" label="Audit Logs" />
@@ -297,14 +264,7 @@ const AuditLogList = () => {
                                     <Button variant="contained" 
                                             onClick={handleApplyFilters} 
                                             sx={{
-                                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                                color: 'white',
-                                                borderRadius: '25px',
-                                                padding: '10px 25px',
-                                                '&:disabled': {
-                                                    background: 'rgba(255, 255, 255, 0.3)',
-                                                },
+                                               ...gradientButtonSx
                                                 }}
                                             >Apply Filters</Button>
                                     <Button variant="outlined" onClick={handleClearFilters} sx={{ borderRadius: '25px',color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
@@ -312,7 +272,7 @@ const AuditLogList = () => {
                             </Paper>
 
                             {loading ? (
-                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={{ color: '#FE6B8B' }} /></div>
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={CircularProgressSx} /></div>
                             ) : error ? (
                                 <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>
                             ) : (
@@ -410,16 +370,9 @@ const AuditLogList = () => {
                                     <Button variant="contained" 
                                             onClick={handleApplySystemLogFilters} 
                                             sx={{
-                                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                                color: 'white',
-                                                borderRadius: '25px',
-                                                padding: '10px 25px',
-                                                '&:disabled': {
-                                                    background: 'rgba(255, 255, 255, 0.3)',
-                                                },
+                                                ...gradientButtonSx
                                                 }}
-                                            >Apply Fillter</Button>
+                                            >Apply Filters</Button>
                                     <Button variant="outlined" onClick={handleClearSystemLogFilters} sx={{ color: 'white',borderRadius: '25px', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
                                 </Box>
                             </Paper>

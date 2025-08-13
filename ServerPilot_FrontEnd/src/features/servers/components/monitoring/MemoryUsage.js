@@ -2,9 +2,9 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { GlassCard } from '../../../../common';
 import {
   ResponsiveContainer,
   PieChart,
@@ -16,23 +16,14 @@ import {
 
 const COLORS = ['#0088FE', '#FF8042'];
 
-const GlassCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  padding: theme.spacing(3),
-  color: '#fff',
-}));
+// Using shared GlassCard from common
 
 const MemoryUsage = ({ memory, width = { xs: '100%', md: '50%' }}) => {
   if (!memory) {
     return (
       <Box sx={{ width:{...width}, p: 1 }}>
         <GlassCard>
-          <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
+          <Typography variant="h6" pl={2} gutterBottom>Memory Usage (GB)</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
             <Typography variant="body2" color="text.secondary">Not available</Typography>
           </Box>
@@ -49,7 +40,7 @@ const MemoryUsage = ({ memory, width = { xs: '100%', md: '50%' }}) => {
   return (
     <Box sx={{ width:{...width}, p: 1 }}>
       <GlassCard>
-        <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
+        <Typography variant="h6" pl={2} gutterBottom>Memory Usage (GB)</Typography>
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie

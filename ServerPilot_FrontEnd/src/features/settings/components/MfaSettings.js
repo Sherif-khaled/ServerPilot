@@ -3,14 +3,17 @@ import { Box, Button, TextField, Typography, Alert, CircularProgress } from '@mu
 import { getProfile, setupMfa, verifyMfa, disableMfa } from '../../../api/userService';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
+import { CustomSnackbar, useSnackbar } from '../../../common';
 
 const MfaSettings = () => {
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [qrCodeUri, setQrCodeUri] = useState(null);
   const [otp, setOtp] = useState('');
+
+  // Use the custom snackbar hook
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const GlassPaper = styled(Paper)(({ theme }) => ({
     background: 'rgba(255, 255, 255, 0.08)',
@@ -23,20 +26,17 @@ const MfaSettings = () => {
     color: '#fff',
 }));
 
-  const textFieldSx = {
+const textFieldSx = {
   '& .MuiOutlinedInput-root': {
-  '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-  '&.Mui-focused fieldset': { borderColor: 'transparent' },
-  '&.Mui-focused': {
-  boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-  borderRadius: 1,
-        },
-  color: '#fff',
-    },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
+    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
+    color: 'white',
+    borderRadius: '12px',
+  },
+  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
   '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
 };
 
   const fetchMfaStatus = async () => {
@@ -57,21 +57,19 @@ const MfaSettings = () => {
 
   const handleEnableMfa = async () => {
     setError('');
-    setSuccess('');
     try {
       const { data } = await setupMfa();
       console.log('MFA Setup Response:', data);
       setQrCodeUri(data.qr_code_uri);
     } catch (err) {
       console.error('Error during MFA setup:', err.response ? err.response.data : err.message);
-      setError('Failed to start MFA setup. Check the browser console for more details.');
+      showError('Failed to start MFA setup. Check the browser console for more details.');
     }
   };
 
   const handleVerifyMfa = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     
     if (!otp || !otp.trim()) {
       setError('Please enter the OTP token from your authenticator app.');
@@ -100,7 +98,7 @@ const MfaSettings = () => {
       }
       
       // Success case - MFA is now enabled
-      setSuccess('MFA has been successfully enabled for your account!');
+      showSuccess('MFA has been successfully enabled for your account!');
       setMfaEnabled(true);
       setQrCodeUri(null);
       setOtp('');
@@ -115,7 +113,7 @@ const MfaSettings = () => {
       
     } catch (err) {
       console.error('Unexpected error during MFA verification:', err);
-      setError('An unexpected error occurred while verifying your code. Please try again.');
+      showError('An unexpected error occurred while verifying your code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -123,14 +121,13 @@ const MfaSettings = () => {
 
   const handleDisableMfa = async () => {
     setError('');
-    setSuccess('');
     try {
       await disableMfa();
-      setSuccess('MFA disabled successfully!');
+      showSuccess('MFA disabled successfully!');
       setMfaEnabled(false);
     } catch (err) {
       console.error('Error during MFA disable:', err.response ? err.response.data : err.message);
-      setError('Failed to disable MFA. Check the browser console for more details.');
+      showError('Failed to disable MFA. Check the browser console for more details.');
     }
   };
 
@@ -147,7 +144,6 @@ const MfaSettings = () => {
         Enable Multi-Factor Authentication (MFA) to add an extra layer of security to your account.
       </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
       {mfaEnabled ? (
         <Box>
@@ -209,6 +205,13 @@ const MfaSettings = () => {
           )}
         </Box>
       )}
+
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={hideSnackbar}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </GlassPaper>
   );
 };

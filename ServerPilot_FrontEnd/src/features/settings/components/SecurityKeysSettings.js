@@ -9,14 +9,17 @@ import * as webAuthnService from '../../../services/webAuthnService';
 import { startRegistration } from '@simplewebauthn/browser';
 import Paper from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
+import { CustomSnackbar, useSnackbar } from '../../../common';
 
 const SecurityKeysSettings = () => {
     const [keys, setKeys] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [open, setOpen] = useState(false);
     const [keyName, setKeyName] = useState('');
+
+    // Use the custom snackbar hook
+    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
     const fetchKeys = async () => {
         try {
@@ -50,30 +53,26 @@ const SecurityKeysSettings = () => {
             return;
         }
         handleClose();
-        setError('');
-        setSuccess('');
 
         try {
             const optionsResponse = await webAuthnService.beginRegistration();
             const registrationData = await startRegistration(optionsResponse.data);
             await webAuthnService.completeRegistration(registrationData, keyName);
-            setSuccess('Security key registered successfully!');
+            showSuccess('Security key registered successfully!');
             fetchKeys(); // Refresh the list of keys
         } catch (err) {
             const errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
-            setError(errorMessage);
+            showError(errorMessage);
         }
     };
 
     const handleDelete = async (keyId) => {
-        setError('');
-        setSuccess('');
         try {
             await webAuthnService.deleteKey(keyId);
-            setSuccess('Security key deleted successfully!');
+            showSuccess('Security key deleted successfully!');
             fetchKeys(); // Refresh the list of keys
         } catch (err) {
-            setError('Failed to delete the key.');
+            showError('Failed to delete the key.');
         }
     };
     const GlassPaper = styled(Paper)(({ theme }) => ({
@@ -95,7 +94,6 @@ const SecurityKeysSettings = () => {
             </Typography>
             
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
             {isLoading ? (
                 <CircularProgress />
@@ -158,6 +156,13 @@ const SecurityKeysSettings = () => {
                     <Button onClick={handleRegister}>Register</Button>
                 </DialogActions>
             </Dialog>
+
+            <CustomSnackbar
+                open={snackbar.open}
+                onClose={hideSnackbar}
+                severity={snackbar.severity}
+                message={snackbar.message}
+            />
         </GlassPaper>
     );
 };

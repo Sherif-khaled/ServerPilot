@@ -1,35 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    Box, Typography, Card, CardContent, Button, CircularProgress, Grid, TextField,
-    FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-    IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
-    Snackbar, Alert
-} from '@mui/material';
+    Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,CardContent,CircularProgress,
+    IconButton, Alert, Grid, Tooltip} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import {
-    Refresh as RefreshIcon,
     CloudDownload as CloudDownloadIcon,
     Restore as RestoreIcon,
-    Delete as DeleteIcon
+    Delete as DeleteIcon,
+    Refresh as RefreshIcon,
+    DataUsage as DataUsageIcon,
+    Schedule as ScheduleIcon,
+    CheckCircleOutline as CheckCircleOutlineIcon,
+    HighlightOffOutlined as HighlightOffOutlinedIcon
 } from '@mui/icons-material';
 import apiClient from '../../../api/apiClient';
+import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, ConfirmDialog, glassCardSx } from '../../../common';
+import BackupNowCard from '../components/BackupNowCard';
+import BackupScheduleCard from '../components/BackupScheduleCard';
 
-// Styled root component for the background
+
 const RootContainer = styled(Box)(({ theme }) => ({
     padding: theme.spacing(3),
-}));
-
-// Glassmorphism Card
-const GlassCard = styled(Card)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    '& .MuiCardContent-root': {
-        color: '#fff',
-    }
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    
 }));
 
 // Styled Table Container with glassmorphism
@@ -57,11 +52,9 @@ const GlassTableContainer = styled(TableContainer)(({ theme }) => ({
 }));
 
 const DatabaseManagementPage = () => {
-    const [loading, setLoading] = useState(false);
     const [backups, setBackups] = useState([]);
     const [listLoading, setListLoading] = useState(true);
     const [listError, setListError] = useState('');
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedBackup, setSelectedBackup] = useState(null);
@@ -70,6 +63,9 @@ const DatabaseManagementPage = () => {
     const [schedule, setSchedule] = useState({ enabled: false, hour: '2', minute: '0' });
     const [scheduleLoading, setScheduleLoading] = useState(true);
     const [scheduleSaving, setScheduleSaving] = useState(false);
+
+    // Use the custom snackbar hook
+    const { snackbar, showSuccess, showError, showInfo, hideSnackbar } = useSnackbar();
 
     const fetchBackups = useCallback(async () => {
         setListLoading(true);
@@ -80,7 +76,7 @@ const DatabaseManagementPage = () => {
         } catch (error) { 
             console.error('Failed to fetch backups:', error);
             setListError('Failed to load backups. Please try again.');
-            setSnackbar({ open: true, message: 'Failed to load backups.', severity: 'error' });
+            showError('Failed to load backups.');
         } finally {
             setListLoading(false);
         }
@@ -98,7 +94,7 @@ const DatabaseManagementPage = () => {
                 });
             } catch (error) {
                 console.error('Failed to fetch schedule:', error);
-                setSnackbar({ open: true, message: 'Failed to load backup schedule.', severity: 'error' });
+                showError('Failed to load backup schedule.');
             } finally {
                 setScheduleLoading(false);
             }
@@ -108,20 +104,12 @@ const DatabaseManagementPage = () => {
         fetchSchedule();
     }, [fetchBackups]);
 
-    const handleBackupNow = async () => {
-        setLoading(true);
-        try {
-            const response = await apiClient.post('/db/backup/');
-            setSnackbar({ open: true, message: 'Backup task started successfully!', severity: 'success' });
-            fetchBackups(); // Refresh the list after starting a new backup
-        } catch (error) {
-            const errorMessage = error.response?.data?.error || 'An unexpected error occurred.';
-            setSnackbar({ open: true, message: `Backup failed: ${errorMessage}`, severity: 'error' });
-        }
-        setLoading(false);
+    const handleBackupTriggered = () => {
+        fetchBackups();
     };
 
     const handleScheduleChange = (event) => {
+        console.log('Schedule change event:', event.target);
         const { name, value, checked, type } = event.target;
         setSchedule(prev => ({
             ...prev,
@@ -130,17 +118,19 @@ const DatabaseManagementPage = () => {
     };
 
     const handleSaveSchedule = async () => {
+        console.log('Saving schedule:', schedule);
         setScheduleSaving(true);
         try {
-            await apiClient.post('/db/schedule/', {
+            const response = await apiClient.post('/db/schedule/', {
                 enabled: schedule.enabled,
                 hour: parseInt(schedule.hour, 10),
                 minute: parseInt(schedule.minute, 10),
             });
-            setSnackbar({ open: true, message: 'Schedule updated successfully!', severity: 'success' });
+            console.log('Schedule save response:', response);
+            showSuccess('Schedule updated successfully!');
         } catch (error) {
             console.error('Failed to save schedule:', error);
-            setSnackbar({ open: true, message: 'Failed to save schedule.', severity: 'error' });
+            showError('Failed to save schedule.');
         } finally {
             setScheduleSaving(false);
         }
@@ -160,21 +150,81 @@ const DatabaseManagementPage = () => {
         if (!selectedBackup) return;
         try {
             await apiClient.delete(`/db/backups/delete/${selectedBackup.filename}/`);
-            setSnackbar({ open: true, message: 'Backup deleted successfully!', severity: 'success' });
-            fetchBackups(); // Refresh the list
+            showSuccess('Backup deleted successfully!');
+            fetchBackups();
         } catch (error) {
             console.error('Failed to delete backup:', error);
-            setSnackbar({ open: true, message: 'Failed to delete backup.', severity: 'error' });
+            showError('Failed to delete backup.');
         }
         handleDialogClose();
     };
 
-    const handleCloseSnackbar = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
+    const handleDownloadBackup = async (backup) => {
+        try {
+            console.log('Starting download for backup:', backup.filename);
+            
+            const response = await apiClient.get(`/db/backups/download/${backup.filename}/`, {
+                responseType: 'blob', // Important for file downloads
+            });
+            
+            // Create a blob URL and trigger download
+            const blob = new Blob([response.data], { type: 'application/octet-stream' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = backup.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            showSuccess('Backup download started!');
+        } catch (error) {
+            console.error('Failed to download backup:', error);
+            console.error('Error response:', error.response);
+            console.error('Error status:', error.response?.status);
+            console.error('Error data:', error.response?.data);
+            
+            if (error.response?.status === 401) {
+                showError('Authentication required. Please log in again.');
+            } else if (error.response?.status === 403) {
+                showError('Access denied. You do not have permission to download this backup.');
+            } else if (error.response?.status === 404) {
+                showError('Backup file not found. It may have been deleted.');
+            } else {
+                showError('Failed to download backup. Please try again.');
+            }
         }
-        setSnackbar({ ...snackbar, open: false });
     };
+
+    const totalBackups = backups.length;
+    const totalSizeBytes = useMemo(() => backups.reduce((sum, b) => sum + (b.size || 0), 0), [backups]);
+    const lastBackupAt = useMemo(() => {
+        if (!backups.length) return null;
+        const latest = backups.reduce((acc, b) => {
+            const t = new Date(b.created_at).getTime();
+            return t > acc ? t : acc;
+        }, 0);
+        return new Date(latest);
+    }, [backups]);
+
+    const handleHeaderRefresh = () => {
+        fetchBackups();
+        (async () => {
+            try {
+                const response = await apiClient.get('/db/schedule/');
+                setSchedule({
+                    enabled: response.data.enabled,
+                    hour: response.data.hour !== undefined ? String(response.data.hour) : '2',
+                    minute: response.data.minute !== undefined ? String(response.data.minute) : '0',
+                });
+            } catch (error) {
+                console.error('Failed to refresh schedule:', error);
+            }
+        })();
+    };
+
+
 
     const formatBytes = (bytes, decimals = 2) => {
         if (bytes === 0) return '0 Bytes';
@@ -187,177 +237,64 @@ const DatabaseManagementPage = () => {
 
     return (
         <RootContainer>
-            <Typography 
-                variant="h3" 
-                component="h1" 
-                sx={{ 
-                    fontWeight: 'bold', 
-                    color: '#fff', 
-                    textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                    mb: 4
-                }}
-            >
-                Database Management
-            </Typography>
-
-            {listError && (
-                <Alert 
-                    severity="error" 
+            <GlassCard sx={{width: 1162, maxWidth: '95vw', p: '40px'}}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
+                <Typography 
+                    variant="h3" 
+                    component="h1" 
                     sx={{ 
-                        mb: 2, 
-                        background: 'rgba(211, 47, 47, 0.8)', 
-                        color: '#fff',
-                        '& .MuiAlert-icon': { color: '#fff' }
+                        fontWeight: 'bold', 
+                        color: '#fff', 
+                        textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                         mb: 0
                     }}
                 >
-                    {listError}
-                </Alert>
-            )}
+                    Database Management
+                </Typography>
 
-            <GlassCard sx={{ mb: 3 }}>
-                <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 'bold' }}>
-                        Manual Backup
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
-                        Click the button below to create an immediate backup of the database. The process will run in the background.
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Button 
-                            variant="contained" 
-                            onClick={handleBackupNow} 
-                            disabled={loading}
-                            sx={{
-                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                color: 'white',
-                                borderRadius: '25px',
-                                padding: '10px 25px',
-                                '&:disabled': {
-                                    background: 'rgba(255, 255, 255, 0.3)',
-                                }
-                            }}
-                        >
-                            Backup Now
-                        </Button>
-                        {loading && <CircularProgress size={24} sx={{ color: '#FE6B8B' }} />}
-                    </Box>
-                </CardContent>
-            </GlassCard>
+                {listError && (
+                    <Alert 
+                        severity="error" 
+                        sx={{ 
+                            mb: 2, 
+                            background: 'rgba(211, 47, 47, 0.8)', 
+                            color: '#fff',
+                            '& .MuiAlert-icon': { color: '#fff' }
+                        }}
+                    >
+                        {listError}
+                    </Alert>
+                )}
+             </Box>
 
-            <GlassCard sx={{ mb: 3 }}>
-                <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 'bold' }}>
-                        Automated Backup Schedule
-                    </Typography>
-                    {scheduleLoading ? (
-                        <CircularProgress sx={{ color: '#FE6B8B' }} />
-                    ) : (
-                        <Grid container spacing={2} alignItems="center">
-                            <Grid size={12}>
-                                <FormControlLabel
-                                    control={
-                                        <Switch 
-                                            checked={schedule.enabled} 
-                                            onChange={handleScheduleChange} 
-                                            name="enabled"
-                                            sx={{
-                                                '& .MuiSwitch-switchBase.Mui-checked': {
-                                                    color: '#FE6B8B',
-                                                },
-                                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                    backgroundColor: '#FE6B8B',
-                                                },
-                                            }}
-                                        />
-                                    }
-                                    label="Enable Daily Backups"
-                                    sx={{ color: '#fff' }}
-                                />
-                            </Grid>
-                            <Grid size={6}>
-                                <TextField
-                                    label="Hour (UTC)"
-                                    type="number"
-                                    name="hour"
-                                    value={schedule.hour}
-                                    onChange={handleScheduleChange}
-                                    disabled={!schedule.enabled}
-                                    fullWidth
-                                    inputProps={{ min: 0, max: 23 }}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                                            '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                                            '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                                            color: 'white'
-                                        },
-                                        '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-                                        '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' }
-                                    }}
-                                />
-                            </Grid>
-                            <Grid size={6}>
-                                <TextField
-                                    label="Minute (UTC)"
-                                    type="number"
-                                    name="minute"
-                                    value={schedule.minute}
-                                    onChange={handleScheduleChange}
-                                    disabled={!schedule.enabled}
-                                    fullWidth
-                                    inputProps={{ min: 0, max: 59 }}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                                            '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                                            '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                                            color: 'white'
-                                        },
-                                        '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-                                        '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' }
-                                    }}
-                                />
-                            </Grid>
-                            <Grid size={12}>
-                                <Button 
-                                    variant="contained" 
-                                    onClick={handleSaveSchedule} 
-                                    disabled={scheduleSaving || !schedule.enabled}
-                                    sx={{
-                                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                        color: 'white',
-                                        borderRadius: '25px',
-                                        padding: '10px 25px',
-                                        '&:disabled': {
-                                            background: 'rgba(255, 255, 255, 0.3)',
-                                        }
-                                    }}
-                                >
-                                    {scheduleSaving ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Save Schedule'}
-                                </Button>
-                            </Grid>
-                        </Grid>
-                    )}
-                </CardContent>
-            </GlassCard>
+            <Box sx={{ position: 'relative', zIndex: 2 }}>
+                {console.log('Rendering backup components')}
+                <BackupNowCard onBackupTriggered={handleBackupTriggered} />
 
-            <GlassCard>
-                <CardContent>
+                <BackupScheduleCard 
+                    schedule={schedule}
+                    scheduleLoading={scheduleLoading}
+                    scheduleSaving={scheduleSaving}
+                    onChange={handleScheduleChange}
+                    onSave={handleSaveSchedule}
+                />
+            </Box>
+
+            <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
+                <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6">Available Backups</Typography>
-                        <IconButton onClick={fetchBackups} disabled={listLoading}>
+                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 'bold' }}>Available Backups</Typography>
+                        <IconButton onClick={fetchBackups} disabled={listLoading} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                             <RefreshIcon />
                         </IconButton>
                     </Box>
-                    {listLoading ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                            <CircularProgress />
-                        </Box>
-                    ) : listError ? (
-                        <Alert severity="error">{listError}</Alert>
-                    ) : (
+                                    {listLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
+                        <CircularProgress sx={CircularProgressSx} />
+                    </Box>
+                ) : listError ? (
+                    <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{listError}</Alert>
+                ) : (
                         <GlassTableContainer component={Paper}>
                             <Table sx={{ minWidth: 650 }} aria-label="simple table">
                                 <TableHead>
@@ -379,9 +316,7 @@ const DatabaseManagementPage = () => {
                                             <TableCell align="center">
                                                 <IconButton
                                                     color="success"
-                                                    component="a"
-                                                    href={`/api/db/backups/download/${backup.filename}/`}
-                                                    target="_blank"
+                                                    onClick={() => handleDownloadBackup(backup)}
                                                 >
                                                     <CloudDownloadIcon />
                                                 </IconButton>
@@ -404,25 +339,23 @@ const DatabaseManagementPage = () => {
                     )}
                 </CardContent>
             </GlassCard>
-            <Dialog open={openDialog} onClose={handleDialogClose}>
-                <DialogTitle>Confirm Deletion</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to delete the backup file `{selectedBackup?.filename}`? This action cannot be undone.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleDialogClose}>Cancel</Button>
-                    <Button onClick={handleConfirmDelete} color="error" autoFocus>
-                        Delete
-                    </Button>
-                </DialogActions>
-            </Dialog>
-            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
+            <ConfirmDialog
+                open={openDialog}
+                onClose={handleDialogClose}
+                onConfirm={handleConfirmDelete}
+                title="Confirm Deletion"
+                message={`Are you sure you want to delete the backup file ${selectedBackup?.filename}? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                severity="error"
+              />
+            <CustomSnackbar
+                open={snackbar.open}
+                onClose={hideSnackbar}
+                severity={snackbar.severity}
+                message={snackbar.message}
+            />
+            </GlassCard>
         </RootContainer>
     );
 };

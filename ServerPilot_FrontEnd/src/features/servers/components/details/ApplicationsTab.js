@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-    List, ListItem, ListItemAvatar, ListItemText, Paper, 
-    Typography, CircularProgress, Alert, Chip, Menu, MenuItem, Avatar, Box, IconButton
-} from '@mui/material';
+import { List, ListItem, ListItemAvatar, Paper, Typography, CircularProgress, Alert, Chip, Menu, MenuItem, Avatar, Box, IconButton} from '@mui/material';
 import { MoreVert as MoreVertIcon, PlayArrow as PlayArrowIcon, Stop as StopIcon, Replay as ReplayIcon, Description as DescriptionIcon, Monitor as MonitorIcon } from '@mui/icons-material';
-import api from '../../../../api/apiClient';
+import { manageApplication, scanApplications } from '../../../../api/serverService';
 import ApplicationMonitorDialog from '../monitoring/ApplicationMonitorDialog';
 import ApplicationLogsDialog from './logs/ApplicationLogsDialog';
+import { CircularProgressSx, MenuActionsSx } from '../../../../common';
 
 const getStatusColor = (status) => {
     switch (status) {
@@ -34,9 +32,6 @@ function ApplicationsTab() {
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedApp, setSelectedApp] = useState(null);
     const [monitorDialogOpen, setMonitorDialogOpen] = useState(false);
-    const [monitorData, setMonitorData] = useState(null);
-    const [monitorLoading, setMonitorLoading] = useState(false);
-    const [monitorError, setMonitorError] = useState(null);
     const [logsDialogOpen, setLogsDialogOpen] = useState(false);
 
     const handleMenuOpen = (event, app) => {
@@ -49,29 +44,15 @@ function ApplicationsTab() {
         setSelectedApp(null);
     };
 
-    const fetchMonitoringData = async (appName) => {
-        setMonitorLoading(true);
-        setMonitorError(null);
-        setMonitorData(null);
-        try {
-            const response = await api.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${selectedApp.id}/monitor-application/`);
-            setMonitorData(response.data);
-        } catch (err) {
-            setMonitorError(err.response?.data?.error || 'Failed to fetch monitoring data.');
-        }
-        setMonitorLoading(false);
-    };
-
     const handleMonitorOpen = () => {
         if (selectedApp) {
             setMonitorDialogOpen(true);
-            fetchMonitoringData(selectedApp.name);
         }
-        handleMenuClose();
+        setAnchorEl(null);
     };
 
     const handleLogsOpen = () => {
-        setAnchorEl(null); // Close the menu, but keep selectedApp
+        setAnchorEl(null);
         if (selectedApp) {
             setLogsDialogOpen(true);
         }
@@ -81,9 +62,8 @@ function ApplicationsTab() {
         handleMenuClose();
         setActionLoading(true);
         try {
-            await api.post(`/customers/${customerId}/servers/${serverId}/installed-applications/${selectedApp.id}/manage-application/`, { action });
-            // Refresh the list to show the updated status
-            const response = await api.get(`/customers/${customerId}/servers/${serverId}/installed-applications/`);
+            await manageApplication(customerId, serverId, selectedApp.id, action);
+            const response = await scanApplications(customerId, serverId);
             setApplications(response.data);
         } catch (err) {
             setError(err.response?.data?.error || `Failed to ${action} ${appName}`);
@@ -101,7 +81,7 @@ function ApplicationsTab() {
             }
             try {
                 setLoading(true);
-                const response = await api.get(`/customers/${customerId}/servers/${serverId}/installed-applications/`);
+                const response = await scanApplications(customerId, serverId);
                 setApplications(response.data);
             } catch (err) {
                 setError(err.response?.data?.detail || 'Failed to fetch application statuses.');
@@ -130,7 +110,7 @@ function ApplicationsTab() {
                                 borderRadius: '16px', 
                                 background: 'rgba(204, 73, 73, 0.05)', 
                                 backdropFilter: 'blur(10px)', 
-                                WebkitBackdropFilter: 'blur(10px)', // For Safari
+                                WebkitBackdropFilter: 'blur(10px)',
                                 border: '1px solid rgba(255, 255, 255, 0.3)',
                                 boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
                             }}
@@ -140,7 +120,7 @@ function ApplicationsTab() {
                                 secondaryAction={
                                     <>
                                         {actionLoading && selectedApp?.name === app.name ? (
-                                            <CircularProgress size={24} />
+                                            <CircularProgress sx={CircularProgressSx} />
                                         ) : (
                                             <IconButton
                                                 aria-label="actions"
@@ -160,24 +140,25 @@ function ApplicationsTab() {
                                         {app.name.charAt(0).toUpperCase()}
                                     </Avatar>
                                 </ListItemAvatar>
-                                <ListItemText
-                                    primary={<Typography variant="h6">{app.name}</Typography>}
-                                    secondary={
-                                        <>
-                                            
-                                            <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Typography variant="body2" color="text.secondary" component="span">
-                                                    Version: {app.version || 'N/A'}
-                                                </Typography>
-                                                
-                                                <Chip label={app.status} color={getStatusColor(app.status)} size="small" sx={{ ml: 2 }} />
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                                                {app.description}
-                                            </Typography>
-                                        </>
-                                    }
-                                />
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography variant="h6" component="div">{app.name}</Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, mb: 1 }}>
+                                        <Typography variant="body2" color="text.secondary" component="span">
+                                            Version: {app.version || 'N/A'}
+                                        </Typography>
+                                        <Chip 
+                                            label={app.status} 
+                                            color={getStatusColor(app.status)} 
+                                            size="small" 
+                                            sx={{ ml: 2 }} 
+                                        />
+                                    </Box>
+                                    {app.description && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+                                            {app.description}
+                                        </Typography>
+                                    )}
+                                </Box>
                             </ListItem>
                         </Paper>
                     ))}
@@ -194,28 +175,7 @@ function ApplicationsTab() {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
                 PaperProps={{
-                  sx: {
-                    background: 'rgba(40, 50, 70, 0.95)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    minWidth: '180px',
-                    boxShadow: '0 8px 32px 0 rgba(58, 56, 56, 0.37)',
-                    marginTop: '4px',
-                    '& .MuiMenuItem-root': {
-                      padding: '12px 16px',
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        borderRadius: '4px',
-                        margin: '2px 8px',
-                        width: 'calc(100% - 16px)',
-                      }
-                    },
-                    '& .MuiListItemIcon-root': {
-                      minWidth: '36px',
-                    }
-                  }
+                  sx: {...MenuActionsSx}
                 }}
             >
                 {selectedApp?.check_command?.includes('systemctl') && [
@@ -229,11 +189,14 @@ function ApplicationsTab() {
             {monitorDialogOpen && (
                 <ApplicationMonitorDialog
                     open={monitorDialogOpen}
-                    onClose={() => setMonitorDialogOpen(false)}
+                    onClose={() => {
+                        setMonitorDialogOpen(false);
+                        setSelectedApp(null);
+                    }}
+                    customerId={customerId}
+                    serverId={serverId}
+                    appId={selectedApp?.id}
                     appName={selectedApp?.name}
-                    data={monitorData}
-                    loading={monitorLoading}
-                    error={monitorError}
                 />
             )}
             {logsDialogOpen && (
@@ -241,7 +204,7 @@ function ApplicationsTab() {
                     open={logsDialogOpen}
                     onClose={() => {
                         setLogsDialogOpen(false);
-                        setSelectedApp(null); // Clear selected app when dialog closes
+                        setSelectedApp(null);
                     }}
                     appName={selectedApp?.name}
                     customerId={customerId}

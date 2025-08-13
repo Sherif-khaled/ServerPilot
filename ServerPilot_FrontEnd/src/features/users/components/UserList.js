@@ -1,79 +1,31 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-    Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert,
-    Button, IconButton, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, CircularProgress,
-    Grid, TextField, MenuItem, Avatar, Chip, Menu, InputAdornment, Card, CardContent, Tooltip, TablePagination,
-    Snackbar
-} from '@mui/material';
+import {Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert,
+    Button, IconButton, CircularProgress, Grid, TextField, MenuItem, Avatar, Chip, Menu, 
+    InputAdornment, CardContent, Tooltip, TablePagination} from '@mui/material';
 import { styled } from '@mui/material/styles';
-import MuiAlert from '@mui/material/Alert';
+import { textFieldSx, gradientButtonSx, CircularProgressSx, ConfirmDialog, MenuActionsSx, GlassCard } from '../../../common';
 
-import {
-    Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, VpnKey as VpnKeyIcon, MoreVert as MoreVertIcon,
-    Search as SearchIcon,
-    PeopleAltOutlined as PeopleAltOutlinedIcon,
-    CheckCircleOutline as CheckCircleOutlineIcon,
-    AdminPanelSettings as AdminPanelSettingsIcon,
-    HighlightOffOutlined as HighlightOffOutlinedIcon
-} from '@mui/icons-material';
-import {
-    adminListUsers, adminDeleteUser,
-    adminSetUserPassword,
-    adminUpdateUser, // <-- Add this import
-    adminCreateUser  // <-- Add this import if not already
-} from '../../../api/userService';
+import {Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, VpnKey as VpnKeyIcon, MoreVert as MoreVertIcon,
+    Search as SearchIcon,PeopleAltOutlined as PeopleAltOutlinedIcon,CheckCircleOutline as CheckCircleOutlineIcon,
+    AdminPanelSettings as AdminPanelSettingsIcon,HighlightOffOutlined as HighlightOffOutlinedIcon} from '@mui/icons-material';
+import { adminListUsers, adminDeleteUser, adminSetUserPassword,} from '../../../api/userService';
+import RefreshIcon from '@mui/icons-material/Refresh';
+
 import SetPasswordForm from './SetPasswordForm';
-import UserForm from './UserForm'; // Make sure this import exists
+import UserForm from './UserForm';
+import { CustomSnackbar, useSnackbar } from '../../../common';
 
-// Styled root component for the background
 const RootContainer = styled(Box)(({ theme }) => ({
     padding: theme.spacing(3),
 }));
 
-// Glassmorphism Card
-const GlassCard = styled(Card)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-}));
-
-const modalStyle = {
-
-    background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(12px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    color: '#fff',
-    minWidth: { md: 900, lg: 900 },
-    overflowY: 'hidden',
-            '&::-webkit-scrollbar': { display: 'none' },
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '100%',           // Increased width
-    maxWidth: 1000,         // Increased maxWidth
-    p: 4,
-    color: '#fff',
-    maxHeight: '90vh',
-    overflowY: 'auto',
-};
 
 export default function UserList() {
-    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null); // Kept for delete and set password actions
+    const [currentUser, setCurrentUser] = useState(null);
     const [setPasswordModalOpen, setSetPasswordModalOpen] = useState(false);
     const [userForPasswordSet, setUserForPasswordSet] = useState(null);
     const [setPasswordError, setSetPasswordError] = useState('');
@@ -88,10 +40,10 @@ export default function UserList() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [addUserModalOpen, setAddUserModalOpen] = useState(false);
-    const [editUser, setEditUser] = useState(null); // NEW: Track user being edited
-    const [notification, setNotification] = useState({ open: false, severity: 'success', message: '' });
-    const [formError, setFormError] = useState({});
-
+    const [editUser, setEditUser] = useState(null); 
+    
+    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+    
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         setError('');
@@ -120,23 +72,17 @@ export default function UserList() {
     }, [fetchUsers]);
 
     useEffect(() => {
-        // This will trigger when users list changes after a successful operation
         if (!loading && !addUserModalOpen && !error) {
-            // Check if we just completed an operation
             const shouldShowNotification = sessionStorage.getItem('userOperationSuccess');
             if (shouldShowNotification) {
-                setNotification({ 
-                    open: true, 
-                    severity: 'success', 
-                    message: shouldShowNotification 
-                });
+                showSuccess(shouldShowNotification);
                 sessionStorage.removeItem('userOperationSuccess');
             }
         }
-    }, [users, loading, addUserModalOpen, error]);
+    }, [users, loading, addUserModalOpen, error, showSuccess]);
 
     const handleCreateUser = () => {
-        setEditUser(null); // Not editing, just adding
+        setEditUser(null); 
         setAddUserModalOpen(true);
     };
 
@@ -148,35 +94,15 @@ export default function UserList() {
         }
     };
 
-    const handleUserFormSubmit = async (formData) => {
-        setLoading(true);
-        setFormError({});
-        try {
-            if (editUser) {
-                await adminUpdateUser(editUser.id, formData);
-                setAddUserModalOpen(false);
-                setEditUser(null);
-                setTimeout(() => {
-                    setNotification({ open: true, severity: 'success', message: 'User updated successfully!' });
-                }, 300);
-            } else {
-                await adminCreateUser(formData);
-                setAddUserModalOpen(false);
-                setTimeout(() => {
-                    setNotification({ open: true, severity: 'success', message: 'User created successfully!' });
-                }, 300);
-            }
-            fetchUsers();
-        } catch (err) {
-            // If error is validation error from backend
-            if (err.response && err.response.data) {
-                setFormError(err.response.data);
-            } else {
-                setNotification({ open: true, severity: 'error', message: 'Failed to save user. ' + (err.message) });
-            }
-        } finally {
-            setLoading(false);
-        }
+    const handleUserFormSuccess = (isEdit = false) => {
+        fetchUsers();
+        setAddUserModalOpen(false);
+        setEditUser(null);
+        showSuccess(isEdit ? 'User updated successfully!' : 'User created successfully!');
+    };
+
+    const handleUserFormError = (error) => {
+        showError(error.message || 'An error occurred while processing your request.');
     };
 
     const handleCloseAddUserModal = () => {
@@ -203,15 +129,11 @@ export default function UserList() {
             fetchUsers();
             setDeleteConfirmOpen(false);
             setCurrentUser(null);
-            setTimeout(() => {
-                setNotification({ open: true, severity: 'success', message: 'User deleted successfully!' });
-            }, 300);
+            showSuccess('User deleted successfully!');
         } catch (err) {
             setDeleteConfirmOpen(false);
             setCurrentUser(null);
-            setTimeout(() => {
-                setNotification({ open: true, severity: 'error', message: 'Failed to delete user. ' + (err.response?.data?.detail || err.message) });
-            }, 300);
+            showError('Failed to delete user. ' + (err.response?.data?.detail || err.message));
             setError('Failed to delete user. ' + (err.response?.data?.detail || err.message));
         } finally {
             setLoading(false);
@@ -237,17 +159,17 @@ export default function UserList() {
         try {
             await adminSetUserPassword(userForPasswordSet.id, newPassword);
             handleCloseSetPasswordModal();
+            showSuccess('Password set successfully!');
         } catch (err) {
             const errorMsg = err.response?.data ? 
                 (err.response.data.new_password ? err.response.data.new_password.join(' ') : (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data))) 
                 : err.message;
             setSetPasswordError(`Failed to set password: ${errorMsg}`);
+            showError(`Failed to set password: ${errorMsg}`);
         } finally {
             setLoading(false);
         }
     };
-
-
 
     const filteredUsers = useMemo(() => {
         let sortableUsers = [...users];
@@ -290,13 +212,13 @@ export default function UserList() {
     const activeUsersCount = users.filter(u => u.is_active).length;
     const adminUsersCount = users.filter(u => u.is_staff).length;
 
-    const managerUsersCount = users.filter(u => u.is_manager).length; // Placeholder for manager logic
+    const managerUsersCount = users.filter(u => u.is_manager).length; 
 
     const statItems = [
         { title: 'Total Users', value: totalUsers, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'primary.main' },
         { title: 'Active Users', value: activeUsersCount, icon: <CheckCircleOutlineIcon sx={{ fontSize: 30 }} />, color: 'success.main' },
         { title: 'Admins', value: adminUsersCount, icon: <AdminPanelSettingsIcon sx={{ fontSize: 30 }} />, color: 'warning.main' },
-        { title: 'Managers', value: managerUsersCount, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'info.main' }, // Added Managers card
+        { title: 'Managers', value: managerUsersCount, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'info.main' }, 
     ];
 
     const handleMenuOpen = (event, user) => {
@@ -333,30 +255,27 @@ export default function UserList() {
         setPage(0);
     };
 
-    const handleCloseNotification = () => {
-        setNotification(prev => ({ ...prev, open: false }));
-    };
-
     return (
         <RootContainer>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
                 <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
                     User Management
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleCreateUser}
-                    sx={{
-                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                        color: 'white',
-                        borderRadius: '25px',
-                        padding: '10px 25px',
-                    }}
-                >
-                    Add User
-                </Button>
+               <Box>
+                <Tooltip title="Refresh Users">
+                        <IconButton onClick={fetchUsers} sx={{ color: 'white', mr: 1 }}>
+                        <RefreshIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleCreateUser}
+                        sx={{...gradientButtonSx}}
+                    >
+                        Add User
+                    </Button>
+               </Box>
             </Box>
 
             {error && <Alert severity="error" sx={{ mb: 2, background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>}
@@ -386,16 +305,7 @@ export default function UserList() {
                             variant="outlined"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                                    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                                    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                                    color: 'white'
-                                },
-                                '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-                                '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' }
-                            }}
+                            sx={{...textFieldSx}}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -410,7 +320,7 @@ export default function UserList() {
 
                 {loading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-                        <CircularProgress sx={{ color: '#FE6B8B' }} />
+                        <CircularProgress sx={CircularProgressSx} />
                     </Box>
                 ) : (
                     <TableContainer component={Paper} sx={{ background: 'transparent' }}>
@@ -519,28 +429,7 @@ export default function UserList() {
                 onClose={handleMenuClose}
                 slotProps={{
             paper: {
-              sx: {
-                background: 'rgba(40, 50, 70, 0.95)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '8px',
-                color: '#fff',
-                minWidth: '180px',
-                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                marginTop: '4px',
-                '& .MuiMenuItem-root': {
-                  padding: '12px 16px',
-                  fontSize: '0.875rem',
-                  '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '4px',
-                    margin: '2px 8px',
-                    width: 'calc(100% - 16px)',
-                  }
-                },
-                '& .MuiListItemIcon-root': {
-                  minWidth: '36px',
-                }
-              }
+              sx: {...MenuActionsSx}
             }
           }}
           disableScrollLock={false}
@@ -551,66 +440,40 @@ export default function UserList() {
                 <MenuItem onClick={handleSetPasswordFromMenu}><VpnKeyIcon sx={{ mr: 1 }} /> Set Password</MenuItem>
                 <MenuItem onClick={handleDeleteFromMenu} sx={{ color: '#f44336' }}><DeleteIcon sx={{ mr: 1 }} /> Delete</MenuItem>
             </Menu>
-            <Dialog
-                open={deleteConfirmOpen}
-                onClose={handleCloseDeleteConfirm}
-                PaperProps={{ sx: { background: 'rgba(30, 40, 57, 0.9)', color: '#fff', backdropFilter: 'blur(5px)' } }}
-            >
-                <DialogTitle>Confirm Deletion</DialogTitle>
-                <DialogContent>
-                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                        Are you sure you want to delete the user "{currentUser?.username}"? This action cannot be undone.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDeleteConfirm} sx={{ color: '#fff' }}>Cancel</Button>
-                    <Button onClick={handleDeleteUser} color="error">Delete</Button>
-                </DialogActions>
-            </Dialog>
-            <Modal
+
+            <ConfirmDialog
+                    open={deleteConfirmOpen}
+                    onClose={handleCloseDeleteConfirm}
+                    onConfirm={handleDeleteUser}
+                    title="Confirm Deletion"
+                    message={`Are you sure you want to delete the user ${currentUser?.username} ? This action cannot be undone.`}
+                    confirmText="Yes, Delete"
+                    cancelText="Cancel"
+                    severity="info"
+            />
+
+            <SetPasswordForm
                 open={setPasswordModalOpen}
                 onClose={handleCloseSetPasswordModal}
-            >
-                <Box sx={modalStyle}>
-                    <Typography variant="h6" component="h2" sx={{ mb: 2 }}>Set Password for {userForPasswordSet?.username}</Typography>
-                    <SetPasswordForm
-                        onSubmit={handleSetPasswordSubmit}
-                        onCancel={handleCloseSetPasswordModal}
-                        error={setPasswordError}
-                        loading={loading}
-                    />
-                </Box>
-            </Modal>
+                onSubmit={handleSetPasswordSubmit}
+                username={userForPasswordSet?.username}
+                error={setPasswordError}
+                loading={loading}
+            />
 
-            {/* Add User Modal */}
-            <Modal
+            <UserForm
                 open={addUserModalOpen}
                 onClose={handleCloseAddUserModal}
-            >
-                <Box sx={modalStyle}>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                        {editUser ? 'Edit User' : 'Add New User'}
-                    </Typography>
-                    <UserForm
-                        onSubmit={handleUserFormSubmit}
-                        onCancel={handleCloseAddUserModal}
-                        isEditMode={!!editUser}
-                        initialUser={editUser}
-                        loading={loading}
-                        error={formError} // Pass error prop
-                    />
-                </Box>
-            </Modal>
-            <Snackbar
-                open={notification.open}
-                autoHideDuration={6000}
-                onClose={handleCloseNotification}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            >
-                <MuiAlert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
-                    {notification.message}
-                </MuiAlert>
-            </Snackbar>
+                user={editUser}
+                onSuccess={handleUserFormSuccess}
+                onError={handleUserFormError}
+            />
+            <CustomSnackbar
+                open={snackbar.open}
+                onClose={hideSnackbar}
+                severity={snackbar.severity}
+                message={snackbar.message}
+            />
         </RootContainer>
     );
 }

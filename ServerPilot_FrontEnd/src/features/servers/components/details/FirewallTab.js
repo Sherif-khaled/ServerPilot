@@ -18,19 +18,12 @@ import {
   IconButton,
   Select,
   MenuItem,
-  Card,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   FormControl,
   InputLabel,
   Grid,
   Avatar,
   TablePagination,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { ShieldOutlined, CheckCircleOutline, Block, ReportProblemOutlined } from '@mui/icons-material';
@@ -45,31 +38,8 @@ import {
   toggleFirewall,
 } from '../../../../api/serverService';
 
-const GlassCard = styled(Card)(({ theme }) => ({
-    background: 'rgba(38, 50, 56, 0.6)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    padding: theme.spacing(3),
-    color: '#fff',
-}));
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-    '&.Mui-focused fieldset': { borderColor: 'transparent' },
-    '&.Mui-focused': {
-      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-      borderRadius: 1,
-    },
-    color: '#fff',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
-};
+import { GlassCard, ConfirmDialog, switchSx, textFieldSx, CircularProgressSx, gradientButtonSx, SelectSx  } from '../../../../common';
+
 const protocolPorts = {
   ssh: 22,
   smtp: 25,
@@ -268,24 +238,16 @@ const FirewallTab = () => {
 
   return (
     <Box>
-      <Dialog
+      <ConfirmDialog
         open={confirmDeleteOpen}
         onClose={handleDeleteCancel}
-        PaperProps={{ sx: { background: 'rgba(30, 40, 57, 0.9)', color: '#fff', backdropFilter: 'blur(5px)' } }}
-      >
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this firewall rule? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleDeleteConfirm}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this firewall rule? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        severity="error"
+      />
       <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)', mb: 3 }}>
         Firewall Management
       </Typography>
@@ -314,18 +276,15 @@ const FirewallTab = () => {
       {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
       
       {loading ? (
-        <CircularProgress sx={{ color: '#FE6B8B' }} />
+        <CircularProgress sx={CircularProgressSx} />
       ) : (
         <GlassCard sx={{ p: 2, mt: 2 }}>
           <FormControlLabel
-            control={<Switch checked={isFirewallEnabled || false} sx={{
-                '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#FE6B8B',
-                },
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#FE6B8B',
-                },
-            }} onChange={handleToggleFirewall} />}
+            control={<Switch checked={isFirewallEnabled || false} 
+            sx={{
+               ...switchSx
+              }} 
+            onChange={handleToggleFirewall} />}
             label={isFirewallEnabled ? 'Firewall is ON' : 'Firewall is OFF'}
           />
         </GlassCard>
@@ -335,12 +294,13 @@ const FirewallTab = () => {
         <GlassCard sx={{ p: 2, mt: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" component="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>Firewall Rules</Typography>
-            <FormControl size="small" sx={{...textFieldSx, minWidth: 120 }}>
-              <InputLabel>Action</InputLabel>
+            <FormControl size="small" sx={{...textFieldSx, minWidth: 500 }}>
+              <InputLabel>Fillter By Action</InputLabel>
               <Select
                 value={actionFilter}
                 label="Action"
                 onChange={(e) => setActionFilter(e.target.value)}
+                sx={{...SelectSx}}
               >
                 <MenuItem value="all">All</MenuItem>
                 <MenuItem value="allow">Allow</MenuItem>
@@ -385,7 +345,7 @@ const FirewallTab = () => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <TextField size="small" label="Port" value={newRule.port} onChange={(e) => setNewRule({ ...newRule, port: e.target.value })} disabled={!isCustomProtocol(newRule.protocol) || newRule.protocol === 'icmp'} />
+                    <TextField size="small" label="Port" value={newRule.port} onChange={(e) => setNewRule({ ...newRule, port: e.target.value })} disabled={!isCustomProtocol(newRule.protocol) || newRule.protocol === 'icmp'} sx={{...textFieldSx}} />
                   </TableCell>
                   <TableCell sx={textFieldSx}>
                     <Select size="small" value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} >
@@ -395,25 +355,21 @@ const FirewallTab = () => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <TextField size="small" value={newRule.source} onChange={(e) => setNewRule({ ...newRule, source: e.target.value })} />
+                    <TextField size="small" value={newRule.source} onChange={(e) => setNewRule({ ...newRule, source: e.target.value })} sx={{...textFieldSx}}/>
                   </TableCell>
                   <TableCell align="right">
                     <Button variant="contained" onClick={handleAddRule}
                     startIcon={<AddIcon />} 
                     disabled={rulesLoading}
                     sx={{
-                        background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                        boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                        color: 'white',
-                        borderRadius: '25px',
-                        padding: '10px 25px',
+                       ...gradientButtonSx
                     }}
                     >Add Rule</Button>
                   </TableCell>
                 </TableRow>
                 {rulesLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center"><CircularProgress sx={{ color: '#FE6B8B' }} /></TableCell>
+                    <TableCell colSpan={6} align="center"><CircularProgress sx={CircularProgressSx} /></TableCell>
                   </TableRow>
                 ) : filteredRules.length === 0 ? (
                   <TableRow>

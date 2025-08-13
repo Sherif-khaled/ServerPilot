@@ -10,66 +10,33 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   MenuItem,
-  Tooltip,
   Alert,
-  FormControlLabel,
-  Checkbox,
-  Card,
   CardContent,
   Grid,
   IconButton,
   Menu,
   Chip,
-  Snackbar
+  Tooltip
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ShieldIcon from '@mui/icons-material/Security';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx, MenuActionsSx, ConfirmDialog } from '../../../common';
 
-import {
-  getSecurityRisks,
-  createSecurityRisk,
-  updateSecurityRisk,
-  deleteSecurityRisk,
-} from '../../../api/serverService';
+import {getSecurityRisks,deleteSecurityRisk,} from '../../../api/serverService';
 
 const RootContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
 }));
-
-const GlassCard = styled(Card)(({ theme }) => ({
-  background: 'rgba(38, 50, 56, 0.6)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-}));
-
-const defaultFormData = {
-  title: '',
-  description: '',
-  risk_level: 'medium',
-  check_command: '',
-  match_pattern: '',
-  fix_command: '',
-  is_enabled: true,
-  expect_non_zero_exit: false,
-  required_role: 'user',
-};
 
 const SecurityRiskRolesPage = () => {
   const [risks, setRisks] = useState([]);
@@ -78,12 +45,15 @@ const SecurityRiskRolesPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRisk, setEditingRisk] = useState(null);
   
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  // Use the custom snackbar hook
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRiskForMenu, setSelectedRiskForMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [riskToDelete, setRiskToDelete] = useState(null);
 
   const fetchRisks = useCallback(async () => {
     setLoading(true);
@@ -135,22 +105,35 @@ const SecurityRiskRolesPage = () => {
 
   const handleDeleteFromMenu = () => {
     if (selectedRiskForMenu) {
-      handleDelete(selectedRiskForMenu.id);
+      handleDelete(selectedRiskForMenu);
     }
     handleMenuClose();
   };
 
   
 
-  const handleDelete = async (id) => {
+  const handleDelete = (risk) => {
+    setRiskToDelete(risk);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await deleteSecurityRisk(id);
-      setNotification({ open: true, message: 'Risk deleted successfully!', severity: 'success' });
+      await deleteSecurityRisk(riskToDelete.id);
+      showSuccess('Risk deleted successfully!');
       fetchRisks();
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.message;
-      setNotification({ open: true, message: `Failed to delete risk: ${errorMessage}`, severity: 'error' });
+      showError(`Failed to delete risk: ${errorMessage}`);
+    } finally {
+      setDeleteConfirmOpen(false);
+      setRiskToDelete(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setRiskToDelete(null);
   };
 
   const filteredRisks = useMemo(() => {
@@ -198,30 +181,28 @@ const SecurityRiskRolesPage = () => {
 
   return (
     <RootContainer>
-      <Snackbar open={notification.open} autoHideDuration={6000} onClose={() => setNotification({ ...notification, open: false })} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert onClose={() => setNotification({ ...notification, open: false })} severity={notification.severity} sx={{ width: '100%' }}>
-          {notification.message}
-        </Alert>
-      </Snackbar>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
           Security Risk Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => openDialog()}
-          sx={{
-            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-            color: 'white',
-            borderRadius: '25px',
-            padding: '10px 25px',
-          }}
-        >
-          Add New Risk
-        </Button>
+       <Box>
+        <Tooltip title="Refresh Rules">
+              <IconButton onClick={fetchRisks} sx={{ color: 'white', mr: 1 }}>
+              <RefreshIcon />
+                </IconButton>
+          </Tooltip>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => openDialog()}
+            sx={{
+              ...gradientButtonSx
+            }}
+          >
+            Add New Risk
+          </Button>
+       </Box>
       </Box>
 
       <Grid container spacing={4} sx={{ mb: 4 }}>
@@ -250,13 +231,7 @@ const SecurityRiskRolesPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-                  '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-                  color: 'white'
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+                ...textFieldSx
               }}
             />
             <TextField
@@ -264,7 +239,7 @@ const SecurityRiskRolesPage = () => {
               label="Level"
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
-              sx={{ minWidth: 150, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' }, '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.7)' } }}
+              sx={{...textFieldSx}}
             >
               <MenuItem value="all">All Levels</MenuItem>
               <MenuItem value="critical">Critical</MenuItem>
@@ -277,7 +252,7 @@ const SecurityRiskRolesPage = () => {
               label="Status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ minWidth: 150, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' }, '& .MuiSelect-icon': { color: 'rgba(255,255,255,0.7)' } }}
+              sx={{...textFieldSx}}
             >
               <MenuItem value="all">All Statuses</MenuItem>
               <MenuItem value="enabled">Enabled</MenuItem>
@@ -286,7 +261,7 @@ const SecurityRiskRolesPage = () => {
           </Box>
 
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress sx={{ color: '#fff' }} /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress sx={CircularProgressSx} /></Box>
           ) : error ? (
             <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>
           ) : (
@@ -328,9 +303,7 @@ const SecurityRiskRolesPage = () => {
         onClose={handleMenuClose}
         PaperProps={{
           sx: {
-            background: 'rgba(50, 50, 50, 0.8)',
-            backdropFilter: 'blur(10px)',
-            color: '#fff',
+            ...MenuActionsSx
           },
         }}
       >
@@ -346,7 +319,26 @@ const SecurityRiskRolesPage = () => {
           fetchRisks();
           closeDialog();
         }}
-        setNotification={setNotification}
+        showSuccess={showSuccess}
+        showError={showError}
+      />
+
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={hideSnackbar}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Security Risk"
+        message={`Are you sure you want to delete "${riskToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        severity="error"
       />
     </RootContainer>
   );

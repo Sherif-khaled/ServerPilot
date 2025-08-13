@@ -4,6 +4,7 @@ import { changePassword } from '../../../api/userService';
 import ShowPasswordIconButton from '../../../common/ShowPasswordIconButton';
 import PasswordStrengthMeter from '../../../common/PasswordStrengthMeter';
 import GeneratePasswordButton from '../../../common/GeneratePasswordButton';
+import { CustomSnackbar, useSnackbar } from '../../../common';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 
@@ -20,18 +21,15 @@ const GlassPaper = styled(Paper)(({ theme }) => ({
 
 const textFieldSx = {
   '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.6)' },
-    '&.Mui-focused fieldset': { borderColor: 'transparent' },
-    '&.Mui-focused': {
-      boxShadow: '0 0 0 2px #FE6B8B, 0 0 0 1px #FF8E53',
-      borderRadius: 1,
-    },
-    color: '#fff',
+    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
+    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
+    color: 'white',
+    borderRadius: '12px',
   },
-  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
   '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255,255,255,0.7)' },
+  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
 };
 
 const PasswordChangeForm = () => {
@@ -39,16 +37,17 @@ const PasswordChangeForm = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Use the custom snackbar hook
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
 
     if (newPassword !== confirmPassword) {
@@ -59,7 +58,7 @@ const PasswordChangeForm = () => {
 
     try {
       await changePassword({ current_password: oldPassword, new_password: newPassword });
-      setSuccess('Password changed successfully.');
+      showSuccess('Password changed successfully.');
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -91,7 +90,6 @@ const PasswordChangeForm = () => {
       </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
         <TextField
           margin="normal"
           required
@@ -188,6 +186,12 @@ const PasswordChangeForm = () => {
         </Button>
       </Box>
 
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={hideSnackbar}
+        severity={snackbar.severity}
+        message={snackbar.message}
+      />
     </GlassPaper>
     
   );
