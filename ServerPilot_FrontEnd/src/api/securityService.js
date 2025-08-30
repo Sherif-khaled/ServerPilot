@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 
-const POLICY_URL = '/security/policy/1/';
+const POLICY_URL = '/security/password-policy/1/';
 const SESSIONS_URL = '/users/sessions/';
 const RISKS_URL = '/security/risks/';
 

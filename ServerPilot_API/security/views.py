@@ -8,11 +8,17 @@ class PasswordPolicyViewSet(viewsets.ModelViewSet):
     """
     API endpoint for the site's password policy.
     It's a singleton model, so we only allow retrieving and updating the single instance.
+    GET requests are allowed for authenticated users, PUT requests require admin permissions.
     """
     queryset = PasswordPolicy.objects.all()
     serializer_class = PasswordPolicySerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'put', 'head', 'options']
+
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticated()]
 
     def get_object(self):
         # .get_or_create() ensures a single policy object exists and returns it.
