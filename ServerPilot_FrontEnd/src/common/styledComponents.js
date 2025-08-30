@@ -2,6 +2,7 @@ import { styled, Paper } from '@mui/material';
 
 // Common styled components and styling constants
 export const textFieldSx = {
+
   '& .MuiOutlinedInput-root': {
     '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
     '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
@@ -11,7 +12,47 @@ export const textFieldSx = {
   },
   '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
   '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
+  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' },
+
+  
+  // RTL label alignment and transform origin
+    // Base RTL enforcement on the TextField root for better inheritance
+  'html[dir="rtl"] &': {
+    direction: 'rtl',
+    textAlign: 'right',
+  },
+  'html[dir="rtl"] & .MuiInputLabel-root': {
+    textAlign: 'right',
+    direction: 'rtl',
+    transformOrigin: 'right top',
+    left: 'auto',
+    right: 14,
+    paddingRight: 1,
+  },
+  'html[dir="rtl"] & .MuiInputLabel-root.Mui-focused': { transformOrigin: 'right top',
+  },
+  'html[dir="rtl"] & .MuiFormHelperText-root': {transformOrigin: 'right top' },
+  'html[dir="rtl"] & .MuiInputLabel-root.MuiInputLabel-shrink': {
+    transformOrigin: 'right top',
+    paddingRight: 2,
+  },
+  // Move the outlined notch to the right in RTL by aligning the legend
+  'html[dir="rtl"] & .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline': {
+    direction: 'rtl',
+  },
+  'html[dir="rtl"] & .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline legend': {
+    textAlign: 'right',
+    marginLeft: 10,
+    marginRight: 0,
+  },
+  'html[dir="rtl"] & .MuiOutlinedInput-input': {
+    // paddingRight: 1,
+  },
+  'html[dir="rtl"] & .MuiFormHelperText-root, html[dir="rtl"] & .MuiFormHelperText-root.MuiFormHelperText-root': {
+    textAlign: 'right',
+    direction: 'rtl',
+    width: '100%',
+  },
 };
 
 export const switchSx = {
@@ -89,6 +130,17 @@ export const glassPaperSx = {
   mb: 3,
 };
 
+export const GlassPaper = styled(Paper)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.08)',
+  backdropFilter: 'blur(12px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+  borderRadius: '12px',
+  border: '1px solid rgba(255, 255, 255, 0.125)',
+  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+  padding: theme.spacing(3),
+  color: '#fff',
+}));
+
 export const glassDialogSx = styled(Paper)(({ theme }) => ({
   background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
   backdropFilter: 'blur(8px) saturate(160%)',
@@ -118,7 +170,6 @@ export const blueGradientButtonSx = {
 
 export const CircularProgressSx = {
   color: '#FE6B8B',
-  size: 18,
 };
 
 export const MenuActionsSx = {

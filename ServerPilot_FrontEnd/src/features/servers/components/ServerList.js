@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { createServer, updateServer } from '../../../api/serverService';
 import {Box, Button, Typography, ListItemText,ListItemIcon, IconButton, CircularProgress, Alert, Tooltip, Menu, MenuItem, Grid, 
-  CardContent, Table, TableBody,TableCell, TableContainer, TableHead, TableRow, TextField,InputAdornment} from '@mui/material';
+  CardContent, Table, TableBody,TableCell, TableContainer, TableHead, TableRow, TextField,InputAdornment, Paper} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,6 +19,7 @@ import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
 import { getServers, deleteServer, getServerHealth, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
 import { CustomSnackbar, useSnackbar } from '../../../common';
+import { useTranslation } from 'react-i18next';
 import { textFieldSx, gradientButtonSx, CircularProgressSx, ConfirmDialog, MenuActionsSx, GlassCard } from '../../../common';
 import ChangeServerPasswordDialog from './ChangeServerPasswordDialog';
 import ServerInfoDialog from './ServerInfoDialog';
@@ -29,6 +30,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 
 
 export default function ServerList({ customerId: propCustomerId }) {
+  const { t, i18n } = useTranslation();
   const { customerId: paramCustomerId } = useParams(); 
   const customerId = propCustomerId || paramCustomerId;
 
@@ -53,8 +55,9 @@ export default function ServerList({ customerId: propCustomerId }) {
   const [serverForPasswordChange, setServerForPasswordChange] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Use the custom snackbar hook
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+
+  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
   const handleMenuOpen = (event, server) => {
     setMenuAnchorEl(event.currentTarget);
@@ -80,11 +83,11 @@ export default function ServerList({ customerId: propCustomerId }) {
     if (!serverForPasswordChange) return { ok: false, error: 'No server selected.' };
     try {
       await changeServerPassword(customerId, serverForPasswordChange.id, password);
-      setSuccessMessage(`Password for server '${serverForPasswordChange.server_name}' has been changed successfully.`);
-      showSuccess(`Password for server '${serverForPasswordChange.server_name}' has been changed successfully.`);
+      setSuccessMessage(t('servers.common.passwordChanged', { name: serverForPasswordChange.server_name }));
+      showSuccess(t('servers.common.passwordChanged', { name: serverForPasswordChange.server_name }));
       return { ok: true };
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 'Failed to change password.';
+      const errorMsg = err.response?.data?.error || t('servers.common.passwordChangeFailed');
       showError(errorMsg);
       return { ok: false, error: errorMsg };
     }
@@ -123,7 +126,7 @@ export default function ServerList({ customerId: propCustomerId }) {
         checkAllServerStatus(uniqueServerList);
       }
     } catch (err) {
-      setError('Failed to load servers. ' + (err.response?.data?.detail || err.message));
+      setError(t('servers.common.loadFailed') + ' ' + (err.response?.data?.detail || err.message));
       setServers([]);
     } finally {
       setLoading(false);
@@ -155,12 +158,12 @@ export default function ServerList({ customerId: propCustomerId }) {
       await deleteServer(customerId, serverToDelete.id);
       setServers(servers.filter(server => server.id !== serverToDelete.id));
       handleCloseDeleteDialog();
-      showSuccess(`Server '${serverToDelete.server_name}' deleted successfully.`);
+      showSuccess(t('servers.common.deleted', { name: serverToDelete.server_name }));
     } catch (err) {
       console.error('Failed to delete server:', err);
-      setError(`Failed to delete server ${serverToDelete.server_name}. Please try again.`);
+      setError(t('servers.common.deleteFailed', { name: serverToDelete.server_name }));
       handleCloseDeleteDialog(); 
-      showError(`Failed to delete server ${serverToDelete.server_name}. Please try again.`);
+      showError(t('servers.common.deleteFailed', { name: serverToDelete.server_name }));
     }
   };
 
@@ -207,11 +210,9 @@ export default function ServerList({ customerId: propCustomerId }) {
     try {
       setLoading(true);
       if (serverId) {
-        // Update existing server
         await updateServer(customerId, serverId, serverData);
         showSuccess('Server updated successfully!');
       } else {
-        // Create new server
         await createServer(customerId, serverData);
         showSuccess('Server created successfully!');
       }
@@ -229,7 +230,7 @@ export default function ServerList({ customerId: propCustomerId }) {
     return (
       <RootContainer>
         <Alert severity="warning" sx={{ background: 'rgba(255, 193, 7, 0.8)', color: '#fff' }}>
-          Customer ID not provided. Cannot load servers.
+          {t('servers.common.customerIdMissing')}
         </Alert>
       </RootContainer>
     );
@@ -238,7 +239,7 @@ export default function ServerList({ customerId: propCustomerId }) {
   if (loading) {
     return (
       <RootContainer sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
-        <CircularProgress sx={CircularProgressSx} />
+        <CircularProgress size={20} sx={CircularProgressSx} />
       </RootContainer>
     );
   }
@@ -248,25 +249,31 @@ export default function ServerList({ customerId: propCustomerId }) {
   const activeServers = servers.filter(s => s.is_active).length;
   const inactiveServers = totalServers - activeServers;
 
+  const statItems = [
+    { title: t('servers.common.total'), value: totalServers, icon: <DnsIcon sx={{ fontSize: 30 }} />, color: 'primary.main' },
+    { title: t('servers.common.active'), value: activeServers, icon: <CheckCircleOutlineIcon sx={{ fontSize: 30 }} />, color: 'success.main' },
+    { title: t('servers.common.inactive'), value: inactiveServers, icon: <HighlightOffOutlinedIcon sx={{ fontSize: 30 }} />, color: 'warning.main' }, 
+  ];
+
   return (
     <RootContainer>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
         <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-          Server Management
+          {t('servers.pages.serverDetailsTabs.details')}
         </Typography>
         <Box>
-          <Tooltip title="Refresh Servers">
+          <Tooltip title={t('servers.common.refresh')}>
             <IconButton onClick={fetchServers} sx={{ color: 'white', mr: 1 }}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<AddIcon sx={{ml: isRtl ? 1 : 0}} />}
             onClick={() => handleOpenModal()}
             sx={{...gradientButtonSx}}
           >
-            Add Server
+            {t('servers.common.add')}
           </Button>
         </Box>
       </Box>
@@ -275,39 +282,20 @@ export default function ServerList({ customerId: propCustomerId }) {
       {successMessage && <Alert severity="success" sx={{ mb: 2, background: 'rgba(76, 175, 80, 0.8)', color: '#fff' }} onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
 
       <Grid container spacing={4} sx={{ mb: 4, position: 'relative', zIndex: 2 }}>
-        <Grid item xs={12} sm={6}>
-          <GlassCard>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">Total Servers</Typography>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{totalServers}</Typography>
-              </Box>
-              <DnsIcon sx={{ fontSize: 48, color: '#fff', opacity: 0.8 }} />
-            </CardContent>
-          </GlassCard>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <GlassCard>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">Active Servers</Typography>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{activeServers}</Typography>
-              </Box>
-              <CheckCircleOutlineIcon sx={{ fontSize: 48, color: '#66bb6a', opacity: 0.8 }} />
-            </CardContent>
-          </GlassCard>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <GlassCard>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">Inactive Servers</Typography>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{inactiveServers}</Typography>
-              </Box>
-              <HighlightOffOutlinedIcon sx={{ fontSize: 48, color: '#ff5252', opacity: 0.8 }} />
-            </CardContent>
-          </GlassCard>
-        </Grid>
+                {statItems.map((item, index) => (
+                    <Grid item xs={12} sm={6} md={3} key={index}>
+                        <GlassCard>
+                            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
+                                {isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8, ml: 2 } })}
+                                <Box sx={{ flexGrow: 1, textAlign: isRtl ? 'right' : 'left' }}>
+                                    <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">{item.title}</Typography>
+                                    <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{item.value}</Typography>
+                                </Box>
+                                {!isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8 } })}
+                            </CardContent>
+                        </GlassCard>
+                    </Grid>
+                ))}
       </Grid>
 
       <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
@@ -316,7 +304,7 @@ export default function ServerList({ customerId: propCustomerId }) {
             <TextField
               fullWidth
               variant="outlined"
-              placeholder="Search servers..."
+              placeholder={t('servers.common.serverSearch')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -335,26 +323,29 @@ export default function ServerList({ customerId: propCustomerId }) {
           ) : filteredServers.length === 0 ? (
             <Box sx={{ textAlign: 'center', p: 5, color: 'rgba(255,255,255,0.7)' }}>
               <DnsIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
-              <Typography variant="h6">No servers found.</Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>Click "Add Server" to create your first server.</Typography>
+              <Typography variant="h6">{t('servers.common.noServers')}</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>{t('servers.common.addFirst')}</Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table sx={{ minWidth: 650 }} aria-label="servers table">
+            <TableContainer component={Paper} sx={{ background: 'transparent' }}>
+              <Table aria-label="servers table">
                 <TableHead>
-                  <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)', color: 'rgba(255, 255, 255, 0.7)' } }}>
-                    <TableCell>Server</TableCell>
-                    <TableCell>Connection Details</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
+                    <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
+                        {[t('servers.common.server'), t('servers.common.connectionDetails'), t('servers.common.actions')].map((headCell, index) => (
+                            <TableCell key={headCell} align={index === 5 ? 'right' : 'left'} sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', textAlign: 'center' }}>
+                                {headCell}
+                            </TableCell>
+                        ))}
+                    </TableRow>
                 </TableHead>
+
                 <TableBody>
                   {filteredServers.map((server) => (
                     <TableRow hover key={server.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                      <TableCell component="th" scope="row">
+                      <TableCell component="th" scope="row" align="center">
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           {onlineStatus[server.id] === undefined ? (
-                            <CircularProgress sx={CircularProgressSx} />
+                            <CircularProgress size={20} sx={CircularProgressSx} />
                           ) : (
                             <Box
                               sx={{
@@ -367,21 +358,21 @@ export default function ServerList({ customerId: propCustomerId }) {
                               }}
                             />
                           )}
-                          <DnsIcon sx={{ mr: 1.5, color: 'text.secondary' }} />
-                          <Typography variant="body1" fontWeight="medium" sx={{ color: 'white' }}>
-                            <Link to={`/customers/${customerId}/servers/${server.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                          <DnsIcon sx={{ mr: 1.5,ml: isRtl ? 1 : 0, color: 'text.secondary' }} />
+                          <Typography variant="body1" fontWeight="medium" sx={{ color: 'white' }} align="center">
+                            <Link to={`/customers/${customerId}/servers/${server.id}`} style={{ textDecoration: 'none', color: 'inherit' }} >
                               {server.server_name}
                             </Link>
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
                         <Typography variant="body2" sx={{ color: 'white' }}>{server.server_ip}:{server.ssh_port}</Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          User: {server.login_using_root ? 'root' : (server.ssh_user || 'N/A')}
-                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary'}} >
+                            {t('servers.common.user')}: {server.login_using_root ? 'root' : (server.ssh_user || t('servers.common.na')    )}
+                          </Typography>
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="center">
                         <IconButton
                           aria-label="more actions"
                           onClick={(e) => handleMenuOpen(e, server)}
@@ -416,11 +407,11 @@ export default function ServerList({ customerId: propCustomerId }) {
             disabled={onlineStatus[currentServerForMenu.id] === 'Offline'}
           >
             <ListItemIcon><InfoIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>View Stats</ListItemText>
+            <ListItemText>{t('servers.common.viewStats')}</ListItemText>
           </MenuItem>,
           <MenuItem key="edit" onClick={() => { handleOpenModal(currentServerForMenu); handleMenuClose(); }}>
             <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Edit</ListItemText>
+            <ListItemText>{t('servers.common.edit')}</ListItemText>
           </MenuItem>,
           <MenuItem
             key="change-password"
@@ -428,11 +419,11 @@ export default function ServerList({ customerId: propCustomerId }) {
             disabled={onlineStatus[currentServerForMenu.id] === 'Offline'}
           >
             <ListItemIcon><LockResetIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Change Password</ListItemText>
+            <ListItemText>{t('servers.common.changePassword')}</ListItemText>
           </MenuItem>,
           <MenuItem key="delete" onClick={() => { handleOpenDeleteDialog(currentServerForMenu); handleMenuClose(); }} sx={{ color: '#f44336' }}>
             <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
-            <ListItemText>Delete</ListItemText>
+            <ListItemText>{t('servers.common.delete')}</ListItemText>
           </MenuItem>
         ]}
       </Menu>
@@ -441,10 +432,10 @@ export default function ServerList({ customerId: propCustomerId }) {
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
         onConfirm={handleDelete}
-        title="Confirm Deletion"
-        message={`Are you sure you want to delete the server "${serverToDelete?.server_name}"? This action cannot be undone.`}
-        confirmText="Yes, Delete"
-        cancelText="Cancel"
+        title={t('servers.common.confirmDeletion')}
+        message={t('servers.common.confirmDeletionMsg', { name: serverToDelete?.server_name })}
+        confirmText={t('servers.common.confirm')}
+        cancelText={t('servers.common.cancel')}
         severity="info"
       />
 

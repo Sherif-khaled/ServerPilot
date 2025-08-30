@@ -13,7 +13,7 @@ import { gradientButtonSx, CancelButton } from '../common';;
 
 const StyledDialog = styled(Dialog)({
   '& .MuiDialog-paper': {
-    background: 'rgba(255, 255, 255, 0.1)',
+    background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
     backdropFilter: 'blur(10px)',
     borderRadius: '20px',
     border: '1px solid rgba(255, 255, 255, 0.2)',

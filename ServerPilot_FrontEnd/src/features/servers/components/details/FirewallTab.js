@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -58,6 +59,7 @@ const protocolPorts = {
 };
 
 const FirewallTab = () => {
+  const { t } = useTranslation();
   const isCustomProtocol = (protocol) => {
     return protocol?.startsWith('custom');
   };
@@ -98,7 +100,7 @@ const FirewallTab = () => {
       const statusRes = await getFirewallStatus(customerId, serverId);
       setIsFirewallEnabled(statusRes.data.firewall_enabled);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to fetch firewall status.';
+      const errorMessage = err.response?.data?.error || t('monitoring.common.loadError', 'Failed to fetch firewall status.');
       setError(errorMessage);
       console.error(err);
     } finally {
@@ -115,7 +117,7 @@ const FirewallTab = () => {
         // The backend returns the array directly, so we use rulesRes.data
         setRules(rulesRes.data || []);
       } catch (err) {
-        const errorMessage = err.response?.data?.error || 'Failed to fetch firewall rules.';
+        const errorMessage = err.response?.data?.error || t('firewall.errors.fetchRules');
         setError(errorMessage);
         console.error(err);
       } finally {
@@ -144,7 +146,7 @@ const FirewallTab = () => {
       const response = await toggleFirewall(customerId, serverId);
       setIsFirewallEnabled(response.data.firewall_enabled);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to toggle firewall.';
+      const errorMessage = err.response?.data?.error || t('firewall.errors.toggle');
       setError(errorMessage);
       console.error(err);
     } finally {
@@ -154,7 +156,7 @@ const FirewallTab = () => {
 
   const handleAddRule = async () => {
     if (!newRule.port && newRule.protocol !== 'icmp') {
-      setError('Port is required to add a rule.');
+      setError(t('firewall.errors.portRequired'));
       return;
     }
     setRulesLoading(true);
@@ -164,7 +166,7 @@ const FirewallTab = () => {
       // Manually trigger fetchRules after adding a rule
       await fetchRules();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to add rule.';
+      const errorMessage = err.response?.data?.error || t('firewall.errors.add');
       setError(errorMessage);
       console.error(err);
     } finally {
@@ -184,7 +186,7 @@ const FirewallTab = () => {
       await deleteUfwRule(customerId, serverId, ruleToDelete);
       fetchRules();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to delete rule.';
+      const errorMessage = err.response?.data?.error || t('firewall.errors.delete');
       setError(errorMessage);
       console.error(err);
     } finally {
@@ -228,7 +230,7 @@ const FirewallTab = () => {
       setEditingRuleId(null);
       fetchRules();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to save rule changes.';
+      const errorMessage = err.response?.data?.error || t('firewall.errors.edit');
       setError(errorMessage);
       console.error(err);
     } finally {
@@ -242,22 +244,22 @@ const FirewallTab = () => {
         open={confirmDeleteOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Confirm Deletion"
-        message="Are you sure you want to delete this firewall rule? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('firewall.confirmDeleteTitle')}
+        message={t('firewall.confirmDeleteMessage')}
+        confirmText={t('firewall.confirm')}
+        cancelText={t('firewall.cancel')}
         severity="error"
       />
       <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)', mb: 3 }}>
-        Firewall Management
+        {t('firewall.title')}
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {[
-          { title: 'Total Rules', count: stats.total, icon: <ShieldOutlined sx={{ fontSize: 30 }} />, color: '#29b6f6' },
-          { title: 'Allowed', count: stats.allow, icon: <CheckCircleOutline sx={{ fontSize: 30 }} />, color: '#66bb6a' },
-          { title: 'Denied', count: stats.deny, icon: <Block sx={{ fontSize: 30 }} />, color: '#ef5350' },
-          { title: 'Rejected', count: stats.reject, icon: <ReportProblemOutlined sx={{ fontSize: 30 }} />, color: '#ffa726' },
+          { title: 'إجمالي القواعد', count: stats.total, icon: <ShieldOutlined sx={{ fontSize: 30 }} />, color: '#29b6f6' },
+          { title: 'المسموح بها', count: stats.allow, icon: <CheckCircleOutline sx={{ fontSize: 30 }} />, color: '#66bb6a' },
+          { title: 'المرفوضة', count: stats.deny, icon: <Block sx={{ fontSize: 30 }} />, color: '#ef5350' },
+          { title: 'المرفوضة مع إشعار', count: stats.reject, icon: <ReportProblemOutlined sx={{ fontSize: 30 }} />, color: '#ffa726' },
         ].map((item, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <GlassCard sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
@@ -285,7 +287,7 @@ const FirewallTab = () => {
                ...switchSx
               }} 
             onChange={handleToggleFirewall} />}
-            label={isFirewallEnabled ? 'Firewall is ON' : 'Firewall is OFF'}
+            label={isFirewallEnabled ? t('firewall.enabled') : t('firewall.disabled')}
           />
         </GlassCard>
       )}
@@ -293,65 +295,65 @@ const FirewallTab = () => {
       {isFirewallEnabled && (
         <GlassCard sx={{ p: 2, mt: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" component="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>Firewall Rules</Typography>
+            <Typography variant="h6" component="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{t('firewall.rulesTitle')}</Typography>
             <FormControl size="small" sx={{...textFieldSx, minWidth: 500 }}>
-              <InputLabel>Fillter By Action</InputLabel>
+              <InputLabel>{t('firewall.filterByAction')}</InputLabel>
               <Select
                 value={actionFilter}
-                label="Action"
+                label={t('firewall.filterByAction')}
                 onChange={(e) => setActionFilter(e.target.value)}
                 sx={{...SelectSx}}
               >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="allow">Allow</MenuItem>
-                <MenuItem value="deny">Deny</MenuItem>
-                <MenuItem value="reject">Reject</MenuItem>
+                <MenuItem value="all">{t('firewall.actionAll')}</MenuItem>
+                <MenuItem value="allow">{t('firewall.actionAllow')}</MenuItem>
+                <MenuItem value="deny">{t('firewall.actionDeny')}</MenuItem>
+                <MenuItem value="reject">{t('firewall.actionReject')}</MenuItem>
               </Select>
             </FormControl>
           </Box>
           <TableContainer>
-            <Table sx={{ minWidth: 650 }} aria-label="Firewall rules">
+            <Table sx={{ minWidth: 650 }} aria-label="قواعد الجدار الناري">
               <TableHead>
                 <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)', color: 'rgba(255, 255, 255, 0.7)' } }}>
-                  <TableCell>#</TableCell>
-                  <TableCell >Protocol</TableCell>
-                  <TableCell>Port</TableCell>
-                  <TableCell>Action</TableCell>
-                  <TableCell>Source</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                  <TableCell>{t('firewall.table.id')}</TableCell>
+                  <TableCell>{t('firewall.table.protocol')}</TableCell>
+                  <TableCell>{t('firewall.table.port')}</TableCell>
+                  <TableCell>{t('firewall.table.action')}</TableCell>
+                  <TableCell>{t('firewall.table.source')}</TableCell>
+                  <TableCell align="right">{t('firewall.table.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 <TableRow>
-                  <TableCell>New</TableCell>
+                  <TableCell>{t('firewall.table.new')}</TableCell>
                   <TableCell sx={textFieldSx}>
                     <Select size="small" value={newRule.protocol || 'custom_tcp'} onChange={(e) => handleProtocolChange(e.target.value, 'new')}>
-                      <MenuItem value="custom_tcp">Custom TCP</MenuItem>
-                      <MenuItem value="custom_udp">Custom UDP</MenuItem>
-                      <MenuItem value="ssh">SSH</MenuItem>
-                      <MenuItem value="smtp">SMTP</MenuItem>
-                      <MenuItem value="dns">DNS</MenuItem>
-                      <MenuItem value="http">HTTP</MenuItem>
-                      <MenuItem value="https">HTTPS</MenuItem>
-                      <MenuItem value="pop3">POP3</MenuItem>
-                      <MenuItem value="imap">IMAP</MenuItem>
-                      <MenuItem value="ldap">LDAP</MenuItem>
-                      <MenuItem value="smb">SMB</MenuItem>
-                      <MenuItem value="smtps">SMTPS</MenuItem>
-                      <MenuItem value="imaps">IMAPS</MenuItem>
-                      <MenuItem value="pop3s">POP3S</MenuItem>
-                      <MenuItem value="mysql">MYSQL</MenuItem>
-                      <MenuItem value="postgresql">PostgreSQL</MenuItem>
+                      <MenuItem value="custom_tcp">{t('firewall.protocol.customTcp')}</MenuItem>
+                      <MenuItem value="custom_udp">{t('firewall.protocol.customUdp')}</MenuItem>
+                      <MenuItem value="ssh">{t('firewall.protocol.ssh')}</MenuItem>
+                      <MenuItem value="smtp">{t('firewall.protocol.smtp')}</MenuItem>
+                      <MenuItem value="dns">{t('firewall.protocol.dns')}</MenuItem>
+                      <MenuItem value="http">{t('firewall.protocol.http')}</MenuItem>
+                      <MenuItem value="https">{t('firewall.protocol.https')}</MenuItem>
+                      <MenuItem value="pop3">{t('firewall.protocol.pop3')}</MenuItem>
+                      <MenuItem value="imap">{t('firewall.protocol.imap')}</MenuItem>
+                      <MenuItem value="ldap">{t('firewall.protocol.ldap')}</MenuItem>
+                      <MenuItem value="smb">{t('firewall.protocol.smb')}</MenuItem>
+                      <MenuItem value="smtps">{t('firewall.protocol.smtps')}</MenuItem>
+                      <MenuItem value="imaps">{t('firewall.protocol.imaps')}</MenuItem>
+                      <MenuItem value="pop3s">{t('firewall.protocol.pop3s')}</MenuItem>
+                      <MenuItem value="mysql">{t('firewall.protocol.mysql')}</MenuItem>
+                      <MenuItem value="postgresql">{t('firewall.protocol.postgresql')}</MenuItem>
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <TextField size="small" label="Port" value={newRule.port} onChange={(e) => setNewRule({ ...newRule, port: e.target.value })} disabled={!isCustomProtocol(newRule.protocol) || newRule.protocol === 'icmp'} sx={{...textFieldSx}} />
+                    <TextField size="small" label={t('firewall.table.port')} value={newRule.port} onChange={(e) => setNewRule({ ...newRule, port: e.target.value })} disabled={!isCustomProtocol(newRule.protocol) || newRule.protocol === 'icmp'} sx={{...textFieldSx}} />
                   </TableCell>
                   <TableCell sx={textFieldSx}>
                     <Select size="small" value={newRule.action} onChange={(e) => setNewRule({ ...newRule, action: e.target.value })} >
-                      <MenuItem value="allow">ALLOW</MenuItem>
-                      <MenuItem value="deny">DENY</MenuItem>
-                      <MenuItem value="reject">REJECT</MenuItem>
+                      <MenuItem value="allow">{t('firewall.actionAllow')}</MenuItem>
+                      <MenuItem value="deny">{t('firewall.actionDeny')}</MenuItem>
+                      <MenuItem value="reject">{t('firewall.actionReject')}</MenuItem>
                     </Select>
                   </TableCell>
                   <TableCell>
@@ -359,12 +361,12 @@ const FirewallTab = () => {
                   </TableCell>
                   <TableCell align="right">
                     <Button variant="contained" onClick={handleAddRule}
-                    startIcon={<AddIcon />} 
+                    startIcon={<AddIcon />}
                     disabled={rulesLoading}
                     sx={{
                        ...gradientButtonSx
                     }}
-                    >Add Rule</Button>
+                    >{t('firewall.addRule')}</Button>
                   </TableCell>
                 </TableRow>
                 {rulesLoading ? (
@@ -374,7 +376,7 @@ const FirewallTab = () => {
                 ) : filteredRules.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} align="center">
-                      {actionFilter === 'all' ? 'No rules defined.' : 'No rules match the current filter.'}
+                      {actionFilter === 'all' ? t('firewall.noRules') : t('firewall.noRulesForFilter')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -392,20 +394,20 @@ const FirewallTab = () => {
                               value={editedRuleData.protocol}
                               onChange={(e) => handleProtocolChange(e.target.value, 'edit')}
                             >
-                              <MenuItem value="ssh">SSH</MenuItem>
-                              <MenuItem value="smtp">SMTP</MenuItem>
-                              <MenuItem value="dns">DNS</MenuItem>
-                              <MenuItem value="http">HTTP</MenuItem>
-                              <MenuItem value="https">HTTPS</MenuItem>
-                              <MenuItem value="pop3">POP3</MenuItem>
-                              <MenuItem value="imap">IMAP</MenuItem>
-                              <MenuItem value="ldap">LDAP</MenuItem>
-                              <MenuItem value="smb">SMB</MenuItem>
-                              <MenuItem value="smtps">SMTPS</MenuItem>
-                              <MenuItem value="imaps">IMAPS</MenuItem>
-                              <MenuItem value="pop3s">POP3S</MenuItem>
-                              <MenuItem value="mysql">MYSQL</MenuItem>
-                              <MenuItem value="postgresql">PostgreSQL</MenuItem>
+                              <MenuItem value="ssh">{t('firewall.protocol.ssh')}</MenuItem>
+                              <MenuItem value="smtp">{t('firewall.protocol.smtp')}</MenuItem>
+                              <MenuItem value="dns">{t('firewall.protocol.dns')}</MenuItem>
+                              <MenuItem value="http">{t('firewall.protocol.http')}</MenuItem>
+                              <MenuItem value="https">{t('firewall.protocol.https')}</MenuItem>
+                              <MenuItem value="pop3">{t('firewall.protocol.pop3')}</MenuItem>
+                              <MenuItem value="imap">{t('firewall.protocol.imap')}</MenuItem>
+                              <MenuItem value="ldap">{t('firewall.protocol.ldap')}</MenuItem>
+                              <MenuItem value="smb">{t('firewall.protocol.smb')}</MenuItem>
+                              <MenuItem value="smtps">{t('firewall.protocol.smtps')}</MenuItem>
+                              <MenuItem value="imaps">{t('firewall.protocol.imaps')}</MenuItem>
+                              <MenuItem value="pop3s">{t('firewall.protocol.pop3s')}</MenuItem>
+                              <MenuItem value="mysql">{t('firewall.protocol.mysql')}</MenuItem>
+                              <MenuItem value="postgresql">{t('firewall.protocol.postgresql')}</MenuItem>
                             </Select>
                           </TableCell>
                           <TableCell>
@@ -422,9 +424,9 @@ const FirewallTab = () => {
                               value={editedRuleData.action || rule.action.toLowerCase()}
                               onChange={(e) => setEditedRuleData({...editedRuleData, action: e.target.value})}
                             >
-                              <MenuItem value="allow">ALLOW</MenuItem>
-                              <MenuItem value="deny">DENY</MenuItem>
-                              <MenuItem value="reject">REJECT</MenuItem>
+                              <MenuItem value="allow">{t('firewall.actionAllow')}</MenuItem>
+                              <MenuItem value="deny">{t('firewall.actionDeny')}</MenuItem>
+                              <MenuItem value="reject">{t('firewall.actionReject')}</MenuItem>
                             </Select>
                           </TableCell>
                           <TableCell>

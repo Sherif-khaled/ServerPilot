@@ -1,29 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getUserSessions, revokeUserSession } from '../../../api/securityService';
 import { format } from 'date-fns';
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Typography,
-  Divider,
-  CircularProgress,
-  Alert,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Tooltip,
-} from '@mui/material';
+import {Box,List,ListItem,ListItemText,ListItemIcon,IconButton,Typography,Divider,CircularProgress,Tooltip,} from '@mui/material';
 import { Computer as ComputerIcon, TabletMac as TabletMacIcon, PhoneIphone as PhoneIphoneIcon } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import MuiAlert from '@mui/material/Alert';
-import { CustomSnackbar, useSnackbar } from '../../../common';
+import { CustomSnackbar, useSnackbar, ConfirmDialog, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 // Helper to guess device type from user agent
 const getDeviceIcon = (userAgent) => {
@@ -46,8 +28,8 @@ const WebSessions = () => {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [revokeLoading, setRevokeLoading] = useState(false);
 
-  // Use the custom snackbar hook
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { t, i18n } = useTranslation();
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -56,7 +38,7 @@ const WebSessions = () => {
       setSessions(response.data);
       setError(null);
     } catch (err) {
-      setError('Failed to load sessions. Please try again later.');
+      setError(t('webSessions.loadFail'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -77,10 +59,10 @@ const WebSessions = () => {
       setRevokeLoading(true);
       try {
         await revokeUserSession(selectedSessionId);
-        fetchSessions(); // Refresh the list
-        showSuccess('Session revoked successfully');
+        fetchSessions();
+        showSuccess(t('webSessions.revokeSuccess'));
       } catch (err) {
-        showError('Failed to revoke session. Please try again.');
+        showError(t('webSessions.revokeFail'));
         console.error(err);
       } finally {
         setOpenDialog(false);
@@ -98,30 +80,30 @@ const WebSessions = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-        <CircularProgress sx={{ color: '#FE6B8B' }} />
+        <CircularProgress sx={CircularProgressSx} />
       </Box>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return showError(error);
   }
 
   return (
-    <Box>
+    <Box dir={i18n.dir()}>
       <Typography variant="h6" gutterBottom>
-        Active Web Sessions
+        {t('webSessions.title')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        This is a list of devices that have logged into your account. Revoke any sessions that you do not recognize.
+        {t('webSessions.description')}
       </Typography>
-      <List>
+      <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 3, p: 2 }} dir={i18n.dir()}>
         {sessions.map((session, index) => (
           <React.Fragment key={session.id}>
             <ListItem
               secondaryAction={
                 !session.is_current_session && (
-                  <Tooltip title="Revoke this session">
+                  <Tooltip title={t('webSessions.revokeTooltip')}>
                     <IconButton edge="end" aria-label="revoke" onClick={() => handleRevokeClick(session.id)}>
                       <DeleteIcon />
                     </IconButton>
@@ -131,7 +113,7 @@ const WebSessions = () => {
 
             >
               <ListItemIcon>
-                <Tooltip title={session.is_current_session ? "Current session" : "Device type"}>
+                <Tooltip title={session.is_current_session ? t('webSessions.currentSession') : t('webSessions.deviceType')}>
                   {session.is_current_session ? (
                     <ComputerIcon color="success" />
                   ) : (
@@ -144,8 +126,8 @@ const WebSessions = () => {
                   <Typography component="span" sx={{ fontWeight: 'bold' }}>
                     {session.ip_address}
                     {session.is_current_session && (
-                      <Typography component="span" sx={{ ml: 1, color: 'success.main', fontWeight: 'normal' }}>
-                        (Current session)
+                      <Typography component="span" sx={{ ...(i18n.dir() === 'rtl' ? { mr: 1 } : { ml: 1 }), color: 'success.main', fontWeight: 'normal' }}>
+                        ({t('webSessions.currentSession')})
                       </Typography>
                     )}
                   </Typography>
@@ -153,16 +135,16 @@ const WebSessions = () => {
                 secondary={
                   <>
                     <Typography component="span" variant="body2" color="text.primary" display="block">
-                      {session.location || 'Unknown location'}
+                      {session.location || t('webSessions.unknownLocation')}
                     </Typography>
                     <Typography component="span" variant="body2" color="text.secondary" display="block">
                       {session.user_agent}
                     </Typography>
                     <Typography component="span" variant="caption" color="text.secondary" display="block">
-                      Started: {session.created_at ? format(new Date(session.created_at), 'PPP p') : 'Unknown'}
+                      {t('webSessions.started')} {session.created_at ? format(new Date(session.created_at), 'PPP p') : t('webSessions.unknown')}
                     </Typography>
                     <Typography component="span" variant="caption" color="text.secondary" display="block">
-                      Last active: {format(new Date(session.last_activity), 'PPP p')}
+                      {t('webSessions.lastActive')} {format(new Date(session.last_activity), 'PPP p')}
                     </Typography>
                   </>
                 }
@@ -172,40 +154,20 @@ const WebSessions = () => {
           </React.Fragment>
         ))}
       </List>
-      <Dialog
+      <ConfirmDialog
         open={openDialog}
-        onClose={revokeLoading ? undefined : handleCloseDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <MuiAlert
-          severity="warning"
-          icon={false}
-          sx={{ alignItems: 'center', borderRadius: 0, mb: 1 }}
-          elevation={0}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Confirm Session Revocation
-          </Typography>
-          <Typography variant="body2">
-            Are you sure you want to revoke this session? This action cannot be undone.
-          </Typography>
-        </MuiAlert>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={revokeLoading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmRevoke}
-            color="error"
-            autoFocus
-            disabled={revokeLoading}
-            startIcon={revokeLoading ? <CircularProgress size={18} /> : null}
-          >
-            {revokeLoading ? 'Revoking...' : 'Revoke'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onClose={handleCloseDialog}
+        onConfirm={handleConfirmRevoke}
+        title={t('webSessions.confirmTitle')}
+        message={t('webSessions.confirmMessage')}
+        confirmText={revokeLoading ? t('webSessions.revoking') : t('webSessions.confirm')}
+        cancelText={t('webSessions.cancel')}
+        severity="warning"
+        confirmButtonProps={{
+          disabled: revokeLoading,
+          startIcon: revokeLoading ? <CircularProgress size={18} /> : null,
+        }}
+      />
       <CustomSnackbar
         open={snackbar.open}
         onClose={hideSnackbar}

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, Alert, CircularProgress, MenuItem, TextField, Switch, FormGroup, FormControlLabel, Paper } from '@mui/material';
+import React, { useEffect, useState, memo } from 'react';
+import { Box, Button, Typography, Alert, CircularProgress, MenuItem, TextField, Switch, FormGroup, FormControlLabel, Paper, Select, FormControl, InputLabel, FormHelperText } from '@mui/material';
 import axios from 'axios';
-import { textFieldSx, glassPaperSx, gradientButtonSx, blueGradientButtonSx, CircularProgressSx, switchSx } from '../../../common';
+import PropTypes from 'prop-types';
+import { textFieldSx, glassPaperSx, gradientButtonSx, blueGradientButtonSx, CircularProgressSx, switchSx, SelectSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 
 
@@ -11,18 +13,15 @@ const securityTypes = [
   { label: 'SSL', value: 'ssl' },
 ];
 
-const GeneralSettings = () => {
+const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
+  const { t } = useTranslation();
   const [favicon, setFavicon] = useState(null);
   const [selectedFavicon, setSelectedFavicon] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
   const [faviconSaving, setFaviconSaving] = useState(false);
-  const [faviconError, setFaviconError] = useState(null);
-  const [faviconSuccess, setFaviconSuccess] = useState(null);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
@@ -32,7 +31,7 @@ const GeneralSettings = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError('Failed to load settings');
+        showError(t('generalSettings.settingsLoadFail'));
         setLoading(false);
       });
 
@@ -42,7 +41,7 @@ const GeneralSettings = () => {
         setFaviconPreview(res.data.icon);
       })
       .catch(() => {
-        setFaviconError('Failed to load favicon');
+        showError(t('generalSettings.iconLoadFail'));
       });
   }, []);
 
@@ -54,31 +53,32 @@ const GeneralSettings = () => {
   const handleSubmit = e => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
-    setSuccess(null);
     axios.put('/api/configuration/email-settings/', settings)
       .then(() => {
-        setSuccess('Settings saved');
+        showSuccess(t('generalSettings.settingsSaved'));
         setSaving(false);
       })
       .catch(() => {
-        setError('Failed to save settings');
+        showError(t('generalSettings.settingsSaveFail'));
         setSaving(false);
       });
   };
 
   const handleTest = () => {
     setTestResult(null);
-    axios.post('/api/configuration/email-settings/test-connection/', settings)
+    axios.post('/api/configuration/test-email/', settings)
       .then(res => {
         setTestResult({ success: true, message: res.data.message });
+        showSuccess('Connection test successful');
       })
       .catch(err => {
-        setTestResult({ success: false, message: err.response?.data?.message || 'Test failed' });
+        const errorMessage = err.response?.data?.message || 'Connection test failed. Please check SMTP authentications.';
+        setTestResult({ success: false, message: errorMessage });
+        showError(errorMessage);
       });
   };
 
-  if (loading) return <CircularProgress size={24} sx={{ color: '#FE6B8B' }}  />;
+  
     const handleFaviconChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -94,12 +94,10 @@ const GeneralSettings = () => {
   const handleFaviconSubmit = (e) => {
     e.preventDefault();
     if (!selectedFavicon) {
-      setFaviconError('Please select a file first.');
+      showError(t('generalSettings.pleaseSelectFile'));
       return;
     }
     setFaviconSaving(true);
-    setFaviconError(null);
-    setFaviconSuccess(null);
 
     const formData = new FormData();
     formData.append('icon', selectedFavicon);
@@ -111,148 +109,155 @@ const GeneralSettings = () => {
     })
       .then((res) => {
         setFavicon(res.data.icon);
-        setFaviconSuccess('Favicon updated successfully.');
+        showSuccess(t('generalSettings.iconUpdated'));
         setFaviconSaving(false);
       })
       .catch(() => {
-        setFaviconError('Failed to upload favicon.');
+        showError(t('generalSettings.iconUploadFail'));
         setFaviconSaving(false);
       });
   };
 
   if (loading) return <CircularProgress sx={CircularProgressSx} />;
-  if (!settings) return <Alert severity="error">Failed to load email settings.</Alert>;
+  if (!settings) return <Alert severity="error">{t('generalSettings.settingsLoadFail')}</Alert>;
 
     return (
     <>
       <Paper sx={{ ...glassPaperSx }}>
         <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-          Icon Settings
+          {t('generalSettings.iconSettings')}
         </Typography>
-        {faviconError && <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff', mb: 2 }}>{faviconError}</Alert>}
-        {faviconSuccess && <Alert severity="success" sx={{ background: 'rgba(76, 175, 80, 0.8)', color: '#fff', mb: 2 }}>{faviconSuccess}</Alert>}
+        
         <Box component="form" onSubmit={handleFaviconSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {faviconPreview && <img src={faviconPreview} alt="Favicon Preview" style={{ width: 32, height: 32, borderRadius: '4px' }} />}
             <Button variant="contained" component="label" sx={{ ...blueGradientButtonSx }}>
-              Choose File
+              {t('generalSettings.chooseFile')}
               <input type="file" hidden accept="image/png, image/jpeg, image/x-icon" onChange={handleFaviconChange} />
             </Button>
             <Button type="submit" variant="contained" disabled={faviconSaving || !selectedFavicon} sx={{ ...gradientButtonSx }}>
-              {faviconSaving ? <CircularProgress sx={CircularProgressSx}  /> : 'Upload Favicon'}
+              {faviconSaving ? <CircularProgress sx={CircularProgressSx}  /> : t('generalSettings.uploadFavicon')}
             </Button>
           </Box>
-          {selectedFavicon && <Typography variant="body2">Selected: {selectedFavicon.name}</Typography>}
+          {selectedFavicon && <Typography variant="body2">{t('generalSettings.selected', { name: selectedFavicon.name })}</Typography>}
         </Box>
       </Paper>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', mt: 2 }}>
-
-        {error && <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ background: 'rgba(76, 175, 80, 0.8)', color: '#fff' }}>{success}</Alert>}
+        
         <Paper sx={{ ...glassPaperSx}}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-            Email Configurations
+            {t('generalSettings.emailConfigurations')}
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Sender Info Group */}
             <Box sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>Sender Info</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>{t('generalSettings.senderInfo')}</Typography>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   id="send_from"
                   name="send_from"
-                  label="Send From"
+                  label={t('generalSettings.sendFrom')}
                   value={settings.send_from || ''}
                   onChange={handleChange}
                   type="email"
                   required
                   fullWidth
                   sx={{...textFieldSx, flex: 1, minWidth: 200 }}
-                  helperText="Email address for outgoing mail"
+                  helperText={t('generalSettings.sendFromHelper')}
                 />
                 <TextField
                   id="alias_name"
                   name="alias_name"
-                  label="Alias Name"
+                  label={t('generalSettings.aliasName')}
                   value={settings.alias_name || ''}
                   onChange={handleChange}
                   fullWidth
                   sx={{...textFieldSx, flex: 1, minWidth: 200 }}
-                  helperText="Optional display name"
+                  helperText={t('generalSettings.aliasHelper')}
                 />
               </Box>
             </Box>
             {/* SMTP Server Group */}
             <Box sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>SMTP Server</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>{t('generalSettings.smtpServer')}</Typography>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   id="smtp_server"
                   name="smtp_server"
-                  label="SMTP Server"
+                  label={t('generalSettings.smtpServer')}
                   value={settings.smtp_server || ''}
                   onChange={handleChange}
                   required
                   fullWidth
                   sx={{...textFieldSx, flex: 1, minWidth: 180 }}
-                  helperText="SMTP server address"
+                  helperText={t('generalSettings.smtpServerHelper')}
                 />
                 <TextField
                   id="smtp_port"
                   name="smtp_port"
-                  label="SMTP Port"
+                  label={t('generalSettings.smtpPort')}
                   value={settings.smtp_port || ''}
                   onChange={handleChange}
                   type="number"
                   required
                   fullWidth
                   sx={{...textFieldSx, flex: 1, minWidth: 120 }}
-                  helperText="SMTP server port"
+                  helperText={t('generalSettings.smtpPortHelper')}
                 />
-                <TextField
-                  id="security_type"
-                  name="security_type"
-                  label="Security Type"
-                  value={settings.use_ssl ? 'ssl' : settings.use_tls ? 'tls' : 'none'}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setSettings(s => ({ ...s, use_ssl: val === 'ssl', use_tls: val === 'tls' }));
-                  }}
-                  select
-                  fullWidth
-                  sx={{...textFieldSx, flex: 1, minWidth: 160 }}
-                  helperText="Choose SSL, TLS, or None"
-                >
-                  {securityTypes.map(opt => <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>)}
-                </TextField>
+                <FormControl fullWidth sx={{...textFieldSx, flex: 1, minWidth: 160 }}>
+                  <InputLabel id="security_type_label">{t('generalSettings.securityType')}</InputLabel>
+                  <Select
+                    labelId="security_type_label"
+                    id="security_type"
+                    name="security_type"
+                    label={t('generalSettings.securityType')}
+                    value={settings.use_ssl ? 'ssl' : settings.use_tls ? 'tls' : 'none'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSettings(s => ({ ...s, use_ssl: val === 'ssl', use_tls: val === 'tls' }));
+                    }}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          ...SelectSx
+                        },
+                      },
+                    }}
+                  >
+                    {securityTypes.map(opt => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>{t('generalSettings.chooseSSL')}</FormHelperText>
+                </FormControl>
               </Box>
             </Box>
             {/* SMTP Authentication Group */}
             <Box sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>SMTP Authentication</Typography>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>{t('generalSettings.smtpAuth')}</Typography>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   id="username"
                   name="username"
-                  label="SMTP Username"
+                  label={t('generalSettings.smtpUsername')}
                   value={settings.username || ''}
                   onChange={handleChange}
                   fullWidth
                   sx={{...textFieldSx, flex: 1, minWidth: 180 }}
-                  helperText="Optional (for authenticated SMTP servers)"
+                  helperText={t('generalSettings.smtpUsernameHelper')}
                 />
                 <TextField
                   id="password"
                   name="password"
-                  label="SMTP Password"
+                  label={t('generalSettings.smtpPassword')}
                   value={settings.password || ''}
                   onChange={handleChange}
                   type="password"
                   autoComplete="new-password"
                   fullWidth
                   sx={{...textFieldSx, flex: 1, minWidth: 180 }}
-                  helperText="Optional (for authenticated SMTP servers)"
+                  helperText={t('generalSettings.smtpPasswordHelper')}
                 />
               </Box>
             </Box>
@@ -265,7 +270,7 @@ const GeneralSettings = () => {
                   name="use_tls"
                   sx={{...switchSx}}
                 />}
-                label="Use TLS"
+                label={t('generalSettings.useTLS')}
               />
               <FormControlLabel
                 control={<Switch
@@ -274,7 +279,7 @@ const GeneralSettings = () => {
                   name="use_ssl"
                   sx={{...switchSx}}
                 />}
-                label="Use SSL"
+                label={t('generalSettings.useSSL')}
               />
             </FormGroup>
           </Box>
@@ -284,13 +289,10 @@ const GeneralSettings = () => {
               variant="contained"
               disabled={saving}
               sx={{...gradientButtonSx, mt: 3}}>
-              Save Settings
+              {t('generalSettings.saveSettings')}
             </Button>
-            <Button type="button" variant="outlined" onClick={handleTest} sx={{ color: 'white', mt: 3, borderRadius: '25px', padding: '10px 25px', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Test Connection</Button>
+            <Button type="button" variant="outlined" onClick={handleTest} sx={{ color: 'white', mt: 3, borderRadius: '25px', padding: '10px 25px', borderColor: 'rgba(255, 255, 255, 0.7)' }}>{t('generalSettings.testConnection')}</Button>
           </Box>
-          {testResult && (
-            <Alert severity={testResult.success ? 'success' : 'error'} sx={{ mt: 2, background: testResult.success ? 'rgba(76, 175, 80, 0.8)' : 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{testResult.message}</Alert>
-          )}
         </Paper>
 
       </Box>
@@ -298,4 +300,11 @@ const GeneralSettings = () => {
   );
 };
 
-export default GeneralSettings;
+GeneralSettings.propTypes = {
+  showSuccess: PropTypes.func.isRequired,
+  showError: PropTypes.func.isRequired,
+  showWarning: PropTypes.func.isRequired,
+  showInfo: PropTypes.func.isRequired,
+};
+
+export default memo(GeneralSettings);

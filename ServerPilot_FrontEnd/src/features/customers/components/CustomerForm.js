@@ -6,6 +6,7 @@ import {
 import { Save as SaveIcon, Close as CloseIcon, NavigateNext as NavigateNextIcon, NavigateBefore as NavigateBeforeIcon } from '@mui/icons-material';
 import { createCustomer, getCustomerDetails, updateCustomer, getCustomerTypes } from '../../../api/customerService';
 import {gradientButtonSx, textFieldSx, CircularProgressSx, SelectSx, glassDialogSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 
 const initialFormData = {
@@ -22,9 +23,11 @@ const initialFormData = {
   customer_type: '',
 };
 
-const steps = ['Basic Information', 'Address', 'Notes'];
+const CustomerFormSteps = ({ t }) => [t('customerForm.steps.0'), t('customerForm.steps.1'), t('customerForm.steps.2')];
 
 export default function CustomerForm({ open, onClose, customerId = null, onSuccess }) {
+  const { t } = useTranslation();
+  const steps = CustomerFormSteps({ t });
   const isEditMode = Boolean(customerId);
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState(initialFormData);
@@ -40,7 +43,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
       setCustomerTypes(typesResponse.data || []);
     } catch (err) {
       console.error('Failed to fetch customer types:', err);
-      setApiFormError('Failed to load customer types.');
+      setApiFormError(t('forgotPassword.genericError'));
     }
   }, []);
 
@@ -72,7 +75,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
       }
     } catch (err) {
       console.error('Failed to fetch customer details:', err);
-      setApiFormError('Failed to load customer data.');
+      setApiFormError(t('forgotPassword.genericError'));
     }
     setLoading(false);
   }, [customerId, isEditMode, customerTypes]);
@@ -93,7 +96,6 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
     }
   }, [isEditMode, customerId, customerTypes, fetchCustomerData, open]);
 
-  // Handle customer type changes
   useEffect(() => {
     if (formData.customer_type && customerTypes.length > 0) {
       const selectedType = customerTypes.find(t => t.id === formData.customer_type);
@@ -132,20 +134,20 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
     switch (step) {
       case 0: // Basic Information
         if (!formData.customer_type) {
-          newErrors.customer_type = 'Customer type is required.';
+          newErrors.customer_type = t('customerForm.type') + ' ' + t('userForm.required.username');
         } else {
           if (isCompany) {
-            if (!formData.company_name?.trim()) newErrors.company_name = 'Company name is required.';
-            if (!formData.delegated_person_name?.trim()) newErrors.delegated_person_name = 'Delegated person name is required.';
+            if (!formData.company_name?.trim()) newErrors.company_name = t('customerForm.companyName') + ' *';
+            if (!formData.delegated_person_name?.trim()) newErrors.delegated_person_name = t('customerForm.delegatedPerson') + ' *';
           } else {
-            if (!formData.first_name?.trim()) newErrors.first_name = 'First name is required.';
-            if (!formData.last_name?.trim()) newErrors.last_name = 'Last name is required.';
+            if (!formData.first_name?.trim()) newErrors.first_name = t('customerForm.firstName') + ' *';
+            if (!formData.last_name?.trim()) newErrors.last_name = t('customerForm.lastName') + ' *';
           }
           
           if (!formData.email?.trim()) {
-            newErrors.email = 'Email is required.';
+            newErrors.email = t('userForm.required.email');
           } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is not valid.';
+            newErrors.email = t('userForm.required.emailInvalid');
           }
         }
         break;
@@ -194,10 +196,10 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
     try {
       if (isEditMode) {
         await updateCustomer(customerId, submissionData);
-        onSuccess && onSuccess('Customer updated successfully!');
+        onSuccess && onSuccess(t('customerForm.save'));
       } else {
         await createCustomer(submissionData);
-        onSuccess && onSuccess('Customer created successfully!');
+        onSuccess && onSuccess(t('customerForm.save'));
       }
       onClose();
     } catch (err) {
@@ -216,10 +218,10 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
             }
           }
           setErrors(prev => ({ ...prev, ...backendErrors }));
-          setApiFormError('Please correct the errors below.');
+          setApiFormError(t('forgotPassword.genericError'));
         }
       } else {
-        setApiFormError('An unexpected error occurred. Please try again.');
+        setApiFormError(t('forgotPassword.genericError'));
       }
     }
     setLoading(false);
@@ -244,16 +246,15 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
       case 0:
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Customer Type */}
             <Box sx={{ width: '100%' }}>
               <FormControl fullWidth error={!!errors.customer_type} sx={textFieldSx}>
-                <InputLabel id="customer-type-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Customer Type</InputLabel>
+                <InputLabel id="customer-type-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('customerForm.type')}</InputLabel>
                 <Select
                   labelId="customer-type-label"
                   id="customer_type"
                   name="customer_type"
                   value={formData.customer_type}
-                  label="Customer Type"
+                  label={t('customerForm.type')}
                   onChange={handleChange}
                   MenuProps={{
                     PaperProps: {
@@ -261,7 +262,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                   }}
                   required
                 >
-                  <MenuItem value=""><em>Select a type</em></MenuItem>
+                  <MenuItem value=""><em>{t('customerForm.selectType')}</em></MenuItem>
                   {customerTypes.map((type) => (
                     <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>
                   ))}
@@ -277,7 +278,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="company_name"
                     name="company_name"
-                    label="Company Name"
+                    label={t('customerForm.companyName')}
                     value={formData.company_name}
                     onChange={handleChange}
                     error={!!errors.company_name}
@@ -289,7 +290,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="delegated_person_name"
                     name="delegated_person_name"
-                    label="Delegated Person"
+                    label={t('customerForm.delegatedPerson')}
                     value={formData.delegated_person_name}
                     onChange={handleChange}
                     error={!!errors.delegated_person_name}
@@ -303,7 +304,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="email"
                     name="email"
-                    label="Email"
+                    label={t('customerForm.email')}
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
@@ -316,7 +317,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="phone_number"
                     name="phone_number"
-                    label="Phone Number"
+                    label={t('customerForm.phone')}
                     value={formData.phone_number}
                     onChange={handleChange}
                     error={!!errors.phone_number}
@@ -332,7 +333,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="first_name"
                     name="first_name"
-                    label="First Name"
+                    label={t('customerForm.firstName')}
                     value={formData.first_name}
                     onChange={handleChange}
                     error={!!errors.first_name}
@@ -344,7 +345,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="last_name"
                     name="last_name"
-                    label="Last Name"
+                    label={t('customerForm.lastName')}
                     value={formData.last_name}
                     onChange={handleChange}
                     error={!!errors.last_name}
@@ -358,7 +359,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="email"
                     name="email"
-                    label="Email"
+                    label={t('customerForm.email')}
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
@@ -371,7 +372,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                     fullWidth
                     id="phone_number"
                     name="phone_number"
-                    label="Phone Number"
+                    label={t('customerForm.phone')}
                     value={formData.phone_number}
                     onChange={handleChange}
                     error={!!errors.phone_number}
@@ -392,7 +393,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                 fullWidth
                 id="address_line1"
                 name="address_line1"
-                label="Address"
+                label={t('customerForm.address')}
                 value={formData.address_line1}
                 onChange={handleChange}
                 sx={{ ...textFieldSx, flex: '1 1 100%' }}
@@ -403,7 +404,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                 fullWidth
                 id="city"
                 name="city"
-                label="City"
+                label={t('customerForm.city')}
                 value={formData.city}
                 onChange={handleChange}
                 sx={{ ...textFieldSx, flex: '1 1 48%', minWidth: 250 }}
@@ -412,7 +413,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
                 fullWidth
                 id="country"
                 name="country"
-                label="Country"
+                label={t('customerForm.country')}
                 value={formData.country}
                 onChange={handleChange}
                 sx={{ ...textFieldSx, flex: '1 1 48%', minWidth: 250 }}
@@ -428,7 +429,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
               fullWidth
               id="notes"
               name="notes"
-              label="Notes"
+              label={t('customerForm.notes')}
               multiline
               rows={8}
               value={formData.notes}
@@ -453,7 +454,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" sx={{ textShadow: '0 2px 8px rgba(0,0,0,.5)' }}>
-          {isEditMode ? 'Edit Customer' : 'Add New Customer'}
+          {isEditMode ? t('customerForm.editTitle') : t('customerForm.addTitle')}
         </Typography>
         <IconButton onClick={handleClose} disabled={loading}>
           <CloseIcon />
@@ -513,7 +514,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
               '&:hover': { color: '#FE6B8B' }
             }}
           >
-            Back
+            {t('customerForm.back')}
           </Button>
         </Box>
         
@@ -526,7 +527,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
               startIcon={loading ? <CircularProgress sx={CircularProgressSx} /> : <SaveIcon />}
               sx={{...gradientButtonSx}}
             >
-              {loading ? 'Saving...' : 'Save Customer'}
+              {loading ? t('customerForm.saving') : t('customerForm.save')}
             </Button>
           ) : (
             <Button
@@ -536,7 +537,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
               endIcon={<NavigateNextIcon />}
               sx={{...gradientButtonSx}}
             >
-              Next
+              {t('customerForm.next')}
             </Button>
           )}
         </Box>

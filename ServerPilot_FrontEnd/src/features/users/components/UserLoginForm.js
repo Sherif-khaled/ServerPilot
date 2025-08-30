@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axiosConfig';
 import { challengeMfa } from '../../../api/userService';
-import { Box, TextField, Button, Alert, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
+import { Box, TextField, Button, Alert,Typography, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -9,8 +9,9 @@ import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Avatar } from '@mui/material';
-import Footer from '../../core/components/Footer'; // Import the Footer component
-import { textFieldSx, gradientButtonSx, CircularProgressSx, glassCardSx } from '../../../common';
+import Footer from '../../core/components/Footer';
+import { textFieldSx, gradientButtonSx, CircularProgressSx, checkBoxSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const Background = styled('div')({
   position: 'fixed',
@@ -26,7 +27,7 @@ const MainContainer = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minHeight: '100vh',
+  minHeight: '90vh',
 });
 
 const FormContainer = styled(Box)({
@@ -62,20 +63,9 @@ const IconWrapper = styled(Box)({
   }
 });
 
-const StyledButton = styled(Button)({
-    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-    border: 0,
-    borderRadius: '10px',
-    boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
-    color: 'white',
-    height: 48,
-    padding: '0 30px',
-    marginTop: '20px',
-    width: '100%',
-});
-
 
 export default function UserLoginForm({ onLoginSuccess }) {
+  const { t, i18n } = useTranslation();
   useEffect(() => {
     api.get('users/csrf/').catch(err => console.error('CSRF pre-flight failed:', err));
   }, []);
@@ -135,6 +125,13 @@ export default function UserLoginForm({ onLoginSuccess }) {
       } else {
         const result = await loginAuth();
         if (result.success) {
+          try {
+            const preferred = result.user?.language;
+            if (preferred) {
+              i18n.changeLanguage(preferred);
+              document.documentElement.dir = preferred === 'ar' ? 'rtl' : 'ltr';
+            }
+          } catch {}
           if (onLoginSuccess) onLoginSuccess();
         } else {
           setError(result.error || 'Login failed. Please try again.');
@@ -157,9 +154,23 @@ export default function UserLoginForm({ onLoginSuccess }) {
     setIsLoading(true);
 
     try {
-      await challengeMfa(otp);
+      // Normalize OTP: remove non-digits and ensure 6 digits
+      const cleaned = (otp || '').toString().replace(/\D/g, '');
+      if (cleaned.length !== 6) {
+        setIsLoading(false);
+        setError('Enter the 6-digit verification code.');
+        return;
+      }
+      await challengeMfa(cleaned);
       const result = await loginAuth();
       if (result.success) {
+        try {
+          const preferred = result.user?.language;
+          if (preferred) {
+            i18n.changeLanguage(preferred);
+            document.documentElement.dir = preferred === 'ar' ? 'rtl' : 'ltr';
+          }
+        } catch {}
         setOtp('');
         if (onLoginSuccess) onLoginSuccess();
       } else {
@@ -196,63 +207,73 @@ export default function UserLoginForm({ onLoginSuccess }) {
           {error && <Alert severity="error" sx={{ mb: 2, background: 'transparent', color: '#ffcdd2' }}>{error}</Alert>}
           {!mfaRequired ? (
             <>
+            <Box sx={{ width: '100%', mb: 2 }}>
+              <Typography variant="h5" sx={{ color: '#fff', mb: 2 }}>{t('common.adminDashboard')}</Typography>
+            </Box>
+              <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField
+                  label={t('auth.username')}
+                  variant="outlined"
+                  fullWidth
+                  id="username"
+                  name="username"
+                  autoComplete="username"
+                  autoFocus
+                  sx={{...textFieldSx}}
+                  value={form.username}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutlineIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+             <Box sx={{ width: '100%' }}>
               <TextField
-                label="Username"
-                variant="outlined"
-                fullWidth
-                id="username"
-                name="username"
-                autoComplete="username"
-                autoFocus
-                sx={{...textFieldSx}}
-                value={form.username}
-                onChange={handleChange}
-                disabled={isLoading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonOutlineIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                label="Password"
-                type="password"
-                variant="outlined"
-                fullWidth
-                name="password"
-                id="password"
-                autoComplete="current-password"
-                value={form.password}
-                onChange={handleChange}
-                disabled={isLoading}
-                sx={{...textFieldSx}}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockOutlinedIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+                  label={t('auth.password')}
+                  type="password"
+                  variant="outlined"
+                  fullWidth
+                  name="password"
+                  id="password"
+                  autoComplete="current-password"
+                  value={form.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  sx={{...textFieldSx}}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockOutlinedIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+             </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
                 <FormControlLabel
-                  control={<Checkbox value="remember" sx={{color: 'rgba(255, 255, 255, 0.7)', '&.Mui-checked': { color: '#2196F3' }}}/>}
-                  label="Remember me"
+                  control={<Checkbox value="remember" sx={{...checkBoxSx}}/>}
+                  label={t('auth.rememberMe')}
                 />
                 <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ color: '#fff', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                  Forgot Password?
+                  {t('auth.forgotPassword')}
                 </Link>
               </Box>
-              <StyledButton
+              <Box sx={{ mt: 2 , width: '100%'}}>
+              <Button
                   type="submit"
                   variant="contained"
                   disabled={isLoading}
-                  startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                  sx={{width: '100%',...gradientButtonSx }}
+                  startIcon={isLoading ? <CircularProgress sx={CircularProgressSx} /> : null}
               >
-                  {isLoading ? 'Logging in...' : 'Login'}
-              </StyledButton>
+                  {isLoading ? t('auth.loggingIn') : t('auth.login')}
+              </Button>
+              </Box>
             </>
           ) : (
             <TextField

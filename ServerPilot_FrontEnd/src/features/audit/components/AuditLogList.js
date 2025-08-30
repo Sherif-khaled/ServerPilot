@@ -5,9 +5,11 @@ import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
     InputLabel, Select, MenuItem, TextField, Button, Tabs, Tab} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
+import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ComputerIcon from '@mui/icons-material/Computer';
 import {CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
     '&:nth-of-type(odd)': {
@@ -48,6 +50,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 }));
 
 const AuditLogList = () => {
+    const { t, i18n } = useTranslation();
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -67,6 +70,7 @@ const AuditLogList = () => {
     const [systemLogRowsPerPage, setSystemLogRowsPerPage] = useState(50);
     const [systemLogFilters, setSystemLogFilters] = useState({ level: '', start_date: '', end_date: '' });
     const [activeSystemLogFilters, setActiveSystemLogFilters] = useState({});
+    const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -211,33 +215,33 @@ const AuditLogList = () => {
                                 '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' },
                             }}
                             >
-                            <Tab icon={<DescriptionIcon />} iconPosition="start" label="Audit Logs" />
-                            <Tab icon={<ComputerIcon />} iconPosition="start" label="System Logs" />
+                            <Tab icon={<DescriptionIcon sx={{ml: isRtl ? 1 : 0}}/>} iconPosition="start" label={t('audit.tabs.auditLogs')} />
+                            <Tab icon={<ComputerIcon sx={{ml: isRtl ? 1 : 0}}/>} iconPosition="start" label={t('audit.tabs.systemLogs')} />
                         </Tabs>
                     </Box>
 
                     {currentTab === 0 && (
                         <>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <DescriptionIcon sx={{ mr: 1, fontSize: '2rem' }} />
+                                <DescriptionIcon sx={{ mr: 1, fontSize: '2rem', ml: isRtl ? 1 : 0 }}/>
                                 <Typography variant="h4" gutterBottom component="div" sx={{ mb: 0 }}>
-                                    Audit Logs
+                                    {t('audit.tabs.auditLogs')}
                                 </Typography>
                             </Box>
 
                             <Paper sx={{ p: 2, mb: 2, background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
                                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                                     <FormControl sx={{...textFieldSx, minWidth: 200 }}>
-                                        <InputLabel id="user-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>User</InputLabel>
+                                        <InputLabel id="user-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('audit.filters.user')}</InputLabel>
                                         <Select
                                             labelId="user-filter-label"
                                             name="user"
                                             value={filters.user}
-                                            label="User"
+                                            label={t('audit.filters.user')}
                                             onChange={handleFilterChange}
                                             sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
                                         >
-                                            <MenuItem value=""><em>All Users</em></MenuItem>
+                                            <MenuItem value=""><em>{t('audit.filters.allUsers')}</em></MenuItem>
                                             {users.map((user) => (
                                                 <MenuItem key={user.id} value={user.username}>{user.username}</MenuItem>
                                             ))}
@@ -245,7 +249,7 @@ const AuditLogList = () => {
                                     </FormControl>
                                     <TextField
                                         name="start_date"
-                                        label="Start Date"
+                                        label={t('audit.filters.startDate')}
                                         type="date"
                                         value={filters.start_date}
                                         onChange={handleFilterChange}
@@ -254,7 +258,7 @@ const AuditLogList = () => {
                                     />
                                     <TextField
                                         name="end_date"
-                                        label="End Date"
+                                        label={t('audit.filters.endDate')}
                                         type="date"
                                         value={filters.end_date}
                                         onChange={handleFilterChange}
@@ -263,11 +267,12 @@ const AuditLogList = () => {
                                     />
                                     <Button variant="contained" 
                                             onClick={handleApplyFilters} 
+                                            startIcon= {<FilterAltOffIcon sx={{ml: isRtl ? 1 : 0}}/>}
                                             sx={{
                                                ...gradientButtonSx
                                                 }}
-                                            >Apply Filters</Button>
-                                    <Button variant="outlined" onClick={handleClearFilters} sx={{ borderRadius: '25px',color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
+                                            >{t('audit.filters.apply')}</Button>
+                                    <Button variant="outlined" onClick={handleClearFilters} sx={{ borderRadius: '25px',color: 'white', borderColor: 'rgba(255, 255, 255, 0.7)' }}>{t('audit.filters.clear')}</Button>
                                 </Box>
                             </Paper>
 
@@ -281,11 +286,11 @@ const AuditLogList = () => {
                                         <Table sx={{ minWidth: 650 }} aria-label="audit logs table">
                                             <TableHead>
                                                 <TableRow sx={{ '& .MuiTableCell-root': { color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                                    <TableCell>User</TableCell>
-                                                    <TableCell>Action</TableCell>
-                                                    <TableCell>Timestamp</TableCell>
-                                                    <TableCell>IP Address</TableCell>
-                                                    <TableCell>Details</TableCell>
+                                                    <TableCell>{t('audit.labels.user')}</TableCell>
+                                                    <TableCell>{t('audit.labels.action')}</TableCell>
+                                                    <TableCell>{t('audit.labels.timestamp')}</TableCell>
+                                                    <TableCell>{t('audit.labels.ip')}</TableCell>
+                                                    <TableCell>{t('audit.labels.details')}</TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -299,7 +304,7 @@ const AuditLogList = () => {
                                                     </StyledTableRow>
                                                 )) : (
                                                     <TableRow>
-                                                        <TableCell colSpan={5} align="center">No logs found.</TableCell>
+                                                        <TableCell colSpan={5} align="center">{t('audit.labels.noLogs')}</TableCell>
                                                     </TableRow>
                                                 )}
                                             </TableBody>
@@ -314,8 +319,10 @@ const AuditLogList = () => {
                                         page={page}
                                         onPageChange={handleChangePage}
                                         onRowsPerPageChange={handleChangeRowsPerPage}
+                                        labelRowsPerPage={t('common.rowsPerPage')}
+                                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
                                     />
-                                </>
+                                 </>
                             )}
                         </>
                     )}
@@ -323,35 +330,35 @@ const AuditLogList = () => {
                     {currentTab === 1 && (
                         <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <ComputerIcon sx={{ mr: 1, fontSize: '2rem' }} />
+                                <ComputerIcon sx={{ mr: 1, fontSize: '2rem', ml: isRtl ? 1 : 0 }} />
                                 <Typography variant="h4" gutterBottom component="div" sx={{ mb: 0 }}>
-                                    System Logs
+                                    {t('audit.tabs.systemLogs')}
                                 </Typography>
                             </Box>
 
                             <Paper sx={{ p: 2, mb: 2, background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
                                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                                     <FormControl sx={{...textFieldSx, minWidth: 120 }}>
-                                        <InputLabel id="level-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Level</InputLabel>
+                                        <InputLabel id="level-filter-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('audit.filters.level')}</InputLabel>
                                         <Select
                                             labelId="level-filter-label"
                                             name="level"
                                             value={systemLogFilters.level}
-                                            label="Level"
+                                            label={t('audit.filters.level')}
                                             onChange={handleSystemLogFilterChange}
                                             sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
                                         >
-                                            <MenuItem value=""><em>All</em></MenuItem>
-                                            <MenuItem value="DEBUG">Debug</MenuItem>
-                                            <MenuItem value="INFO">Info</MenuItem>
-                                            <MenuItem value="WARNING">Warning</MenuItem>
-                                            <MenuItem value="ERROR">Error</MenuItem>
-                                            <MenuItem value="CRITICAL">Critical</MenuItem>
+                                            <MenuItem value=""><em>{t('audit.filters.all')}</em></MenuItem>
+                                            <MenuItem value="DEBUG">{t('audit.filters.debug')}</MenuItem>
+                                            <MenuItem value="INFO">{t('audit.filters.info')}</MenuItem>
+                                            <MenuItem value="WARNING">{t('audit.filters.warning')}</MenuItem>
+                                            <MenuItem value="ERROR">{t('audit.filters.error')}</MenuItem>
+                                            <MenuItem value="CRITICAL">{t('audit.filters.critical')}</MenuItem>
                                         </Select>
                                     </FormControl>
                                     <TextField
                                         name="start_date"
-                                        label="Start Date"
+                                        label={t('audit.filters.startDate')}
                                         type="date"
                                         value={systemLogFilters.start_date}
                                         onChange={handleSystemLogFilterChange}
@@ -360,7 +367,7 @@ const AuditLogList = () => {
                                     />
                                     <TextField
                                         name="end_date"
-                                        label="End Date"
+                                        label={t('audit.filters.endDate')}
                                         type="date"
                                         value={systemLogFilters.end_date}
                                         onChange={handleSystemLogFilterChange}
@@ -368,12 +375,13 @@ const AuditLogList = () => {
                                         sx={textFieldSx}
                                     />
                                     <Button variant="contained" 
-                                            onClick={handleApplySystemLogFilters} 
+                                            onClick={handleApplySystemLogFilters}
+                                            startIcon= {<FilterAltOffIcon sx={{ml: isRtl ? 1 : 0}}/>} 
                                             sx={{
                                                 ...gradientButtonSx
                                                 }}
-                                            >Apply Filters</Button>
-                                    <Button variant="outlined" onClick={handleClearSystemLogFilters} sx={{ color: 'white',borderRadius: '25px', borderColor: 'rgba(255, 255, 255, 0.7)' }}>Clear</Button>
+                                            >{t('audit.filters.apply')}</Button>
+                                    <Button variant="outlined" onClick={handleClearSystemLogFilters} sx={{ color: 'white',borderRadius: '25px', borderColor: 'rgba(255, 255, 255, 0.7)' }}>{t('audit.filters.clear')}</Button>
                                 </Box>
                             </Paper>
 
@@ -387,9 +395,9 @@ const AuditLogList = () => {
                                         <Table sx={{ minWidth: 650 }} aria-label="system logs table">
                                             <TableHead>
                                                 <TableRow sx={{ '& .MuiTableCell-root': { color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                                    <TableCell sx={{ width: '20%' }}>Timestamp</TableCell>
-                                                    <TableCell sx={{ width: '10%' }}>Level</TableCell>
-                                                    <TableCell>Message</TableCell>
+                                                    <TableCell sx={{ width: '20%' }}>{t('audit.labels.timestamp')}</TableCell>
+                                                    <TableCell sx={{ width: '10%' }}>{t('audit.filters.level')}</TableCell>
+                                                    <TableCell>{t('audit.labels.details')}</TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -403,7 +411,7 @@ const AuditLogList = () => {
                                                     </StyledTableRow>
                                                 )) : (
                                                     <TableRow>
-                                                        <TableCell colSpan={3} align="center">No system logs found.</TableCell>
+                                                        <TableCell colSpan={3} align="center">{t('audit.labels.noSystemLogs')}</TableCell>
                                                     </TableRow>
                                                 )}
                                             </TableBody>
@@ -418,6 +426,8 @@ const AuditLogList = () => {
                                         page={systemLogPage}
                                         onPageChange={handleSystemLogChangePage}
                                         onRowsPerPageChange={handleSystemLogChangeRowsPerPage}
+                                        labelRowsPerPage={t('common.rowsPerPage')}
+                                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
                                     />
                                 </>
                             )}

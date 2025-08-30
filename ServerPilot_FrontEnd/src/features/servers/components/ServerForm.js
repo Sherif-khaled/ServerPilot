@@ -5,7 +5,8 @@ import {getServerDetails, testServerConnection, testServerConnectionWithPayload 
 import { IMaskInput } from 'react-imask';
 import PropTypes from 'prop-types';
 import { Save as SaveIcon } from '@mui/icons-material';
-import { textFieldSx, gradientButtonSx, glassDialogSx, checkBoxSx, CancelButton } from '../../../common';
+import { textFieldSx, gradientButtonSx, glassDialogSx, checkBoxSx, CancelButton, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const TextMaskAdapter = React.forwardRef(function TextMaskAdapter(props, ref) {
   const { onChange, ...other } = props;
@@ -46,6 +47,7 @@ const initialFormData = {
 
 
 const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
+  const { t, i18n } = useTranslation();
   const isEditMode = Boolean(serverData && serverData.id);
   const serverId = isEditMode ? serverData.id : null;
 
@@ -57,6 +59,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
   const [connectionTested, setConnectionTested] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionMessage, setConnectionMessage] = useState(null);
+  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
   useEffect(() => {
     const fetchServerDetails = async () => {
@@ -74,7 +77,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
           is_active: response.data.is_active === undefined ? true : response.data.is_active,
         });
       } catch (err) {
-        setApiFormError('Failed to load server data. Please try again.');
+        setApiFormError(t('servers.common.loadingError'));
       }
       setPageLoading(false);
     };
@@ -156,36 +159,36 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
 
     // Server IP validation
     if (!formData.server_ip.trim()) {
-      errors.server_ip = 'Please enter a server IP address first.';
+      errors.server_ip = t('servers.form.errors.enterServerIp');
     } else {
       const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
       const ipv6Pattern = /^[a-fA-F0-9:]+$/;
       if (!ipv4Pattern.test(formData.server_ip) && !ipv6Pattern.test(formData.server_ip)) {
-        errors.server_ip = 'Invalid IP address format.';
+        errors.server_ip = t('servers.form.errors.invalidIp');
       }
     }
 
     // SSH Port validation
     if (!formData.ssh_port) {
-      errors.ssh_port = 'Please enter an SSH port.';
+      errors.ssh_port = t('servers.form.errors.enterSshPort');
     } else {
       const port = parseInt(formData.ssh_port, 10);
       if (isNaN(port) || port <= 0 || port > 65535) {
-        errors.ssh_port = 'Invalid SSH port (1-65535).';
+        errors.ssh_port = t('servers.form.errors.invalidSshPort');
       }
     }
 
     // Authentication validation
     if (formData.login_using_root) {
       if (!formData.ssh_root_password && !formData.ssh_key) {
-        errors.root_auth = 'For root login, either root password or SSH key is required.';
+        errors.root_auth = t('servers.form.errors.rootAuthRequired');
       }
     } else {
       if (!formData.ssh_user.trim()) {
-        errors.ssh_user = 'SSH username is required.';
+        errors.ssh_user = t('servers.form.errors.sshUserRequired');
       }
       if (!formData.ssh_password && !formData.ssh_key) {
-        errors.user_auth = 'Either password or SSH key is required.';
+        errors.user_auth = t('servers.form.errors.authRequired');
       }
     }
 
@@ -199,32 +202,32 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
     }
     // Server name validation
     if (!formData.server_name.trim()) {
-      setValidationError({ server_name: 'Please enter a server name first.' });
+      setValidationError({ server_name: t('servers.form.errors.enterServerName') });
       return false;
     }
     
     // Server IP validation
     if (!formData.server_ip.trim()) {
-      setValidationError({ server_ip: 'Please enter a server IP address first.' });
+      setValidationError({ server_ip: t('servers.form.errors.enterServerIp') });
       return false;
     } else {
       // IP format validation
       const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
       const ipv6Pattern = /^[a-fA-F0-9:]+$/;
       if (!ipv4Pattern.test(formData.server_ip) && !ipv6Pattern.test(formData.server_ip)) {
-        setValidationError({ server_ip: 'Invalid IP address format.' });
+        setValidationError({ server_ip: t('servers.form.errors.invalidIp') });
         return false;
       }
     }
     
     // SSH Port validation
     if (!formData.ssh_port) {
-      setValidationError({ ssh_port: 'Please enter an SSH port.' });
+      setValidationError({ ssh_port: t('servers.form.errors.enterSshPort') });
       return false;
     } else {
       const port = parseInt(formData.ssh_port, 10);
       if (isNaN(port) || port <= 0 || port > 65535) {
-        setValidationError({ ssh_port: 'Invalid SSH port (1-65535).' });
+        setValidationError({ ssh_port: t('servers.form.errors.invalidSshPort') });
         return false;
       }
     }
@@ -233,19 +236,19 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
     if (formData.login_using_root) {
       if (!formData.ssh_root_password && !formData.ssh_key) {
         if (!isEditMode || (formData.ssh_root_password === '' && formData.ssh_key === '')) {
-          setValidationError({ root_auth: 'For root login, either root password or SSH key is required.' });
+          setValidationError({ root_auth: t('servers.form.errors.rootAuthRequired') });
           return false;
         }
       }
     } else {
       if (!formData.ssh_user.trim()) {
-        setValidationError({ ssh_user: 'SSH username is required.' });
+        setValidationError({ ssh_user: t('servers.form.errors.sshUserRequired') });
         return false;
       }
       
       if (!formData.ssh_password && !formData.ssh_key) {
         if (!isEditMode || (formData.ssh_password === '' && formData.ssh_key === '')) {
-          setValidationError({ user_auth: 'Either password or SSH key is required.' });
+          setValidationError({ user_auth: t('servers.form.errors.authRequired') });
           return false;
         }
       }
@@ -320,10 +323,10 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
         response = await testServerConnectionWithPayload(customerId, payload);
       }
       setConnectionTested(true);
-      setConnectionMessage({ type: 'success', text: response?.data?.message || 'Connection successful.' });
+      setConnectionMessage({ type: 'success', text: response?.data?.message || t('servers.form.connectionSuccess') });
     } catch (error) {
       setConnectionTested(false);
-      const msg = error?.response?.data?.details || error?.response?.data?.message || error.message || 'Connection failed.';
+      const msg = error?.response?.data?.details || error?.response?.data?.message || error.message || t('servers.form.connectionFailed');
       setConnectionMessage({ type: 'error', text: msg });
     } finally {
       setTestingConnection(false);
@@ -332,7 +335,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth PaperComponent={glassDialogSx}>
-      <DialogTitle fontSize={24} fontWeight="bold">{isEditMode ? 'Edit Server' : 'Add New Server'}</DialogTitle>
+      <DialogTitle fontSize={24} fontWeight="bold">{isEditMode ? t('servers.form.editTitle') : t('servers.form.addTitle')}</DialogTitle>
       <Box component="div" noValidate autoComplete="off" sx={{ mt: 2 }}>
         <DialogContent dividers>
           <Box>
@@ -370,7 +373,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               required
               fullWidth
               id="server_name"
-              label="Server Name"
+              label={t('servers.form.name')}
               name="server_name"
               value={formData.server_name}
               onChange={handleChange}
@@ -384,7 +387,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               <TextField
                 required
                 fullWidth
-                label="Server IP Address"
+                label={t('servers.form.ip')}
                 name="server_ip"
                 id="server_ip"
                 value={formData.server_ip}
@@ -400,7 +403,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               <TextField
                 required
                 id="ssh_port"
-                label="SSH Port"
+                label={t('servers.form.sshPort')}
                 name="ssh_port"
                 type="number"
                 value={formData.ssh_port}
@@ -425,7 +428,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
                   sx={{ ...checkBoxSx}} 
                 />
               }
-              label="Login as root user"
+              label={t('servers.form.loginAsRoot')}
               sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 1 }}
             />
 
@@ -434,12 +437,12 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
                 <TextField
                   fullWidth
                   id="ssh_user"
-                  label="SSH Username (non-root)"
+                  label={t('servers.form.sshUser')}
                   name="ssh_user"
                   value={formData.ssh_user}
                   onChange={handleChange}
                   error={!!validationError.ssh_user}
-                  helperText={validationError.ssh_user ? validationError.ssh_user : 'Leave blank to keep current or if using SSH key.'}
+                  helperText={validationError.ssh_user ? validationError.ssh_user : t('servers.form.keepOrKey')}
                   required={!formData.login_using_root}
                   sx={textFieldSx}
                   disabled={loading}
@@ -447,13 +450,13 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
                 <TextField
                   fullWidth
                   id="ssh_password"
-                  label="SSH Password (non-root)"
+                  label={t('servers.form.sshPassword')}
                   name="ssh_password"
                   type="password"
                   value={formData.ssh_password}
                   onChange={handleChange}
                   error={!!validationError.ssh_password}
-                  helperText={validationError.ssh_password ? validationError.ssh_password : 'Leave blank to keep current or if using SSH key.'}
+                  helperText={validationError.ssh_password ? validationError.ssh_password : t('servers.form.keepOrKey')}
                   autoComplete="new-password"
                   sx={textFieldSx}
                   disabled={loading}
@@ -465,13 +468,13 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               <TextField
                 fullWidth
                 id="ssh_root_password"
-                label="Root Password *"
+                label={t('servers.form.rootPassword')}
                 name="ssh_root_password"
                 type="password"
                 value={formData.ssh_root_password}
                 onChange={handleChange}
                 error={!!validationError.ssh_root_password}
-                helperText={validationError.ssh_root_password ? validationError.ssh_root_password : 'Leave blank to keep current or if using SSH key.'}
+                helperText={validationError.ssh_root_password ? validationError.ssh_root_password : t('servers.form.keepOrKey')}
                 autoComplete="new-password"
                 sx={textFieldSx}
                 disabled={loading}
@@ -481,46 +484,46 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
             <TextField
               fullWidth
               id="ssh_key"
-              label="SSH Private Key"
+              label={t('servers.form.privateKey')}
               name="ssh_key"
               value={formData.ssh_key}
               onChange={handleChange}
               error={!!validationError.ssh_key}
-              helperText={
-                validationError.ssh_key ? validationError.ssh_key : 
-                (formData.login_using_root 
-                  ? 'Enter root private key (leave blank to use password authentication)'
-                  : 'Enter user private key (leave blank to use password authentication)')
-              }
+              helperText={validationError.ssh_key ? validationError.ssh_key : t('servers.form.keepOrKey')}
               multiline
               rows={4}
-              placeholder="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+              placeholder={t('servers.form.privateKeyPlaceholder')}
               sx={textFieldSx}
               disabled={loading}
             />
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-               <Button 
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-start'}}>
+              <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.is_active}
+                      onChange={handleChange}
+                      name="is_active"
+                      disabled={loading}
+                      sx={{ ...checkBoxSx}} 
+                    />
+                  }
+                  label={t('servers.form.active')}
+                  sx={{ color: 'rgba(255, 255, 255, 0.7)'}}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end'}}>
+              <Button 
                   onClick={handleTestConnection}
                   variant="outlined"
                   disabled={testingConnection || loading}
                 >
-                  {testingConnection ? 'Testing...' : 'Test Connection'}
+                  {testingConnection ? t('servers.form.testing') : t('servers.form.testConnection')}
                 </Button>
-            
+              </Box>
+                
             </Box>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.is_active}
-                  onChange={handleChange}
-                  name="is_active"
-                  disabled={loading}
-                  sx={{ ...checkBoxSx}} 
-                />
-              }
-              label="Active"
-              sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 1 }}
-            />
+            
             
           </Box>
         </DialogContent>
@@ -530,7 +533,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               onClick={handleClose}
               variant="outlined"
             >
-              Cancel
+              {t('servers.common.cancel')}
             </CancelButton>
            
           </Box>
@@ -540,15 +543,15 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               onClick={handleSave}
               variant="contained"
               disabled={loading || !connectionTested}
-              startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+              startIcon={loading ? <CircularProgress size={20} sx={CircularProgressSx}/> : <SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
               sx={{...gradientButtonSx}}
             >
               {loading ? (
                 <Box display="flex" alignItems="center" gap={1}>
                   <CircularProgress size={20} sx={{ color: 'inherit' }} />
-                  {isEditMode ? 'Updating...' : 'Creating...'}
+                  {isEditMode ? t('servers.form.updating') : t('servers.form.creating')}
                 </Box>
-              ) : isEditMode ? 'Update Server' : 'Create Server'}
+              ) : isEditMode ? t('servers.form.update') : t('servers.form.create')}
             </Button>
           </Box>
         </DialogActions>

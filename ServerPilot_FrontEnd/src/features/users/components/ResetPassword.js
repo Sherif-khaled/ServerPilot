@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button, TextField, Typography, Alert, Container } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import api from '../../../api/axiosConfig';
+import { useTranslation } from 'react-i18next';
 
 const Background = styled('div')({
   position: 'fixed',
@@ -43,6 +44,7 @@ const StyledButton = styled(Button)({
 const ResetPassword = () => {
   const { uid, token } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -51,7 +53,7 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t('resetPassword.mismatch'));
       return;
     }
     setError('');
@@ -66,7 +68,7 @@ const ResetPassword = () => {
       setMessage(response.data.detail);
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred. The link may be invalid or expired.');
+      setError(err.response?.data?.detail || t('forgotPassword.genericError'));
     }
   };
 
@@ -76,12 +78,12 @@ const ResetPassword = () => {
       <FormContainer>
         <StyledForm onSubmit={handleSubmit}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
-            Reset Password
+            {t('resetPassword.title')}
           </Typography>
           {message && <Alert severity="success">{message}</Alert>}
           {error && <Alert severity="error">{error}</Alert>}
           <TextField
-            label="New Password"
+            label={t('resetPassword.newPassword')}
             variant="outlined"
             fullWidth
             margin="normal"
@@ -93,7 +95,7 @@ const ResetPassword = () => {
             sx={{ input: { color: 'white' } }}
           />
           <TextField
-            label="Confirm New Password"
+            label={t('resetPassword.confirmNewPassword')}
             variant="outlined"
             fullWidth
             margin="normal"
@@ -105,7 +107,7 @@ const ResetPassword = () => {
             sx={{ input: { color: 'white' } }}
           />
           <StyledButton type="submit" fullWidth variant="contained">
-            Set New Password
+            {t('resetPassword.submit')}
           </StyledButton>
         </StyledForm>
       </FormContainer>

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, Alert, CircularProgress } from '@mui/material';
 import { getProfile, setupMfa, verifyMfa, disableMfa } from '../../../api/userService';
-import { styled } from '@mui/material/styles';
-import Paper from '@mui/material/Paper';
-import { CustomSnackbar, useSnackbar } from '../../../common';
+import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const MfaSettings = () => {
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -12,32 +11,9 @@ const MfaSettings = () => {
   const [qrCodeUri, setQrCodeUri] = useState(null);
   const [otp, setOtp] = useState('');
 
-  // Use the custom snackbar hook
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { t } = useTranslation();
 
-  const GlassPaper = styled(Paper)(({ theme }) => ({
-    background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(12px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    padding: theme.spacing(3),
-    color: '#fff',
-}));
-
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-    color: 'white',
-    borderRadius: '12px',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-};
 
   const fetchMfaStatus = async () => {
     try {
@@ -45,11 +21,12 @@ const textFieldSx = {
       setMfaEnabled(data.mfa_enabled);
     } catch (err) {
       console.error('Error fetching MFA status:', err.response ? err.response.data : err.message);
-      setError('Failed to load MFA status.');
+      setError(t('mfaSettings.loadFail'));
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchMfaStatus();
@@ -63,7 +40,7 @@ const textFieldSx = {
       setQrCodeUri(data.qr_code_uri);
     } catch (err) {
       console.error('Error during MFA setup:', err.response ? err.response.data : err.message);
-      showError('Failed to start MFA setup. Check the browser console for more details.');
+      showError(t('mfaSettings.setupFail'));
     }
   };
 
@@ -72,33 +49,31 @@ const textFieldSx = {
     setError('');
     
     if (!otp || !otp.trim()) {
-      setError('Please enter the OTP token from your authenticator app.');
+      setError(t('mfaSettings.otpRequired'));
+      setLoading(false);
       return;
     }
     
     try {
-      // Show loading state
       setLoading(true);
       
-      // Verify the OTP token
       const { data, error } = await verifyMfa(otp);
       
       if (error) {
         if (error.code === 'mfa_not_setup') {
-          // Reset the MFA setup flow since it's not properly configured
           setQrCodeUri(null);
           setOtp('');
-          setError('Your MFA setup session has expired. Please click "Enable MFA" to start over.');
+          setError(t('mfaSettings.setupExpired'));
           return;
         }
         // Handle specific error messages from the backend
-        const errorMessage = error.detail || error.message || 'Failed to verify MFA. Please try again.';
+        const errorMessage = error.detail || error.message || t('mfaSettings.verifyFailGeneric');
         setError(errorMessage);
         return;
       }
       
       // Success case - MFA is now enabled
-      showSuccess('MFA has been successfully enabled for your account!');
+      showSuccess(t('mfaSettings.enabledNow'));
       setMfaEnabled(true);
       setQrCodeUri(null);
       setOtp('');
@@ -112,8 +87,11 @@ const textFieldSx = {
       await fetchMfaStatus();
       
     } catch (err) {
-      console.error('Unexpected error during MFA verification:', err);
-      showError('An unexpected error occurred while verifying your code. Please try again.');
+      console.error('Unexpected error during MFA verification:', err.response ? err.response.data : err.message);
+      const errorMessage = err.response && err.response.data && err.response.data.detail
+        ? err.response.data.detail
+        : t('mfaSettings.verifyUnexpected');
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -123,11 +101,11 @@ const textFieldSx = {
     setError('');
     try {
       await disableMfa();
-      showSuccess('MFA disabled successfully!');
+      showSuccess(t('mfaSettings.disableSuccess'));
       setMfaEnabled(false);
     } catch (err) {
       console.error('Error during MFA disable:', err.response ? err.response.data : err.message);
-      showError('Failed to disable MFA. Check the browser console for more details.');
+      showError(t('mfaSettings.disableFail'));
     }
   };
 
@@ -138,10 +116,10 @@ const textFieldSx = {
   return (
     <GlassPaper>
       <Typography variant="h6" gutterBottom>
-        Multi-Factor Authentication (MFA)
+        {t('mfaSettings.title')}
       </Typography>
       <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255,255,255,0.7)' }}>
-        Enable Multi-Factor Authentication (MFA) to add an extra layer of security to your account.
+        {t('mfaSettings.description')}
       </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -149,7 +127,7 @@ const textFieldSx = {
         <Box>
           <Typography sx={{ mb: 2 }}>Multi-Factor Authentication is currently enabled.</Typography>
           <Button variant="contained" color="error" onClick={handleDisableMfa}>
-            Disable MFA
+            {t('mfaSettings.disable')}
           </Button>
         </Box>
       ) : (
@@ -159,26 +137,17 @@ const textFieldSx = {
               variant="contained" 
               onClick={handleEnableMfa}
               sx={{
-            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-            color: 'white',
-            borderRadius: '25px',
-            padding: '10px 25px',
-              '&:disabled': {
-              background: 'rgba(255, 255, 255, 0.3)',
-              },
-              mt: 3,
-          }}>
-              Enable MFA
+            ...gradientButtonSx}}>
+              {t('mfaSettings.enable')}
             </Button>
           ) : (
-            <Box component="form" onSubmit={handleVerifyMfa}>
-              <Typography>Scan this QR code with your authenticator app:</Typography>
+            <Box component="form" onSubmit={handleVerifyMfa} noValidate>
+              <Typography>{t('mfaSettings.scanQr')}</Typography>
               <Box sx={{ my: 2 }}>
                 <img src={qrCodeUri} alt="MFA QR Code" />
               </Box>
               <TextField
-                label="OTP Token"
+                label={t('mfaSettings.otpToken')}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
@@ -189,17 +158,8 @@ const textFieldSx = {
                 type="submit" 
                 variant="contained"
                 sx={{
-            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-            color: 'white',
-            borderRadius: '25px',
-            padding: '10px 25px',
-              '&:disabled': {
-              background: 'rgba(255, 255, 255, 0.3)',
-              },
-              mt: 3,
-          }}>
-                Verify & Enable
+            ...gradientButtonSx}}>
+                {t('mfaSettings.verifyEnable')}
               </Button>
             </Box>
           )}

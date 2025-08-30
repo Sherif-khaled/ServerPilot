@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, LinearProgress, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 // Accepts: password (string), sx (optional style overrides)
 export function getPasswordStrength(password) {
@@ -13,13 +14,15 @@ export function getPasswordStrength(password) {
   return score;
 }
 
-const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+const strengthKeyMap = ['veryWeak', 'weak', 'fair', 'good', 'strong'];
 const strengthColors = ['#d32f2f', '#f57c00', '#fbc02d', '#388e3c', '#1976d2'];
 
 export default function PasswordStrengthMeter({ password, sx }) {
+  const { t } = useTranslation();
   const score = getPasswordStrength(password);
   const percent = (score / 5) * 100;
-  const label = strengthLabels[score - 1] || strengthLabels[0];
+  const labelKey = strengthKeyMap[score - 1] || strengthKeyMap[0];
+  const label = t(`passwordStrength.${labelKey}`);
   const color = strengthColors[score - 1] || strengthColors[0];
 
   if (!password) return null;

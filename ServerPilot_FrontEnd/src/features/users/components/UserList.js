@@ -10,6 +10,7 @@ import {Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, VpnKey as VpnKey
     AdminPanelSettings as AdminPanelSettingsIcon,HighlightOffOutlined as HighlightOffOutlinedIcon} from '@mui/icons-material';
 import { adminListUsers, adminDeleteUser, adminSetUserPassword,} from '../../../api/userService';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { useTranslation } from 'react-i18next';
 
 import SetPasswordForm from './SetPasswordForm';
 import UserForm from './UserForm';
@@ -21,6 +22,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 
 
 export default function UserList() {
+    const { t, i18n } = useTranslation();
     const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -215,11 +217,13 @@ export default function UserList() {
     const managerUsersCount = users.filter(u => u.is_manager).length; 
 
     const statItems = [
-        { title: 'Total Users', value: totalUsers, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'primary.main' },
-        { title: 'Active Users', value: activeUsersCount, icon: <CheckCircleOutlineIcon sx={{ fontSize: 30 }} />, color: 'success.main' },
-        { title: 'Admins', value: adminUsersCount, icon: <AdminPanelSettingsIcon sx={{ fontSize: 30 }} />, color: 'warning.main' },
-        { title: 'Managers', value: managerUsersCount, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'info.main' }, 
+        { title: t('users.userManagement'), value: totalUsers, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'primary.main' },
+        { title: t('users.active'), value: activeUsersCount, icon: <CheckCircleOutlineIcon sx={{ fontSize: 30 }} />, color: 'success.main' },
+        { title: t('users.roleAdmin'), value: adminUsersCount, icon: <AdminPanelSettingsIcon sx={{ fontSize: 30 }} />, color: 'warning.main' },
+        { title: t('users.managers'), value: managerUsersCount, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'info.main' }, 
     ];
+
+    const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
     const handleMenuOpen = (event, user) => {
         setAnchorEl(event.currentTarget);
@@ -259,21 +263,21 @@ export default function UserList() {
         <RootContainer>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
                 <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-                    User Management
+                    {t('users.userManagement')}
                 </Typography>
                <Box>
-                <Tooltip title="Refresh Users">
+                <Tooltip title={t('users.refresh')}>
                         <IconButton onClick={fetchUsers} sx={{ color: 'white', mr: 1 }}>
                         <RefreshIcon />
                         </IconButton>
                     </Tooltip>
                     <Button
                         variant="contained"
-                        startIcon={<AddIcon />}
+                        startIcon={<AddIcon sx={{ml: isRtl ? 1 : 0}}/>}
                         onClick={handleCreateUser}
                         sx={{...gradientButtonSx}}
                     >
-                        Add User
+                        {t('users.addUser')}
                     </Button>
                </Box>
             </Box>
@@ -285,11 +289,12 @@ export default function UserList() {
                     <Grid item xs={12} sm={6} md={3} key={index}>
                         <GlassCard>
                             <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                                <Box sx={{ flexGrow: 1 }}>
+                                {isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8, ml: 2 } })}
+                                <Box sx={{ flexGrow: 1, textAlign: isRtl ? 'right' : 'left' }}>
                                     <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">{item.title}</Typography>
                                     <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{item.value}</Typography>
                                 </Box>
-                                {React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8 } })}
+                                {!isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8 } })}
                             </CardContent>
                         </GlassCard>
                     </Grid>
@@ -301,7 +306,7 @@ export default function UserList() {
                     <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                         <TextField
                             fullWidth
-                            placeholder="Search Users..."
+                            placeholder={t('users.searchPlaceholder')}
                             variant="outlined"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -327,7 +332,7 @@ export default function UserList() {
                         <Table aria-label="user list">
                             <TableHead>
                                 <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                    {['User', 'Email', 'Role', 'Status', 'Actions'].map((headCell, index) => (
+                                    {[t('users.headers.user'), t('users.headers.email'), t('users.headers.role'), t('users.headers.status'), t('users.headers.actions')].map((headCell, index) => (
                                         <TableCell key={headCell} align={index === 4 ? 'right' : 'left'} sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold' }}>
                                             {headCell}
                                         </TableCell>
@@ -340,8 +345,8 @@ export default function UserList() {
                                         <TableCell colSpan={5} align="center" sx={{ border: 0 }}>
                                             <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: 'rgba(255, 255, 255, 0.7)' }}>
                                                 <SearchIcon sx={{ fontSize: 60 }} />
-                                                <Typography variant="h6">No users found</Typography>
-                                                <Typography>Try adjusting your search or filter criteria.</Typography>
+                                                <Typography variant="h6">{t('users.noUsersFound')}</Typography>
+                                                <Typography>{t('users.tryAdjustingSearch')}</Typography>
                                             </Box>
                                         </TableCell>
                                     </TableRow>
@@ -362,7 +367,7 @@ export default function UserList() {
                                         >
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <Avatar src={user.profile_photo_url} sx={{ mr: 2, border: '2px solid #fff' }}>
+                                                    <Avatar src={user.profile_photo_url} sx={{ mr: 2, border: '2px solid #fff', ml: isRtl ? 1 : 0 }}>
                                                         {user.username.charAt(0).toUpperCase()}
                                                     </Avatar>
                                                     <Box>
@@ -375,19 +380,23 @@ export default function UserList() {
                                             <TableCell>
                                                 <Chip
                                                     icon={user.is_staff ? <AdminPanelSettingsIcon /> : <PeopleAltOutlinedIcon />}
-                                                    label={user.is_staff ? 'Admin' : 'User'}
+                                                    label={user.is_staff ? t('users.roleAdmin') : t('users.roleUser')}
                                                     size="small"
                                                     sx={{
                                                         background: user.is_staff ? 'linear-gradient(45deg, #c62828, #f44336)' : 'linear-gradient(45deg, #1565c0, #2196f3)',
                                                         color: 'white',
-                                                        fontWeight: 'bold'
+                                                        fontWeight: 'bold',
+                                                        '& .MuiChip-label': {
+                                                            direction: 'rtl',
+                                                            textAlign: 'right',
+                                                        }
                                                     }}
                                                 />
                                             </TableCell>
                                             <TableCell>
                                                 <Chip
                                                     icon={user.is_active ? <CheckCircleOutlineIcon /> : <HighlightOffOutlinedIcon />}
-                                                    label={user.is_active ? 'Active' : 'Inactive'}
+                                                    label={user.is_active ? t('users.active') : t('users.inactive')}
                                                     size="small"
                                                     color={user.is_active ? 'success' : 'error'}
                                                     variant="outlined"
@@ -399,7 +408,7 @@ export default function UserList() {
                                                 />
                                             </TableCell>
                                             <TableCell align="right">
-                                                <Tooltip title="Actions">
+                                                <Tooltip title={t('users.actions')}>
                                                     <IconButton onClick={(e) => handleMenuOpen(e, user)} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                                                         <MoreVertIcon />
                                                     </IconButton>
@@ -421,6 +430,8 @@ export default function UserList() {
                     page={page}
                     onPageChange={handleChangePage}
                     onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage={t('common.rowsPerPage')}
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
                 />
             </GlassCard>
             <Menu
@@ -436,19 +447,19 @@ export default function UserList() {
           disablePortal={false}
           keepMounted={false}
             >
-                <MenuItem onClick={handleEditFromMenu}><EditIcon sx={{ mr: 1 }} /> Edit</MenuItem>
-                <MenuItem onClick={handleSetPasswordFromMenu}><VpnKeyIcon sx={{ mr: 1 }} /> Set Password</MenuItem>
-                <MenuItem onClick={handleDeleteFromMenu} sx={{ color: '#f44336' }}><DeleteIcon sx={{ mr: 1 }} /> Delete</MenuItem>
+                <MenuItem onClick={handleEditFromMenu}><EditIcon sx={{ mr: 1 }} /> {t('users.edit')}</MenuItem>
+                <MenuItem onClick={handleSetPasswordFromMenu}><VpnKeyIcon sx={{ mr: 1 }} /> {t('users.setPassword')}</MenuItem>
+                <MenuItem onClick={handleDeleteFromMenu} sx={{ color: '#f44336' }}><DeleteIcon sx={{ mr: 1 }} /> {t('users.delete')}</MenuItem>
             </Menu>
 
             <ConfirmDialog
                     open={deleteConfirmOpen}
                     onClose={handleCloseDeleteConfirm}
                     onConfirm={handleDeleteUser}
-                    title="Confirm Deletion"
-                    message={`Are you sure you want to delete the user ${currentUser?.username} ? This action cannot be undone.`}
-                    confirmText="Yes, Delete"
-                    cancelText="Cancel"
+                    title={t('users.confirmDeletionTitle')}
+                    message={t('users.confirmDeletionMessage', { username: currentUser?.username || '' })}
+                    confirmText={t('users.yesDelete')}
+                    cancelText={t('users.cancel')}
                     severity="info"
             />
 

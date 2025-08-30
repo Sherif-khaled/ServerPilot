@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, Tabs, Tab, CircularProgress, Alert, Paper, GlobalStyles, styled } from '@mui/material';
 import { getServerDetails } from '../../../api/serverService';
+import { useTranslation } from 'react-i18next';
 import SecurityAdvisorTab from '../components/details/SecurityAdvisorTab';
 import DetailsTab from '../components/details/DetailsTab';
 import ApplicationsTab from '../components/details/ApplicationsTab';
@@ -48,6 +49,7 @@ function TabPanel(props) {
 }
 
 export default function ServerDetailsPage() {
+  const { t } = useTranslation();
   const { customerId, serverId } = useParams();
   const [server, setServer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export default function ServerDetailsPage() {
         setServer(response.data);
         setError('');
       } catch (err) {
-        setError('Failed to fetch server details.');
+        setError(t('servers.common.loadingError'));
         console.error(err);
       } finally {
         setLoading(false);
@@ -85,7 +87,7 @@ export default function ServerDetailsPage() {
   }
 
   if (!server) {
-    return <Typography sx={{ m: 2 }}>Server not found.</Typography>;
+    return <Typography sx={{ m: 2 }}>{t('servers.common.notFound')}</Typography>;
   }
 
   return (
@@ -108,11 +110,11 @@ export default function ServerDetailsPage() {
                 '& .MuiTabs-indicator': { backgroundColor: '#FE6B8B' },
               }}
             >
-              <Tab label="Details" />
-              <Tab label="Applications" />
-              <Tab label="Monitoring" />
-              <Tab label="Security Advisor" />
-              <Tab label="Firewall" />
+              <Tab label={t('servers.pages.serverDetailsTabs.details')} />
+              <Tab label={t('servers.pages.serverDetailsTabs.applications')} />
+              <Tab label={t('servers.pages.serverDetailsTabs.monitoring')} />
+              <Tab label={t('servers.pages.serverDetailsTabs.securityAdvisor')} />
+              <Tab label={t('servers.pages.serverDetailsTabs.firewall')} />
             </Tabs>
           </Box>
           <TabPanel value={tabValue} index={0}>

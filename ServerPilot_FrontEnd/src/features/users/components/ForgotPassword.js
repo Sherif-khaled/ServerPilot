@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Container, Alert } from '@mui/material';
+import { Box, TextField, Button, Typography, Container, Alert, InputAdornment } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import ReCAPTCHA from 'react-google-recaptcha';
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import api from '../../../api/axiosConfig';
 import Footer from '../../core/components/Footer';
+import { textFieldSx, gradientButtonSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const Background = styled('div')({
   position: 'fixed',
@@ -34,17 +37,8 @@ const StyledForm = styled('form')({
   color: '#fff',
 });
 
-const StyledButton = styled(Button)({
-  marginTop: '20px',
-  background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-  color: 'white',
-  '&:disabled': {
-    background: 'rgba(255, 255, 255, 0.3)',
-    color: 'rgba(255, 255, 255, 0.5)',
-  },
-});
-
 const ForgotPassword = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [message, setMessage] = useState('');
@@ -66,7 +60,7 @@ const ForgotPassword = () => {
     setMessage('');
 
     if (recaptchaEnabled && !recaptchaToken) {
-      setError('Please complete the reCAPTCHA.');
+      setError(t('forgotPassword.recaptchaRequired'));
       return;
     }
 
@@ -74,7 +68,7 @@ const ForgotPassword = () => {
       const response = await api.post('users/password/reset/', { email, recaptcha_token: recaptchaToken });
       setMessage(response.data.detail);
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(t('forgotPassword.genericError'));
     }
   };
 
@@ -84,15 +78,15 @@ const ForgotPassword = () => {
       <FormContainer sx={{ flexGrow: 1 }}>
         <StyledForm onSubmit={handleSubmit}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
-            Forgot Password
+            {t('forgotPassword.title')}
           </Typography>
           <Typography variant="body1" align="center" sx={{ mb: 3 }}>
-            Enter your email address and we'll send you a link to reset your password.
+            {t('forgotPassword.helper')}
           </Typography>
           {message && <Alert severity="success">{message}</Alert>}
           {error && <Alert severity="error">{error}</Alert>}
           <TextField
-            label="Email Address"
+            label={t('forgotPassword.email')}
             variant="outlined"
             fullWidth
             margin="normal"
@@ -100,8 +94,14 @@ const ForgotPassword = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            InputLabelProps={{ style: { color: '#fff' } }}
-            sx={{ input: { color: 'white' } }}
+            sx={{ ...textFieldSx }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <AlternateEmailIcon />
+                </InputAdornment>
+              ),
+            }}
           />
           {recaptchaEnabled && (
             <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
@@ -111,14 +111,15 @@ const ForgotPassword = () => {
               />
             </Box>
           )}
-          <StyledButton 
+          <Button 
             type="submit" 
             fullWidth 
             variant="contained" 
             disabled={recaptchaEnabled ? !recaptchaToken : false}
+            sx={{width: '100%',mt:2,...gradientButtonSx }}
           >
-            Send Reset Link
-          </StyledButton>
+            {t('forgotPassword.submit')}
+          </Button>
         </StyledForm>
       </FormContainer>
       <Footer transparent authPage />

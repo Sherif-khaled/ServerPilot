@@ -5,6 +5,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
 import { getServerHealth, getServerMetrics } from '../../../../api/serverService';
 import { GlassCard, CircularProgressSx } from '../../../../common';
+import { useTranslation } from 'react-i18next';
 
 const SectionHeader = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1, 2),
@@ -30,6 +31,7 @@ const DetailItem = ({ label, value }) => (
 );
 
 function DetailsTab({ server, customerId }) {
+  const { t } = useTranslation();
   const [isOnline, setIsOnline] = useState(null);
   const [serverMetrics, setServerMetrics] = useState(null);
   const [infoLoading, setInfoLoading] = useState(true);
@@ -72,45 +74,45 @@ function DetailsTab({ server, customerId }) {
       <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
         {/* Server Section */}
         <Box sx={{ width: '100%', p: 1.5 }}>
-          <SectionHeader>Server</SectionHeader>
+          <SectionHeader>{t('servers.details.sectionServer')}</SectionHeader>
           <GlassCard sx={{ p: 2 }}>
             {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
-              <DetailItem label="Server Name" value={server.server_name} />
-              <DetailItem label="Status" value={renderStatusChip(isOnline ? 'Online' : 'Offline', isOnline)} />
-              <DetailItem label="Operating System" value={serverMetrics?.os_info || 'N/A'} />
-              <DetailItem label="Hostname" value={server.server_ip} />
-              <DetailItem label="Uptime" value={serverMetrics?.uptime || 'N/A'} />
+              <DetailItem label={t('servers.details.name')} value={server.server_name} />
+              <DetailItem label={t('servers.details.status')} value={renderStatusChip(isOnline ? t('servers.common.statusOnline') : t('servers.common.statusOffline'), isOnline)} />
+              <DetailItem label={t('servers.details.os')} value={serverMetrics?.os_info || t('servers.common.na')} />
+              <DetailItem label={t('servers.details.hostname')} value={server.server_ip} />
+              <DetailItem label={t('servers.details.uptime')} value={serverMetrics?.uptime || t('servers.common.na')} />
             </Box>
             )}
           </GlassCard>
         </Box>
         <Box sx={{ width: { xs: '100%', md: '100%' }, p: 1.5 }}>
-          <SectionHeader>Resource</SectionHeader>
+          <SectionHeader>{t('servers.details.sectionResource')}</SectionHeader>
           <GlassCard sx={{ minHeight: 150, p: 2 }}>
             {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
-                <DetailItem label="CPU Usage" value={`${serverMetrics?.cpu?.cpu_usage_percent?.toFixed(1) || 'N/A'} %`} />
-                <DetailItem label="CPU Cores" value={`${serverMetrics?.cpu?.cores || 'N/A'} Cores`} />
-                <DetailItem label="Total Memory" value={`${serverMetrics?.memory?.total_gb || 'N/A'} GB`} />
-                <DetailItem label="Free Memory" value={`${serverMetrics?.memory?.available_gb || 'N/A'} GB`} />
-                <DetailItem label="Used Memory" value={`${serverMetrics?.memory?.used_gb || 'N/A'} GB`} />
-                <DetailItem label="Available Disk Space" value={`${serverMetrics?.disks?.[0]?.available_gb?.toFixed(2) || 'N/A'} GB`} />
-                <DetailItem label="Used Disk Space" value={`${serverMetrics?.disks?.[0]?.used_gb?.toFixed(2) || 'N/A'} GB`} />
-                <DetailItem label="Total Disk Space" value={`${serverMetrics?.disks?.[0]?.total_gb?.toFixed(2) || 'N/A'} GB`} />
+                <DetailItem label={t('servers.details.cpuUsage')} value={`${serverMetrics?.cpu?.cpu_usage_percent?.toFixed(1) || t('servers.common.na')} %`} />
+                <DetailItem label={t('servers.details.cpuCores')} value={`${serverMetrics?.cpu?.cores || t('servers.common.na')} Cores`} />
+                <DetailItem label={t('servers.details.totalMemory')} value={`${serverMetrics?.memory?.total_gb || t('servers.common.na')} GB`} />
+                <DetailItem label={t('servers.details.freeMemory')} value={`${serverMetrics?.memory?.available_gb || t('servers.common.na')} GB`} />
+                <DetailItem label={t('servers.details.usedMemory')} value={`${serverMetrics?.memory?.used_gb || t('servers.common.na')} GB`} />
+                <DetailItem label={t('servers.details.availableDisk')} value={`${serverMetrics?.disks?.[0]?.available_gb?.toFixed(2) || t('servers.common.na')} GB`} />
+                <DetailItem label={t('servers.details.usedDisk')} value={`${serverMetrics?.disks?.[0]?.used_gb?.toFixed(2) || t('servers.common.na')} GB`} />
+                <DetailItem label={t('servers.details.totalDisk')} value={`${serverMetrics?.disks?.[0]?.total_gb?.toFixed(2) || t('servers.common.na')} GB`} />
               </Box>
             )}
           </GlassCard>
         </Box>
         <Box sx={{ width: { xs: '100%', md: '100%' }, p: 1.5 }}>
-          <SectionHeader>SWAP Details</SectionHeader>
+          <SectionHeader>{t('servers.details.sectionSwap')}</SectionHeader>
           <GlassCard sx={{ minHeight: 150, p: 2 }}>
           {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
-                    <DetailItem label="Enable Swap" value={serverMetrics?.swap ? (serverMetrics.swap.enabled ? 'Enabled' : 'Disabled') : 'N/A'} />
-          <DetailItem label="Total Swap" value={`${serverMetrics?.swap?.total_gb || 'N/A'} GB`} />
-          <DetailItem label="Free Swap" value={`${serverMetrics?.swap?.free_gb || 'N/A'} GB`} />
-          <DetailItem label="Used Swap" value={`${serverMetrics?.swap?.used_gb || 'N/A'} GB`} />
+                    <DetailItem label={t('servers.details.enableSwap')} value={serverMetrics?.swap ? (serverMetrics.swap.enabled ? t('securityRisks.table.enabled') : t('securityRisks.table.disabled')) : t('servers.common.na')} />
+          <DetailItem label={t('servers.details.totalSwap')} value={`${serverMetrics?.swap?.total_gb || t('servers.common.na')} GB`} />
+          <DetailItem label={t('servers.details.freeSwap')} value={`${serverMetrics?.swap?.free_gb || t('servers.common.na')} GB`} />
+          <DetailItem label={t('servers.details.usedSwap')} value={`${serverMetrics?.swap?.used_gb || t('servers.common.na')} GB`} />
           </Box>
           )}
           </GlassCard>

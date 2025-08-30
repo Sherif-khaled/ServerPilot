@@ -1,33 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {Box,Button,CircularProgress,FormControl,InputLabel,MenuItem,Select,TextField,Typography,Alert, Paper} from '@mui/material';
-import { styled } from '@mui/material/styles';
+import {Box,Button,CircularProgress,FormControl,InputLabel,MenuItem,Select,TextField,Typography} from '@mui/material';
 import api from '../../../api/axiosConfig';
-import { CustomSnackbar, useSnackbar } from '../../../common';
+import { CustomSnackbar, useSnackbar, textFieldSx, gradientButtonSx,GlassPaper,SelectSx, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
-
-const GlassPaper = styled(Paper)(({ theme }) => ({
-    background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(12px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-    padding: theme.spacing(3),
-    color: '#fff',
-}));
-
-const textFieldSx = {
-    '& .MuiOutlinedInput-root': {
-      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-      '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-      '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-      color: 'white',
-      borderRadius: '12px',
-    },
-    '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-    '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-    '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-  };
 
 const AISettings = () => {
     const [provider, setProvider] = useState('OpenAI');
@@ -39,6 +15,7 @@ const AISettings = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -53,9 +30,9 @@ const AISettings = () => {
                 }
             } catch (err) {
                 if (err.response && err.response.status !== 404) {
-                    setError('Failed to fetch AI settings.');
+                    setError(t('settingsAI.loadFail'));
                 } else if (!err.response) {
-                    setError('An error occurred while fetching settings.');
+                    setError(t('settingsAI.loadGenericFail'));
                 }
             } finally {
                 setLoading(false);
@@ -91,12 +68,12 @@ const AISettings = () => {
                 model,
             });
             if (response.status === 200) {
-                showSuccess('AI settings saved successfully!');
+                showSuccess(t('settingsAI.saveSuccess'));
             } else {
-                showError(response.data.error || 'Failed to save AI settings.');
+                showError(response.data.error || t('settingsAI.saveFail'));
             }
         } catch (err) {
-            showError(err.response?.data?.error || 'An error occurred while saving settings.');
+            showError(err.response?.data?.error || t('settingsAI.saveGenericFail'));
         } finally {
             setLoading(false);
         }
@@ -105,10 +82,10 @@ const AISettings = () => {
     return (
         <GlassPaper>
              <Typography variant="h6" gutterBottom>
-                AI Settings
+                {t('settingsAI.title')}
             </Typography>
             <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255,255,255,0.7)' }}>
-                Configure the AI provider and model for generating explanations of security risks.
+                {t('settingsAI.description')}
             </Typography>
             
             {loading ? (
@@ -118,31 +95,45 @@ const AISettings = () => {
             ) : (
                 <Box component="form" noValidate autoComplete="off">
                     <FormControl fullWidth sx={{...textFieldSx, mb: 2 }} >
-                        <InputLabel>Provider</InputLabel>
+                        <InputLabel>{t('settingsAI.provider')}</InputLabel>
                         <Select
                             value={provider}
-                            label="Provider"
+                            label={t('settingsAI.provider')}
                             onChange={(e) => setProvider(e.target.value)}
+                            MenuProps={{
+                                PaperProps: {
+                                  sx: {
+                                    ...SelectSx
+                                  },
+                                },
+                              }}
                         >
                             <MenuItem value={"OpenAI"}>OpenAI</MenuItem>
                         </Select>
                     </FormControl>
                     <TextField
                         fullWidth
-                        label="API Key"
+                        label={t('settingsAI.apiKey')}
                         type="password"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         sx={{ ...textFieldSx, mb: 2 }}
-                        placeholder="Enter new API key to update"
-                        helperText="Your API key is write-only and stored securely."
+                        placeholder={t('settingsAI.apiKeyPlaceholder')}
+                        helperText={t('settingsAI.apiKeyHelper')}
                     />
                     <FormControl fullWidth sx={{...textFieldSx, mb: 2 }} disabled={modelsLoading}>
-                        <InputLabel>Model</InputLabel>
+                        <InputLabel>{t('settingsAI.model')}</InputLabel>
                         <Select
                             value={model}
-                            label="Model"
+                            label={t('settingsAI.model')}
                             onChange={(e) => setModel(e.target.value)}
+                            MenuProps={{
+                                PaperProps: {
+                                  sx: {
+                                    ...SelectSx
+                                  },
+                                },
+                              }}
                         >
                             {modelsLoading ? (
                                 <MenuItem value="">
@@ -163,17 +154,10 @@ const AISettings = () => {
                             onClick={handleSave}
                             disabled={loading || !apiKey}
                             sx={{
-                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                                boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                                color: 'white',
-                                borderRadius: '25px',
-                                padding: '10px 25px',
-                                '&:disabled': {
-                                    background: 'rgba(255, 255, 255, 0.3)',
-                                },
+                               ...gradientButtonSx
                             }}
                         >
-                            {loading ? <CircularProgress size={24} color="inherit" /> : 'Save Settings'}
+                            {loading ? <CircularProgress sx={CircularProgressSx} /> : t('settingsAI.save')}
                         </Button>
                     </Box>
                 </Box>

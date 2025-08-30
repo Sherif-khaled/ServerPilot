@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Typography, CardContent, Button, CircularProgress } from '@mui/material';
 import { GlassCard, gradientButtonSx, useSnackbar, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../../../api/apiClient';
 
 const BackupNowCard = ({ onBackupTriggered }) => {
     const [loading, setLoading] = useState(false);
+    const { t } = useTranslation();
     const { showSuccess, showError } = useSnackbar();
 
     const handleBackupNow = async () => {
@@ -14,14 +16,14 @@ const BackupNowCard = ({ onBackupTriggered }) => {
             console.log('Making backup API call...');
             const response = await apiClient.post('/db/backup/');
             console.log('Backup response:', response);
-            showSuccess('Backup task started successfully!');
+            showSuccess(t('backups.started'));
             if (typeof onBackupTriggered === 'function') {
                 onBackupTriggered();
             }
         } catch (error) {
             console.error('Backup error:', error);
-            const errorMessage = error.response?.data?.error || 'An unexpected error occurred.';
-            showError(`Backup failed: ${errorMessage}`);
+            const errorMessage = error.response?.data?.error || t('backups.unexpectedError');
+            showError(`${t('backups.failedPrefix')}: ${errorMessage}`);
         }
         setLoading(false);
     };
@@ -30,10 +32,10 @@ const BackupNowCard = ({ onBackupTriggered }) => {
         <GlassCard sx={{ mb: 3 }}>
             <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 'bold' }}>
-                    Manual Backup
+                    {t('backups.manualTitle')}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
-                    Click the button below to create an immediate backup of the database. The process will run in the background.
+                    {t('backups.manualDesc')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button 
@@ -44,7 +46,7 @@ const BackupNowCard = ({ onBackupTriggered }) => {
                             ...gradientButtonSx
                         }}
                     >
-                        Backup Now
+                        {t('backups.backupNow')}
                     </Button>
                     {loading && <CircularProgress sx={CircularProgressSx} />}
                 </Box>

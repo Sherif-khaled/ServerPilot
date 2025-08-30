@@ -3,16 +3,19 @@ import { Box, CircularProgress,TextField, Button, Dialog, DialogTitle, DialogCon
 import { AutoFixHigh as AutoFixHighIcon, Save as SaveIcon} from '@mui/icons-material';
 import { generatApplicationInfo } from '../../../api/aiService';
 import { textFieldSx, glassDialogSx, checkBoxSx, gradientButtonSx, CancelButton } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const ApplicationForm = ({ open, handleClose, application, onSave }) => {
+  const { t, i18n } = useTranslation();
   const [appName, setAppName] = useState('');
   const [description, setDescription] = useState('');
   const [checkCommand, setCheckCommand] = useState('');
   const [version, setVersion] = useState('');
   const [icon, setIcon] = useState('');
   const [detectVersion, setDetectVersion] = useState(true);
-  const [validationError, setValidationError] = useState('');
+  const [errors, setErrors] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
   useEffect(() => {
     if (application) {
@@ -30,26 +33,65 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
       setIcon('');
       setDetectVersion(true);
     }
-    setValidationError('');
+    setErrors({});
   }, [application, open]);
 
+  const handleChange = (field, value) => {
+    switch (field) {
+      case 'appName':
+        setAppName(value);
+        break;
+      case 'description':
+        setDescription(value);
+        break;
+      case 'checkCommand':
+        setCheckCommand(value);
+        break;
+      case 'version':
+        setVersion(value);
+        break;
+      case 'icon':
+        setIcon(value);
+        break;
+      case 'detectVersion':
+        setDetectVersion(value);
+        break;
+      default:
+        break;
+    }
+    
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!appName.trim()) {
+      newErrors.appName = t('applicationForm.errors.enterName');
+    }
+    
+    if (!checkCommand.trim()) {
+      newErrors.checkCommand = t('applicationForm.errors.enterCheck');
+    } else if (detectVersion && !checkCommand.includes('command -v')) {
+      newErrors.checkCommand = t('applicationForm.errors.detectVersionOnly');
+    }
+    
+    if (!detectVersion && !version.trim()) {
+      newErrors.version = t('applicationForm.errors.enterVersion');
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = () => {
-    if (detectVersion && checkCommand && !checkCommand.includes('command -v')) {
-      setValidationError("The 'Detect Version' option only works with the 'command -v' command.");
-      return;
-    }
-    else if (!appName) {
-      setValidationError('Please enter an application name first.');
-      return;
-    }
-    else if (!checkCommand) {
-      setValidationError('Please enter a check command first.');
-      return;
-    }
-    else if (!version && !detectVersion) {
-      setValidationError('Please enter a version first.');
-      return;
-    }
+    if (!validateForm()) return;
 
     const appData = {
       name: appName,
@@ -63,12 +105,13 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
   };
 
   const handleGenerateInfo = async () => {
-    if (!appName) {
-      setValidationError('Please enter an application name first.');
+    if (!appName.trim()) {
+      setErrors({ appName: t('applicationForm.errors.enterName') });
       return;
     }
+    
     setIsGenerating(true);
-    setValidationError('');
+    setErrors({});
     try {
       const response = await generatApplicationInfo(appName)
       if (response.data) {
@@ -77,8 +120,8 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
       }
     } catch (error) {
       console.error('Failed to generate app info:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to generate AI content.';
-      setValidationError(errorMessage);
+      const errorMessage = error.response?.data?.error || error.message || t('applicationForm.errors.aiFailed');
+      setErrors({ appName: errorMessage });
     } finally {
       setIsGenerating(false);
     }
@@ -86,21 +129,23 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm" PaperComponent={glassDialogSx}>
-      <DialogTitle fontSize={36} fontWeight="bold">{application ? 'Edit Application' : 'Add Application'}</DialogTitle>
+      <DialogTitle fontSize={36} fontWeight="bold">
+        {application ? t('applicationForm.editTitle') : t('applicationForm.addTitle')}
+      </DialogTitle>
       <DialogContent dividers>
         <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
           <TextField
-            label="Application Name *"
+            label={t('applicationForm.name')}
             fullWidth
             value={appName}
-            onChange={(e) => setAppName(e.target.value)}
-            error={!!validationError}
-            helperText={validationError || "Use Technical Name of the Application e.g., 'nginx' or 'node'"}
+            onChange={(e) => handleChange('appName', e.target.value)}
+            error={!!errors.appName}
+            helperText={errors.appName || t('applicationForm.nameHint')}
             sx={{...textFieldSx}}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <Tooltip title="Generate Description and Icon with AI">
+                  <Tooltip title={t('applicationForm.generate')}>
                     <IconButton onClick={handleGenerateInfo} disabled={isGenerating} edge="end">
                       {isGenerating ? <CircularProgress size={24} sx={{ color: '#FE6B8B' }} /> : <AutoFixHighIcon />}
                     </IconButton>
@@ -110,53 +155,53 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
             }}
           />
           <TextField
-            label="Description"
+            label={t('applicationForm.description')}
             fullWidth
             multiline
             rows={3}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            helperText="A brief description of the application"
+            onChange={(e) => handleChange('description', e.target.value)}
+            helperText={t('applicationForm.descriptionHint')}
             sx={{...textFieldSx}}
           />
           <TextField
-            label="Icon URL"
+            label={t('applicationForm.iconUrl')}
             fullWidth
             value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            helperText="URL for the application's icon"
+            onChange={(e) => handleChange('icon', e.target.value)}
+            helperText={t('applicationForm.iconHint')}
             sx={{...textFieldSx}}
           />
           <FormControlLabel
             control={
               <Checkbox
                 checked={detectVersion}
-                onChange={(e) => setDetectVersion(e.target.checked)}
+                onChange={(e) => handleChange('detectVersion', e.target.checked)}
                 sx={{ 
                   ...checkBoxSx
                 }} 
               />
             }
-            label="Detect Application Version"
+            label={t('applicationForm.detectVersion')}
           />
           {!detectVersion && (
             <TextField
-              label="Version *"
+              label={t('applicationForm.version')}
               fullWidth
               value={version}
-              error={!!validationError}
-              helperText={validationError || ''}
-              onChange={(e) => setVersion(e.target.value)}
+              error={!!errors.version}
+              helperText={errors.version || ''}
+              onChange={(e) => handleChange('version', e.target.value)}
               sx={{...textFieldSx}}
             />
           )}
           <TextField
-            label="Check Command *"
+            label={t('applicationForm.checkCommand')}
             fullWidth
             value={checkCommand}
-            onChange={(e) => setCheckCommand(e.target.value)}
-            error={!!validationError}
-            helperText={validationError || "e.g., 'command -v node' or 'systemctl status nginx'"}
+            onChange={(e) => handleChange('checkCommand', e.target.value)}
+            error={!!errors.checkCommand}
+            helperText={errors.checkCommand || t('applicationForm.checkHint')}
             sx={{...textFieldSx}}
           />
         </Box>
@@ -166,17 +211,17 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
           <CancelButton 
             onClick={handleClose}
             disabled={isGenerating}
-            >Cancel</CancelButton>
+            >{t('applicationForm.cancel')}</CancelButton>
         </Box>
         <Box>
           <Button 
             onClick={handleSave}
-            startIcon={<SaveIcon />}
+            startIcon={<SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
             variant="contained"
             disabled={isGenerating}
             sx={{...gradientButtonSx}}
           >
-            {application ? 'Update' : 'Create'}
+            {application ? t('applicationForm.update') : t('applicationForm.create')}
           </Button>
         </Box>
       </DialogActions>

@@ -6,6 +6,7 @@ import { manageApplication, scanApplications } from '../../../../api/serverServi
 import ApplicationMonitorDialog from '../monitoring/ApplicationMonitorDialog';
 import ApplicationLogsDialog from './logs/ApplicationLogsDialog';
 import { CircularProgressSx, MenuActionsSx } from '../../../../common';
+import { useTranslation } from 'react-i18next';
 
 const getStatusColor = (status) => {
     switch (status) {
@@ -24,6 +25,7 @@ const getStatusColor = (status) => {
 };
 
 function ApplicationsTab() {
+    const { t } = useTranslation();
     const { customerId, serverId } = useParams();
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ function ApplicationsTab() {
                 const response = await scanApplications(customerId, serverId);
                 setApplications(response.data);
             } catch (err) {
-                setError(err.response?.data?.detail || 'Failed to fetch application statuses.');
+                setError(err.response?.data?.detail || t('servers.common.loadingError'));
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -144,7 +146,7 @@ function ApplicationsTab() {
                                     <Typography variant="h6" component="div">{app.name}</Typography>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, mb: 1 }}>
                                         <Typography variant="body2" color="text.secondary" component="span">
-                                            Version: {app.version || 'N/A'}
+                                            {t('servers.apps.version')}: {app.version || t('servers.common.na')}
                                         </Typography>
                                         <Chip 
                                             label={app.status} 
@@ -165,7 +167,7 @@ function ApplicationsTab() {
                 </List>
             ) : (
                 <Typography align="center" sx={{ mt: 4 }}>
-                    No applications found or scanned yet.
+                    {t('servers.apps.none')}
                 </Typography>
             )}
             <Menu
@@ -179,12 +181,12 @@ function ApplicationsTab() {
                 }}
             >
                 {selectedApp?.check_command?.includes('systemctl') && [
-                    <MenuItem key="start" onClick={() => handleApplicationAction(selectedApp.name, 'start')}><PlayArrowIcon sx={{ mr: 1 }} /> Start</MenuItem>,
-                    <MenuItem key="stop" onClick={() => handleApplicationAction(selectedApp.name, 'stop')}><StopIcon sx={{ mr: 1 }} /> Stop</MenuItem>,
-                    <MenuItem key="restart" onClick={() => handleApplicationAction(selectedApp.name, 'restart')}><ReplayIcon sx={{ mr: 1 }} /> Restart</MenuItem>
+                    <MenuItem key="start" onClick={() => handleApplicationAction(selectedApp.name, 'start')}><PlayArrowIcon sx={{ mr: 1 }} /> {t('servers.apps.start')}</MenuItem>,
+                    <MenuItem key="stop" onClick={() => handleApplicationAction(selectedApp.name, 'stop')}><StopIcon sx={{ mr: 1 }} /> {t('servers.apps.stop')}</MenuItem>,
+                    <MenuItem key="restart" onClick={() => handleApplicationAction(selectedApp.name, 'restart')}><ReplayIcon sx={{ mr: 1 }} /> {t('servers.apps.restart')}</MenuItem>
                 ]}
-                <MenuItem onClick={handleLogsOpen}><DescriptionIcon sx={{ mr: 1 }} /> Logs</MenuItem>
-                <MenuItem onClick={handleMonitorOpen}><MonitorIcon sx={{ mr: 1 }} /> Monitoring</MenuItem>
+                <MenuItem onClick={handleLogsOpen}><DescriptionIcon sx={{ mr: 1 }} /> {t('servers.apps.logs')}</MenuItem>
+                <MenuItem onClick={handleMonitorOpen}><MonitorIcon sx={{ mr: 1 }} /> {t('servers.apps.monitoring')}</MenuItem>
             </Menu>
             {monitorDialogOpen && (
                 <ApplicationMonitorDialog

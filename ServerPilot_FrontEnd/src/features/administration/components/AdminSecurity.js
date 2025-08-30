@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Typography, Paper, Box, TextField, Button, FormControlLabel, Switch, CircularProgress, Link, Alert, Collapse } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import React, { useState, useEffect, memo } from 'react';
+import { Typography, Paper, Box, TextField, Button, FormControlLabel, Switch, CircularProgress, Link } from '@mui/material';
+import PropTypes from 'prop-types';
 import api from '../../../api/axiosConfig';
-import { textFieldSx, glassPaperSx, gradientButtonSx, blueGradientButtonSx, CircularProgressSx } from '../../../common';
+import { textFieldSx, glassPaperSx, gradientButtonSx, CircularProgressSx, switchSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 
 
-const AdminSecurity = () => {
+const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState({
     recaptcha_site_key: '',
     recaptcha_secret_key: '',
@@ -14,7 +16,6 @@ const AdminSecurity = () => {
     session_expiration_hours: 24,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -28,13 +29,14 @@ const AdminSecurity = () => {
         };
         setSettings(fetchedSettings);
       } catch (err) {
-        setAlert({ open: true, message: 'Failed to load settings.', severity: 'error' });
+        showError(t('adminSecurity.loadFail'));
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
     fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (event) => {
@@ -47,12 +49,11 @@ const AdminSecurity = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setAlert({ ...alert, open: false }); // Hide previous alert
     try {
       await api.post('/security/settings/', settings);
-      setAlert({ open: true, message: 'Settings saved successfully!', severity: 'success' });
+      showSuccess(t('adminSecurity.savingSuccess'));
     } catch (err) {
-      setAlert({ open: true, message: 'Failed to save settings.', severity: 'error' });
+      showError(t('adminSecurity.saveFail'));
       console.error(err);
     }
   };
@@ -64,26 +65,15 @@ const AdminSecurity = () => {
   return (
     <Box component="form" onSubmit={handleSubmit}>
       <Paper sx={{ ...glassPaperSx }}>
-        <Collapse in={alert.open}>
-          <Alert
-            severity={alert.severity}
-            onClose={() => {
-              setAlert({ ...alert, open: false });
-            }}
-            sx={{ mb: 2, background: alert.severity === 'success' ? 'rgba(76, 175, 80, 0.8)' : 'rgba(211, 47, 47, 0.8)', color: '#fff' }}
-          >
-            {alert.message}
-          </Alert>
-        </Collapse>
         <Typography variant="h6" gutterBottom>
-          reCAPTCHA v2 Settings
+          {t('adminSecurity.title')}
         </Typography>
         <Typography variant="body2" sx={{ mb: 2, color: 'rgba(255, 255, 255, 0.7)' }}>
-          Configure Google reCAPTCHA v2 to protect your site from spam and abuse.
+          {t('adminSecurity.description')}
         </Typography>
         <Typography variant="body2" sx={{ mb: 2 }}>
           <Link href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener noreferrer" sx={{ color: '#FE6B8B' }}>
-            Google reCAPTCHA
+            {t('adminSecurity.linkText')}
           </Link>
         </Typography>
         <Box sx={{ border: '1px solid', borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 1, p: 2, mt: 2 }}>
@@ -94,60 +84,61 @@ const AdminSecurity = () => {
                 onChange={handleChange} 
                 name="recaptcha_enabled"
                 sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#FE6B8B',
-                    },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#FE6B8B',
-                    },
-                  }} 
-                />}
-              label="Enable reCAPTCHA"
+                  ...switchSx
+                }}
+              />}
+              label={t('adminSecurity.enableRecaptcha')}
             />
           </Box>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Site Key"
-              name="recaptcha_site_key"
-              value={settings.recaptcha_site_key}
-              sx={{...textFieldSx}}
-              onChange={handleChange}
-              disabled={!settings.recaptcha_enabled}
-              helperText="The site key used in your frontend code."
-            />
-            <TextField
-              fullWidth
-              label="Secret Key"
-              name="recaptcha_secret_key"
-              type="password"
-              value={settings.recaptcha_secret_key}
-              sx={{...textFieldSx}}
-              onChange={handleChange}
-              disabled={!settings.recaptcha_enabled}
-              helperText="The secret key used for communication between your site and Google."
-            />
-          </Box>
+          {settings.recaptcha_enabled && (
+            <>
+              <TextField
+                fullWidth
+                label={t('adminSecurity.siteKey')}
+                name="recaptcha_site_key"
+                value={settings.recaptcha_site_key}
+                onChange={handleChange}
+                sx={{ ...textFieldSx, mt: 2 }}
+                helperText={t('adminSecurity.siteKeyHelper')}
+              />
+              <TextField
+                fullWidth
+                label={t('adminSecurity.secretKey')}
+                name="recaptcha_secret_key"
+                value={settings.recaptcha_secret_key}
+                onChange={handleChange}
+                sx={{ ...textFieldSx, mt: 2 }}
+                helperText={t('adminSecurity.secretKeyHelper')}
+                type="password"
+              />
+            </>
+          )}
         </Box>
-        <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-          Session Settings
-        </Typography>
-        <TextField
-          fullWidth
-          label="Session Expiration (Hours)"
-          name="session_expiration_hours"
-          type="number"
-          value={settings.session_expiration_hours}
-          sx={{...textFieldSx}}
-          onChange={handleChange}
-          helperText="The number of hours before an inactive session expires."
-        />
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button 
-            type="submit" 
-            variant="contained" 
-            sx={{...gradientButtonSx}}>
-            Save Settings
+        
+        <Box sx={{ border: '1px solid', borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 1, p: 2, mt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            {t('adminSecurity.sessionTitle')}
+          </Typography>
+          <TextField
+            fullWidth
+            label={t('adminSecurity.sessionHours')}
+            name="session_expiration_hours"
+            type="number"
+            value={settings.session_expiration_hours}
+            onChange={handleChange}
+            sx={{ ...textFieldSx }}
+            helperText={t('adminSecurity.sessionHelper')}
+            inputProps={{ min: 1, max: 168 }}
+          />
+        </Box>
+        
+        <Box sx={{ mt: 3 }}>
+          <Button
+            type="submit"
+            variant="contained"
+            sx={{ ...gradientButtonSx }}
+          >
+            {t('adminSecurity.save')}
           </Button>
         </Box>
       </Paper>
@@ -155,4 +146,11 @@ const AdminSecurity = () => {
   );
 };
 
-export default AdminSecurity;
+AdminSecurity.propTypes = {
+  showSuccess: PropTypes.func.isRequired,
+  showError: PropTypes.func.isRequired,
+  showWarning: PropTypes.func.isRequired,
+  showInfo: PropTypes.func.isRequired,
+};
+
+export default memo(AdminSecurity);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider } from '@mui/material';
+import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider, Menu, MenuItem } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
@@ -8,6 +8,8 @@ import { styled } from '@mui/material/styles';
 import { Avatar, Collapse } from '@mui/material';
 import Footer from './Footer';
 import axios from 'axios'; // Import the new Footer component
+import { useTranslation } from 'react-i18next';
+import { MenuActionsSx } from '../../../common';
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -24,9 +26,11 @@ const Background = styled('div')({
 const drawerWidth = 240;
 
 export default function Dashboard({ children, toggleTheme, currentThemeMode, overrideBackground }) { // Added theme props
+  const { t, i18n } = useTranslation();
   const { user, logoutAuth } = useAuth(); // Get user and logoutAuth from context
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
+  const isRTL = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
 
   // Drawer open state: always open on large screens, toggleable on mobile
   // Sidebar toggleable on all screen sizes
@@ -36,29 +40,29 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const [administrationOpen, setAdministrationOpen] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-    const [favicon, setFavicon] = useState(null);
-  const [pageTitle, setPageTitle] = React.useState('System Overview');
+  const [favicon, setFavicon] = useState(null);
+  const [pageTitle, setPageTitle] = React.useState(t('common.systemOverview'));
+  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
 
   const pageTitles = {
-    '/dashboard': 'Dashboard',
-    '/profile': 'Profile',
-    '/users': 'Users',
-    '/customers': 'Customers',
-    '/applications': 'Applications',
-    '/admin/settings': 'System Settings',
-    '/password-policy': 'Password Policy',
-    '/audit-logs': 'Audit Logs',
-    '/database-management': 'Database Management',
-    '/security-risk-roles': 'Security Risk Roles',
-    '/settings': 'Settings'
+    '/dashboard': t('common.dashboard'),
+    '/profile': t('common.profile'),
+    '/users': t('common.users'),
+    '/customers': t('common.customers'),
+    '/applications': t('common.applications'),
+    '/admin/settings': t('common.systemSettings'),
+    '/password-policy': t('common.passwordPolicy'),
+    '/audit-logs': t('common.auditLogs'),
+    '/database-management': t('common.databaseManagement'),
+    '/security-risk-roles': t('common.securityRiskRoles'),
+    '/settings': t('common.settings')
   };
 
   useEffect(() => {
     const path = location.pathname;
-    const title = pageTitles[path] || 'System Overview'; // Default title
+    const title = pageTitles[path] || t('common.systemOverview'); // Default title
     setPageTitle(title);
-  }, [location]);
+  }, [location, i18n.language]);
 
   useEffect(() => {
     axios.get('/api/configuration/favicon/')
@@ -98,6 +102,14 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const handleSystemSettingsClick = () => setSystemSettingsOpen(!systemSettingsOpen);
   const handleAdministrationClick = () => setAdministrationOpen(!administrationOpen);
 
+  const handleUserMenuOpen = (event) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+
   const handleLogout = async () => {
     try {
       await logoutUser(); // Call API to logout
@@ -124,7 +136,8 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
         position="fixed"
         sx={{
           width: drawerOpen && isSmUp ? `calc(100% - ${drawerWidth}px)` : '100%',
-          ml: drawerOpen && isSmUp ? `${drawerWidth}px` : 0,
+          ml: drawerOpen && isSmUp && !isRTL ? `${drawerWidth}px` : 0,
+          mr: drawerOpen && isSmUp && isRTL ? `${drawerWidth}px` : 0,
           zIndex: (theme) => theme.zIndex.drawer + 1,
           background: 'linear-gradient(45deg, rgba(15, 32, 39, 0.8), rgba(32, 58, 67, 0.8), rgba(44, 83, 100, 0.8))',
           backdropFilter: 'blur(10px)',
@@ -148,29 +161,62 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
           >
             <MenuIcon />
           </IconButton>
-          <Box sx={{ flexGrow: 1, cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-            <Typography variant="h6" component="div">
-              Admin Dashboard
+          <Box sx={{ flexGrow: 1, cursor: 'pointer', textAlign: isRTL ? 'right' : 'left' }} onClick={() => navigate('/dashboard')}>
+            <Typography variant="h6" component="div" sx={{ textAlign: isRTL ? 'right' : 'left', direction: isRTL ? 'rtl' : 'ltr', paddingRight: '25px'}}>
+              {t('common.adminDashboard')}
             </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: isRTL ? 'right' : 'left', direction: isRTL ? 'rtl' : 'ltr', paddingRight: '25px'}}>
               {pageTitle}
             </Typography>
           </Box>
-          <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
+          {/* <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
             {currentThemeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
+          </IconButton> */}
           <IconButton color="inherit" sx={{ ml: 1 }}>
             <NotificationsIcon />
           </IconButton>
-          <IconButton color="inherit" component={NavLink} to="/settings">
+          {/* <IconButton color="inherit" component={NavLink} to="/settings">
             <SettingsIcon />
-          </IconButton>
-          {/* User Profile Avatar Link */}
-          <IconButton onClick={() => navigate('/profile')} sx={{ p: 0 }}>
-            <Avatar alt={user?.username || 'User'} src={user?.profile_photo_url}>
+          </IconButton> */}
+          {/* User Profile Avatar + Menu */}
+          <IconButton onClick={handleUserMenuOpen} sx={{ p: 0 }} aria-controls={Boolean(userMenuAnchor) ? 'user-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(userMenuAnchor) ? 'true' : undefined}>
+            <Avatar alt={user?.username || 'User'} src={user?.profile_photo || user?.profile_photo_url || undefined}>
               {user?.username ? user.username.charAt(0).toUpperCase() : <AccountCircle />}
             </Avatar>
           </IconButton>
+          <Menu
+            id="user-menu"
+            anchorEl={userMenuAnchor}
+            open={Boolean(userMenuAnchor)}
+            onClose={handleUserMenuClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{
+              paper: {
+                sx: {...MenuActionsSx}
+              }
+            }}
+          >
+            <MenuItem onClick={() => { handleUserMenuClose(); navigate('/profile'); }}>
+              <ListItemIcon>
+                <AccountCircle fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>{t('common.profile')}</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => { handleUserMenuClose(); navigate('/settings'); }}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>{t('common.settings')}</ListItemText>
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={() => { handleUserMenuClose(); handleLogout(); }}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>{t('common.logout')}</ListItemText>
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
       {/* Overlay for mobile when drawer is open */}
@@ -191,6 +237,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
       )}
       {drawerOpen && (
         <Drawer
+          anchor={isRTL ? 'right' : 'left'}
           variant={isSmUp ? 'permanent' : 'temporary'}
           open={drawerOpen}
           onClose={handleDrawerToggle}
@@ -204,14 +251,14 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
               width: drawerWidth, 
               boxSizing: 'border-box',
               background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-              borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+              ...(isRTL ? { borderLeft: '1px solid rgba(255, 255, 255, 0.1)' } : { borderRight: '1px solid rgba(255, 255, 255, 0.1)' }),
               boxShadow: '4px 0px 15px rgba(0, 0, 0, 0.3)',
             },
           }}
         >
                     <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: [1] }}>
               {favicon && <img src={favicon} alt="Favicon" style={{ width: 24, height: 24, marginRight: '8px', borderRadius: '4px' }} />}
-              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', color: '#fff' }}>
+              <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', color: '#fff', textAlign: isRTL ? 'right' : 'left', direction: isRTL ? 'rtl' : 'ltr', paddingRight: '8px'}}>
                   ServerPilot
               </Typography>
           </Toolbar>
@@ -223,6 +270,9 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                   '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
                     color: 'rgba(255, 255, 255, 0.7)',
                     transition: 'color 0.2s',
+                  },
+                  '& .MuiListItemText-primary': {
+                    textAlign: isRTL ? 'right' : 'left',
                   },
                   '&:hover': {
                     backgroundColor: 'rgba(136, 20, 20, 0.08)',
@@ -245,7 +295,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                     {/* Dashboard */}
                     <ListItem component={NavLink} to="/dashboard" onClick={isSmUp ? undefined : handleDrawerToggle} sx={navLinkSx}>
                       <ListItemIcon sx={{ minWidth: '40px' }}><DashboardIcon /></ListItemIcon>
-                      <ListItemText primary="Dashboard" />
+                      <ListItemText primary={t('common.dashboard')} />
                     </ListItem>
 
                     <Divider sx={{ my: 1 }} />
@@ -253,7 +303,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                     {/* Accounts Section */}
                     <ListItemButton onClick={handleAccountsClick}>
                       <ListItemIcon sx={{ minWidth: '40px' }}><SupervisorAccountIcon /></ListItemIcon>
-                      <ListItemText primary="Accounts" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }} />
+                      <ListItemText primary={t('common.accounts')} primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', textAlign: isRTL ? 'right' : 'left' }} />
                       <ExpandMore sx={{ transform: accountsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                     </ListItemButton>
                     <Collapse in={accountsOpen} timeout="auto" unmountOnExit>
@@ -261,19 +311,19 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                         {/* Profile */}
                         <ListItem component={NavLink} to="/profile" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><AccountCircle /></ListItemIcon>
-                          <ListItemText primary="Profile" />
+                          <ListItemText primary={t('common.profile')} />
                         </ListItem>
                         {/* Users (conditional) */}
                         {user?.is_staff && (
                           <ListItem component={NavLink} to="/users" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                             <ListItemIcon sx={{ minWidth: '40px' }}><People /></ListItemIcon>
-                            <ListItemText primary="Users" />
+                            <ListItemText primary={t('common.users')} />
                           </ListItem>
                         )}
                         {/* Customers */}
                         <ListItem component={NavLink} to="/customers" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><ContactsIcon /></ListItemIcon>
-                          <ListItemText primary="Customers" />
+                          <ListItemText primary={t('common.customers')} />
                         </ListItem>
                       </List>
                     </Collapse>
@@ -285,7 +335,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                         {/* System Settings Section */}
                         <ListItemButton onClick={handleSystemSettingsClick}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><TuneIcon /></ListItemIcon>
-                          <ListItemText primary="System Settings" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }} />
+                          <ListItemText primary={t('common.systemSettings')} primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', textAlign: isRTL ? 'right' : 'left' }} />
                           <ExpandMore sx={{ transform: systemSettingsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                         </ListItemButton>
                         <Collapse in={systemSettingsOpen} timeout="auto" unmountOnExit>
@@ -293,19 +343,19 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                             {/* Applications */}
                             <ListItem component={NavLink} to="/applications" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><StorageIcon /></ListItemIcon>
-                              <ListItemText primary="Applications" />
+                              <ListItemText primary={t('common.applications')} />
                             </ListItem>
                           </List>
                           <List component="div" disablePadding>
                             {/* Settings */}
                             <ListItem component={NavLink} to="/admin/settings" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><SettingsIcon /></ListItemIcon>
-                              <ListItemText primary="Settings" />
+                              <ListItemText primary={t('common.settings')} />
                             </ListItem>
                             {/* Password Policy */}
                             <ListItem component={NavLink} to="/password-policy" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><PolicyIcon /></ListItemIcon>
-                              <ListItemText primary="Password Policy" />
+                              <ListItemText primary={t('common.passwordPolicy')} />
                             </ListItem>
                           </List>
                         </Collapse>
@@ -313,7 +363,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                         {/* Administration Section */}
                         <ListItemButton onClick={handleAdministrationClick}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><AdminPanelSettingsIcon /></ListItemIcon>
-                          <ListItemText primary="Administration" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }} />
+                          <ListItemText primary={t('common.administration')} primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', textAlign: isRTL ? 'right' : 'left' }} />
                           <ExpandMore sx={{ transform: administrationOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                         </ListItemButton>
                         <Collapse in={administrationOpen} timeout="auto" unmountOnExit>
@@ -321,17 +371,17 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                             {/* Audit Logs */}
                             <ListItem component={NavLink} to="/audit-logs" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><HistoryIcon /></ListItemIcon>
-                              <ListItemText primary="Audit Logs" />
+                              <ListItemText primary={t('common.auditLogs')} />
                             </ListItem>
                             {/* Database Management */}
                             <ListItem component={NavLink} to="/database-management" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><StorageIcon /></ListItemIcon>
-                              <ListItemText primary="Database Management" />
+                              <ListItemText primary={t('common.databaseManagement')} />
                             </ListItem>
                             {/* Security Risk Roles */}
                             <ListItem component={NavLink} to="/security-risk-roles" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                               <ListItemIcon sx={{ minWidth: '40px' }}><SecurityIcon /></ListItemIcon>
-                              <ListItemText primary="Security Risk Roles" />
+                              <ListItemText primary={t('common.securityRiskRoles')} />
                             </ListItem>
                           </List>
                         </Collapse>
@@ -341,7 +391,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                     <Divider sx={{ my: 1 }} />
                     <ListItemButton onClick={handleLogout} sx={navLinkSx}>
                       <ListItemIcon sx={{ minWidth: '40px' }}><LogoutIcon /></ListItemIcon>
-                      <ListItemText primary="Logout" />
+                      <ListItemText primary={t('common.logout')} />
                     </ListItemButton>
                   </>
                 );

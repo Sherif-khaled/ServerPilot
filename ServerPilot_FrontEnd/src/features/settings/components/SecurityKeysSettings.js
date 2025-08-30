@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Box, Button, Typography, List, ListItem, ListItemText, 
-    IconButton, TextField, Dialog, DialogActions, DialogContent, 
-    DialogContentText, DialogTitle, CircularProgress, Alert 
-} from '@mui/material';
+import { Button, Typography, List, ListItem, ListItemText, IconButton, TextField, Dialog, DialogActions, DialogContent, 
+    DialogContentText, DialogTitle, CircularProgress, Alert } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import * as webAuthnService from '../../../services/webAuthnService';
 import { startRegistration } from '@simplewebauthn/browser';
-import Paper from '@mui/material/Paper';
-import { styled } from '@mui/material/styles';
-import { CustomSnackbar, useSnackbar } from '../../../common';
+import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const SecurityKeysSettings = () => {
+    const { t } = useTranslation();
     const [keys, setKeys] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [open, setOpen] = useState(false);
     const [keyName, setKeyName] = useState('');
 
-    // Use the custom snackbar hook
     const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
     const fetchKeys = async () => {
@@ -70,33 +66,24 @@ const SecurityKeysSettings = () => {
         try {
             await webAuthnService.deleteKey(keyId);
             showSuccess('Security key deleted successfully!');
-            fetchKeys(); // Refresh the list of keys
+            fetchKeys();
         } catch (err) {
             showError('Failed to delete the key.');
         }
     };
-    const GlassPaper = styled(Paper)(({ theme }) => ({
-        background: 'rgba(255, 255, 255, 0.08)',
-        backdropFilter: 'blur(12px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.125)',
-        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-        padding: theme.spacing(3),
-        color: '#fff',
-    }));
 
     return (
         <GlassPaper>
-            <Typography variant="h6" gutterBottom>Security Keys</Typography>
+            <Typography variant="h6" gutterBottom>{t('securityKeys.title')}</Typography>
             <Typography variant="body2" color="textSecondary" paragraph>
-                Manage your security keys (e.g., YubiKey, Windows Hello, etc.) for a more secure login experience.
+                {/* Manage your security keys (e.g., YubiKey, Windows Hello, etc.) for a more secure login experience. */}
+                {t('securityKeys.comingSoon')}
             </Typography>
             
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {/* {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             {isLoading ? (
-                <CircularProgress />
+                <CircularProgress sx={CircularProgressSx}/>
             ) : (
                 <List>
                     {keys.map((key) => (
@@ -119,16 +106,7 @@ const SecurityKeysSettings = () => {
                 startIcon={<AddIcon />} 
                 onClick={handleRegisterClick}
                 sx={{
-                    background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                    boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-                    color: 'white',
-                    borderRadius: '25px',
-                    padding: '10px 25px',
-                    '&:disabled': {
-                    background: 'rgba(255, 255, 255, 0.3)',
-                    },
-                    mt: 3,
-                }}
+                    ...gradientButtonSx}}
             >
                 Add Security Key
             </Button>
@@ -149,6 +127,7 @@ const SecurityKeysSettings = () => {
                         variant="standard"
                         value={keyName}
                         onChange={(e) => setKeyName(e.target.value)}
+                        sx={{...textFieldSx}}
                     />
                 </DialogContent>
                 <DialogActions>
@@ -162,7 +141,7 @@ const SecurityKeysSettings = () => {
                 onClose={hideSnackbar}
                 severity={snackbar.severity}
                 message={snackbar.message}
-            />
+            /> */}
         </GlassPaper>
     );
 };

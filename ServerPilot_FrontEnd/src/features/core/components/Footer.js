@@ -38,8 +38,8 @@ const Footer = ({ transparent, authPage }) => {
       <Container maxWidth="lg">
         <Typography variant="body2" sx={{ color: getTextColor() }}>
           {'Copyright © '}
-          <Link color="inherit" href="https://your-website.com/">
-            ServerPilot
+          <Link color="inherit" href="https://growsbyte.com/">
+            GrowsByte
           </Link>{' '}
           {new Date().getFullYear()}
           {'.'}

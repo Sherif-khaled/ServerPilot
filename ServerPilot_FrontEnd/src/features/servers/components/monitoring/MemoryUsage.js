@@ -3,8 +3,8 @@ import {
   Box,
   Typography,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import { GlassCard } from '../../../../common';
+import { useTranslation } from 'react-i18next';
 import {
   ResponsiveContainer,
   PieChart,
@@ -19,13 +19,14 @@ const COLORS = ['#0088FE', '#FF8042'];
 // Using shared GlassCard from common
 
 const MemoryUsage = ({ memory, width = { xs: '100%', md: '50%' }}) => {
+  const { t } = useTranslation();
   if (!memory) {
     return (
       <Box sx={{ width:{...width}, p: 1 }}>
         <GlassCard>
-          <Typography variant="h6" pl={2} gutterBottom>Memory Usage (GB)</Typography>
+          <Typography variant="h6" pl={2} gutterBottom>{t('servers.infoDialog.memory')}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-            <Typography variant="body2" color="text.secondary">Not available</Typography>
+            <Typography variant="body2" color="text.secondary">{t('servers.infoDialog.notAvailable')}</Typography>
           </Box>
         </GlassCard>
       </Box>
@@ -40,7 +41,7 @@ const MemoryUsage = ({ memory, width = { xs: '100%', md: '50%' }}) => {
   return (
     <Box sx={{ width:{...width}, p: 1 }}>
       <GlassCard>
-        <Typography variant="h6" pl={2} gutterBottom>Memory Usage (GB)</Typography>
+        <Typography variant="h6" pl={2} gutterBottom>{t('servers.infoDialog.memory')}</Typography>
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie

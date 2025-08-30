@@ -5,9 +5,11 @@ import { arrayMove, SortableContext, useSortable, rectSortingStrategy } from '@d
 import { CSS } from '@dnd-kit/utilities';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Group as GroupIcon, Person as PersonIcon, Business as BusinessIcon, Dns as DnsIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../AuthContext';
 import { getDashboardStats } from '../../../api/userService';
 import { useNavigate } from 'react-router-dom';
+import { CircularProgressSx } from '../../../common';
 
 const GlassmorphicCard = ({ children, onClick, tooltip }) => {
     // Read animation setting from localStorage (or context if you have one)
@@ -44,15 +46,16 @@ const GlassmorphicCard = ({ children, onClick, tooltip }) => {
 };
 
 const StatCard = ({ title, value, total, unit, uptimeComponents, icon, tooltip, onClick }) => {
+    const { t } = useTranslation();
     let displayValue = `${value}${unit || ''}`;
     if (uptimeComponents) {
         const { years, months, days, hours, minutes } = uptimeComponents;
         const parts = [];
-        if (years > 0) parts.push(`${years} year${years > 1 ? 's' : ''}`);
-        if (months > 0) parts.push(`${months} month${months > 1 ? 's' : ''}`);
-        if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
-        if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
-        if (minutes > 0 || parts.length === 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+        if (years > 0) parts.push(`${years} ${years > 1 ? t('dashboard.years') : t('dashboard.year')}`);
+        if (months > 0) parts.push(`${months} ${months > 1 ? t('dashboard.months') : t('dashboard.month')}`);
+        if (days > 0) parts.push(`${days} ${days > 1 ? t('dashboard.days') : t('dashboard.day')}`);
+        if (hours > 0) parts.push(`${hours} ${hours > 1 ? t('dashboard.hours') : t('dashboard.hour')}`);
+        if (minutes > 0 || parts.length === 0) parts.push(`${minutes} ${minutes > 1 ? t('dashboard.minutes') : t('dashboard.minute')}`);
         displayValue = parts.join(', ');
     }
 
@@ -69,7 +72,7 @@ const StatCard = ({ title, value, total, unit, uptimeComponents, icon, tooltip, 
                 <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>{displayValue}</Typography>
                 {total && !uptimeComponents && (
                     <Box sx={{ mt: 1.5 }}>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>out of {total}{unit}</Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('dashboard.outOf')} {total}{unit}</Typography>
                         <LinearProgress
                             variant="determinate"
                             value={usagePercent}
@@ -110,11 +113,12 @@ const getColorForUsage = (percentage) => {
 };
 
 const RamUsageChart = ({ used, total }) => {
+  const { t } = useTranslation();
   const free = total > used ? total - used : 0;
   const usagePercent = total > 0 ? (used / total) * 100 : 0;
   const data = [
-    { name: 'Used', value: parseFloat(used.toFixed(2)) },
-    { name: 'Free', value: parseFloat(free.toFixed(2)) },
+    { name: t('dashboard.used'), value: parseFloat(used.toFixed(2)) },
+    { name: t('dashboard.free'), value: parseFloat(free.toFixed(2)) },
   ];
   const COLORS = [getColorForUsage(usagePercent), 'rgba(255, 255, 255, 0.2)'];
 
@@ -158,9 +162,10 @@ const RamUsageChart = ({ used, total }) => {
 };
 
 const CpuUsageChart = ({ usage }) => {
+  const { t } = useTranslation();
   const data = [
-    { name: 'Used', value: usage },
-    { name: 'Idle', value: 100 - usage },
+    { name: t('dashboard.used'), value: usage },
+    { name: t('dashboard.idle'), value: 100 - usage },
   ];
   const COLORS = [getColorForUsage(usage), 'rgba(255, 255, 255, 0.2)'];
 
@@ -189,14 +194,14 @@ const CpuUsageChart = ({ usage }) => {
             borderColor: 'rgba(255, 255, 255, 0.2)',
             color: '#fff'
           }}
-          formatter={(value) => [`${value.toFixed(2)}%`, 'Usage']}
+          formatter={(value) => [`${value.toFixed(2)}%`, t('dashboard.usage')]}
         />
          <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#fff">
           <tspan x="50%" dy="-0.6em" fontSize="28" fontWeight="bold">
             {`${usage.toFixed(0)}%`}
           </tspan>
           <tspan x="50%" dy="1.2em" fontSize="14" fill="rgba(255, 255, 255, 0.7)">
-            Usage
+            {t('dashboard.usage')}
           </tspan>
         </text>
       </PieChart>
@@ -220,6 +225,7 @@ const SortableCard = ({ id, children }) => {
 };
 
 const DashboardPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
@@ -234,26 +240,26 @@ const DashboardPage = () => {
           const statsData = response.data;
           setStats(statsData);
           const initialCards = [
-            { id: 'totalUsers', title: 'Total Users', value: statsData.users.total, unit: '', icon: <GroupIcon fontSize="large" />, tooltip: 'Total number of registered users in the system.', path: '/users' },
-            { id: 'activeUsers', title: 'Active Users', value: statsData.users.active, unit: '', icon: <PersonIcon fontSize="large" />, tooltip: 'Number of users who have been active recently.', path: '/users' },
-            { id: 'totalCustomers', title: 'Total Customers', value: statsData.customers.total, unit: '', icon: <BusinessIcon fontSize="large" />, tooltip: 'Total number of customers managed.', path: '/customers' },
-            { id: 'averageUptime', title: 'Average Server Uptime', uptimeComponents: statsData.system?.uptime_components, tooltip: 'The average uptime across all monitored servers.', path: '/system-health' },
-            { id: 'totalBandwidth', title: 'Total Bandwidth (since boot)', value: statsData.system?.total_bandwidth_gb_since_boot, unit: ' GB', tooltip: 'Total network bandwidth consumed since the last server reboot.', path: '/system-health' },
-            { id: 'cpuUsage', title: 'CPU Usage', value: statsData.system.cpu_usage_percent, tooltip: 'Current CPU utilization across all cores.', path: '/system-health' },
-            { id: 'ramUsage', title: 'RAM Usage', value: statsData.system.ram.used_gb, total: statsData.system.ram.total_gb, tooltip: 'Current RAM consumption.', path: '/system-health' },
-            { id: 'storageUsage', title: 'Storage Usage', value: statsData.system.storage.used_gb, total: statsData.system.storage.total_gb, unit: ' GB', tooltip: 'Total used disk space.', path: '/system-health' },
+            { id: 'totalUsers', title: t('dashboard.totalUsers'), value: statsData.users.total, unit: '', icon: <GroupIcon fontSize="large" />, tooltip: t('dashboard.tooltips.totalUsers'), path: '/users' },
+            { id: 'activeUsers', title: t('dashboard.activeUsers'), value: statsData.users.active, unit: '', icon: <PersonIcon fontSize="large" />, tooltip: t('dashboard.tooltips.activeUsers'), path: '/users' },
+            { id: 'totalCustomers', title: t('dashboard.totalCustomers'), value: statsData.customers.total, unit: '', icon: <BusinessIcon fontSize="large" />, tooltip: t('dashboard.tooltips.totalCustomers'), path: '/customers' },
+            { id: 'averageUptime', title: t('dashboard.averageServerUptime'), uptimeComponents: statsData.system?.uptime_components, tooltip: t('dashboard.tooltips.averageUptime'), path: '/system-health' },
+            { id: 'totalBandwidth', title: t('dashboard.totalBandwidth'), value: statsData.system?.total_bandwidth_gb_since_boot, unit: ' GB', tooltip: t('dashboard.tooltips.totalBandwidth'), path: '/system-health' },
+            { id: 'cpuUsage', title: t('dashboard.cpuUsage'), value: statsData.system.cpu_usage_percent, tooltip: t('dashboard.tooltips.cpuUsage'), path: '/system-health' },
+            { id: 'ramUsage', title: t('dashboard.ramUsage'), value: statsData.system.ram.used_gb, total: statsData.system.ram.total_gb, tooltip: t('dashboard.tooltips.ramUsage'), path: '/system-health' },
+            { id: 'storageUsage', title: t('dashboard.storageUsage'), value: statsData.system.storage.used_gb, total: statsData.system.storage.total_gb, unit: ' GB', tooltip: t('dashboard.tooltips.storageUsage'), path: '/system-health' },
           ];
           setCardOrder(initialCards);
         })
         .catch(err => {
           console.error('Failed to fetch dashboard stats:', err);
-          setError('Failed to load dashboard statistics.');
+          setError(t('dashboard.errors.failedToLoad'));
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, t]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
@@ -267,13 +273,13 @@ const DashboardPage = () => {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)' }}><CircularProgress color="inherit" /></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)' }}><CircularProgress size={20} sx={CircularProgressSx} /></Box>;
   }
 
   if (!user?.is_staff) {
     return (
       <Box sx={{ p: 4, background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)', minHeight: '100vh', color: '#fff' }}>
-        <Typography variant="h5">Welcome, {user.first_name || user.username}!</Typography>
+        <Typography variant="h5">{t('dashboard.welcome', { name: user.first_name || user.username })}</Typography>
       </Box>
     );
   }
@@ -283,14 +289,14 @@ const DashboardPage = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 4, background: 'linear-gradient(45deg, #0d1117, #203a43, #0d1117)', minHeight: '100vh' }}>
-      <Typography variant="h2" gutterBottom sx={{ color: '#fff', textAlign: 'center', mb: 4 }}>Admin Dashboard</Typography>
+      <Typography variant="h2" gutterBottom sx={{ color: '#fff', textAlign: 'center', mb: 4 }}>{t('dashboard.adminDashboard')}</Typography>
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {stats && (
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={cardOrder.map(c => c.id)} strategy={rectSortingStrategy}>
             {/* User Metrics Section */}
             <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 2, mb: 3, display: 'flex', alignItems: 'center', color: '#fff' }}>
-              <PersonIcon sx={{ mr: 1.5, fontSize: '2rem' }} /> User Metrics
+              <PersonIcon sx={{ mr: 1.5, fontSize: '2rem' }} /> {t('dashboard.userMetrics')}
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2, mb: 5 }}>
               {userMetricCards.map(card => (
@@ -304,7 +310,7 @@ const DashboardPage = () => {
 
             {/* System Health Section */}
             <Typography variant="h4" component="h2" gutterBottom sx={{ mt: 4, mb: 3, display: 'flex', alignItems: 'center', color: '#fff' }}>
-              <DnsIcon sx={{ mr: 1.5, fontSize: '2rem' }} /> System Health
+              <DnsIcon sx={{ mr: 1.5, fontSize: '2rem' }} /> {t('dashboard.systemHealth')}
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2 }}>
               {systemHealthCards.map(card => {

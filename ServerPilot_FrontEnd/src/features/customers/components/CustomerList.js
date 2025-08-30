@@ -9,6 +9,7 @@ import { getCustomers, deleteCustomer, getCustomerTypes } from '../../../api/cus
 import { useAuth } from '../../../AuthContext';
 import CustomerForm from './CustomerForm';
 import { CustomSnackbar, useSnackbar, gradientButtonSx, textFieldSx, CircularProgressSx, ConfirmDialog, GlassCard } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 // Styled root component for the background
 const RootContainer = styled(Box)(({ theme }) => ({
@@ -18,6 +19,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 // Using shared GlassCard from common
 
 export default function CustomerList() {
+  const { t, i18n } = useTranslation();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +40,8 @@ export default function CustomerList() {
   
   // Use the custom snackbar hook
   const { snackbar, showSuccess, hideSnackbar } = useSnackbar();
+
+  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
   const descendingComparator = (a, b, orderBy) => {
     if (b[orderBy] < a[orderBy]) {
@@ -89,10 +93,10 @@ export default function CustomerList() {
       setCustomers(response.data);
     } catch (err) {
       console.error('Failed to fetch customers:', err);
-      setError('Failed to load customers. Please try again.');
+      setError(t('forgotPassword.genericError'));
     }
     setLoading(false);
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     fetchCustomers();
@@ -177,78 +181,66 @@ export default function CustomerList() {
   };
 
   if (!user) {
-    return <Typography>Please log in to manage customers.</Typography>;
+    return <Typography>{t('auth.login')}</Typography>;
   }
 
   const totalCustomers = customers.length;
   const activeCustomers = customers.filter(c => c.is_active).length;
   const inactiveCustomers = totalCustomers - activeCustomers;
 
+  const statItems = [
+    { title: t('customers.metrics.total'), value: totalCustomers, icon: <PeopleAltOutlinedIcon sx={{ fontSize: 30 }} />, color: 'primary.main' },
+    { title: t('customers.metrics.active'), value: activeCustomers, icon: <CheckCircleOutlineIcon sx={{ fontSize: 30 }} />, color: 'success.main' },
+    { title: t('customers.metrics.inactive'), value: inactiveCustomers, icon: <HighlightOffOutlinedIcon sx={{ fontSize: 30 }} />, color: 'warning.main' }, 
+  ];
+
   return (
       <RootContainer>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
               <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-                  Customer Management
+                  {t('customers.management')}
               </Typography>
               <Box>
-                  <Tooltip title="Refresh Customers">
+                  <Tooltip title={t('customers.refresh')}>
                       <IconButton onClick={fetchCustomers} sx={{ color: 'white', mr: 1 }}>
                           <RefreshIcon />
                       </IconButton>
                   </Tooltip>
                   <Button
                       variant="contained"
-                      startIcon={<AddIcon />}
+                      startIcon={<AddIcon sx={{ml: isRtl ? 1 : 0}}/>}
                       onClick={handleAddCustomer}
                       sx={{...gradientButtonSx}}
                   >
-                      Add Customer
+                      {t('customers.add')}
                   </Button>
               </Box>
           </Box>
           {error && <Alert severity="error" sx={{ mb: 2, background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>}
           <Grid container spacing={4} sx={{ mb: 4, position: 'relative', zIndex: 2 }}>
-              <Grid item xs={12} sm={4}>
-                  <GlassCard>
-                      <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                          <Box sx={{ flexGrow: 1 }}>
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">Total Customers</Typography>
-                              <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{totalCustomers}</Typography>
-                          </Box>
-                          <PeopleAltOutlinedIcon sx={{ fontSize: 48, color: '#fff', opacity: 0.8 }} />
-                      </CardContent>
-                  </GlassCard>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                  <GlassCard>
-                      <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                          <Box sx={{ flexGrow: 1 }}>
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">Active Customers</Typography>
-                              <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{activeCustomers}</Typography>
-                          </Box>
-                          <CheckCircleOutlineIcon sx={{ fontSize: 48, color: '#66bb6a', opacity: 0.8 }} />
-                      </CardContent>
-                  </GlassCard>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                  <GlassCard>
-                      <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                          <Box sx={{ flexGrow: 1 }}>
-                              <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">Inactive Customers</Typography>
-                              <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{inactiveCustomers}</Typography>
-                          </Box>
-                          <HighlightOffOutlinedIcon sx={{ fontSize: 48, color: '#f44336', opacity: 0.8 }} />
-                      </CardContent>
-                  </GlassCard>
-              </Grid>
-          </Grid>
+                {statItems.map((item, index) => (
+                    <Grid item xs={12} sm={6} md={3} key={index}>
+                        <GlassCard>
+                            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
+                                {isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8, ml: 2 } })}
+                                <Box sx={{ flexGrow: 1, textAlign: isRtl ? 'right' : 'left' }}>
+                                    <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }} variant="subtitle2">{item.title}</Typography>
+                                    <Typography variant="h4" sx={{ color: '#fff', fontWeight: 'bold' }}>{item.value}</Typography>
+                                </Box>
+                                {!isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8 } })}
+                            </CardContent>
+                        </GlassCard>
+                    </Grid>
+                ))}
+            </Grid>
+
           <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
               <CardContent sx={{ p: 3 }}>
                       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                           <TextField
                               fullWidth
                               variant="outlined"
-                              placeholder="Search Customers..."
+                              placeholder={t('customers.searchPlaceholder')}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               sx={{...textFieldSx}}
@@ -269,14 +261,14 @@ export default function CustomerList() {
                   </Box>
               ) : !error && filteredCustomers.length === 0 ? (
                   <Typography sx={{ textAlign: 'center', p: 3, color: 'rgba(255, 255, 255, 0.7)' }}>
-                      {customers.length === 0 ? "You haven't added any customers yet." : "No customers found matching your criteria."}
+                      {customers.length === 0 ? t('customers.noneYet') : t('customers.noneFound')}
                   </Typography>
               ) : (
                   <TableContainer component={Paper} sx={{ background: 'transparent' }}>
                       <Table aria-label="customers table">
                           <TableHead>
                               <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                  {['Name', 'Email', 'Company', 'Phone', 'Status', 'Actions'].map((headCell, index) => (
+                                  {[t('customers.headers.name'), t('customers.headers.email'), t('customers.headers.company'), t('customers.headers.phone'), t('customers.headers.status'), t('customers.headers.actions')].map((headCell, index) => (
                                       <TableCell key={headCell} align={index === 5 ? 'right' : 'left'} sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold' }}>
                                           {headCell}
                                       </TableCell>
@@ -307,7 +299,7 @@ export default function CustomerList() {
                                   <TableCell>{customer.phone_number || 'N/A'}</TableCell>
                                   <TableCell>
                                       <Chip
-                                          label={customer.is_active ? 'Active' : 'Inactive'}
+                                          label={customer.is_active ? t('customers.active') : t('customers.inactive')}
                                           color={customer.is_active ? 'success' : 'error'}
                                           size="small"
                                           variant="outlined"
@@ -319,17 +311,17 @@ export default function CustomerList() {
                                       />
                                   </TableCell>
                                   <TableCell align="right">
-                                      <Tooltip title="Manage Servers">
+                                      <Tooltip title={t('customers.manageServers')}>
                                           <IconButton onClick={() => navigate(`/customers/${customer.id}/servers`)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                                               <DnsIcon />
                                           </IconButton>
                                       </Tooltip>
-                                      <Tooltip title="Edit Customer">
+                                      <Tooltip title={t('customers.edit')}>
                                           <IconButton onClick={() => handleEditCustomer(customer.id)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                                               <EditIcon />
                                           </IconButton>
                                       </Tooltip>
-                                      <Tooltip title="Delete Customer">
+                                      <Tooltip title={t('customers.delete')}>
                                           <IconButton onClick={() => openDeleteDialog(customer)} size="small" sx={{ color: '#f44336' }}>
                                               <DeleteIcon />
                                           </IconButton>
@@ -348,6 +340,8 @@ export default function CustomerList() {
                           page={page}
                           onPageChange={handleChangePage}
                           onRowsPerPageChange={handleChangeRowsPerPage}
+                          labelRowsPerPage={t('common.rowsPerPage')}
+                          labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
                       />
                   </TableContainer>
               )}
@@ -364,10 +358,10 @@ export default function CustomerList() {
                     open={deleteDialogOpen}
                     onClose={closeDeleteDialog}
                     onConfirm={deleteDialogOpen}
-                    title="Confirm Deletion"
-                    message={`Are you sure you want to delete this customer? This action cannot be undone.`}
-                    confirmText="Yes, Delete"
-                    cancelText="Cancel"
+                    title={t('customers.confirmDeleteTitle')}
+                    message={t('customers.confirmDeleteMessage')}
+                    confirmText={t('customers.yesDelete')}
+                    cancelText={t('customers.cancel')}
                     severity="info"
             />
 

@@ -28,6 +28,7 @@ import ShowPasswordIconButton from '../../../common/ShowPasswordIconButton';
 import GeneratePasswordButton from '../../../common/GeneratePasswordButton';
 import PasswordStrengthMeter from '../../../common/PasswordStrengthMeter';
 import { textFieldSx, checkBoxSx, gradientButtonSx,glassDialogSx,SelectSx, CancelButton } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 /*********************  HELPERS  ************************/
 const getDefaultFormData = () => ({
@@ -44,7 +45,7 @@ const getDefaultFormData = () => ({
 
 /*********************  COMPONENT  ************************/
 export default function UserForm({ open, onClose, user = null, onSuccess }) {
-  // State
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -62,9 +63,8 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [apiFormError, setApiFormError] = useState('');
+  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
-
-  // Reset form when user changes or dialog opens/closes
   useEffect(() => {
     if (!open) return;
     
@@ -116,7 +116,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
       try {
         const res = await checkUsernameExists(value);
         if (res.data.exists && (!user || user.username !== value)) {
-          setUsernameError('Username is already taken');
+          setUsernameError(t('userForm.usernameTaken'));
         } else {
           setUsernameError('');
         }
@@ -128,14 +128,14 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
   
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.username.trim()) newErrors.username = 'Username is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    if (!formData.first_name.trim()) newErrors.first_name = 'First Name is required';
-    if (!formData.last_name.trim()) newErrors.last_name = 'Last Name is required';
-    if (!isEditMode && !formData.password) newErrors.password = 'Password is required';
+    if (!formData.username.trim()) newErrors.username = t('userForm.required.username');
+    if (!formData.email.trim()) newErrors.email = t('userForm.required.email');
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('userForm.required.emailInvalid');
+    if (!formData.first_name.trim()) newErrors.first_name = t('userForm.required.firstName');
+    if (!formData.last_name.trim()) newErrors.last_name = t('userForm.required.lastName');
+    if (!isEditMode && !formData.password) newErrors.password = t('userForm.required.password');
     if (!isEditMode && formData.password !== formData.password2) {
-      newErrors.password2 = 'Passwords do not match';
+      newErrors.password2 = t('userForm.required.passwordsMismatch');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -161,7 +161,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
       onClose();
       if (!isEditMode) setFormData(getDefaultFormData());
     } catch (err) {
-      setApiFormError(err.response?.data?.message || 'An error occurred');
+      setApiFormError(err.response?.data?.message || t('forgotPassword.genericError'));
     } finally {
       setLoading(false);
     }
@@ -175,7 +175,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" PaperComponent={glassDialogSx}>
       <DialogTitle fontSize={36} fontWeight="bold">
-      {isEditMode ? 'Edit User' : 'Add New User'}
+      {isEditMode ? t('userForm.editTitle') : t('userForm.addTitle')}
       </DialogTitle>
       
       <form onSubmit={handleSubmit}>
@@ -186,13 +186,11 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
             </Alert>
           )}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-            {/* Basic Info */}
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
               <TextField
                 fullWidth
-                label="Username*"
+                label={t('userForm.username')}
                 name="username"
-                placeholder="Username"
                 value={formData.username}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -215,7 +213,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
               <TextField
                 fullWidth
-                label="Email*"
+                label={t('userForm.email')}
                 name="email"
                 type="email"
                 value={formData.email}
@@ -231,7 +229,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
               <TextField
                 fullWidth
-                label="First Name*"
+                label={t('userForm.firstName')}
                 name="first_name"
                 value={formData.first_name}
                 onChange={handleChange}
@@ -246,7 +244,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
               <TextField
                 fullWidth
-                label="Last Name*"
+                label={t('userForm.lastName')}
                 name="last_name"
                 value={formData.last_name}
                 onChange={handleChange}
@@ -264,7 +262,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
                 <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
                   <TextField
                     fullWidth
-                    label="Password*"
+                    label={t('userForm.password')}
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
@@ -300,7 +298,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
                 <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
                   <TextField
                     fullWidth
-                    label="Confirm Password*"
+                    label={t('userForm.confirmPassword')}
                     name="password2"
                     type={showConfirm ? 'text' : 'password'}
                     value={formData.password2}
@@ -345,19 +343,19 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
                   }}
                 >
                   <MenuItem value="" disabled>
-                    Role
+                    {t('userForm.role')}
                   </MenuItem>
-                  <MenuItem value="true">Admin</MenuItem>
-                  <MenuItem value="false">User</MenuItem>
+                  <MenuItem value="true">{t('userForm.roleAdmin')}</MenuItem>
+                  <MenuItem value="false">{t('userForm.roleUser')}</MenuItem>
                 </Select>
-                <FormHelperText>Choose user role</FormHelperText>
+                <FormHelperText>{t('userForm.roleHint')}</FormHelperText>
               </FormControl>
             </Box>
             {/* Status & Role */}
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)' } }}>
               <FormControl component="fieldset">
                 <FormLabel component="legend" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                  Status
+                  {t('userForm.status')}
                 </FormLabel>
                 <FormGroup row>
                   <FormControlLabel 
@@ -368,7 +366,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
                         sx={{...checkBoxSx}} 
                       />
                     } 
-                    label={formData.is_active ? "Active" : "Inactive"} 
+                    label={formData.is_active ? t('userForm.active') : t('userForm.inactive')} 
                   />
                 </FormGroup>
               </FormControl>
@@ -382,18 +380,18 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
             <CancelButton 
               onClick={onClose} 
               disabled={loading}
-              >Cancel
+              >{t('userForm.cancel')}
               </CancelButton>
           </Box>
           <Box>
             <Button
               type="submit"
-              startIcon={<SaveIcon />}
+              startIcon={<SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
               variant="contained"
               disabled={loading}
-              sx={{...gradientButtonSx}}
+              sx={{...gradientButtonSx}} 
             >
-              {isEditMode ? 'Update User' : 'Create User'}
+              {isEditMode ? t('userForm.update') : t('userForm.create')}
             </Button>
           </Box>
         </DialogActions>

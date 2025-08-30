@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import { getServerHealth } from '../../../../api/serverService';
 import CpuUsage from '../monitoring/CpuUsage';
@@ -9,6 +10,7 @@ import Bandwidth from '../monitoring/Bandwidth';
 import { CircularProgressSx } from '../../../../common';
 
 const MonitoringTab = ({ customerId, serverId }) => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,7 +22,7 @@ const MonitoringTab = ({ customerId, serverId }) => {
       setStats(response.data.data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch server statistics. Please try again later.');
+      setError(t('monitoring.common.loadError'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -37,7 +39,7 @@ const MonitoringTab = ({ customerId, serverId }) => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3 }}>
         <CircularProgress sx={CircularProgressSx}/>
-        <Typography sx={{ ml: 2 }}>Loading server stats...</Typography>
+        <Typography sx={{ ml: 2 }}>{t('monitoring.common.loading')}</Typography>
       </Box>
     );
   }
@@ -47,7 +49,7 @@ const MonitoringTab = ({ customerId, serverId }) => {
   }
 
   if (!stats) {
-    return <Typography sx={{ p: 3 }}>No data available.</Typography>;
+    return <Typography sx={{ p: 3 }}>{t('monitoring.common.noData')}</Typography>;
   }
 
   return (

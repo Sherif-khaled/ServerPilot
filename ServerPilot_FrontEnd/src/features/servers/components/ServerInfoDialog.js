@@ -15,6 +15,7 @@ import CpuUsage from './monitoring/CpuUsage';
 import MemoryUsage from './monitoring/MemoryUsage';
 import DiskUsage from './monitoring/DiskUsage';
 import { glassDialogSx, CircularProgressSx, CancelButton } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Props:
@@ -26,10 +27,11 @@ import { glassDialogSx, CircularProgressSx, CancelButton } from '../../../common
  * - metrics: { cpu?, memory?, disks? } | null
  */
 export default function ServerInfoDialog({ open, onClose, serverName, loading, error, metrics }) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth PaperComponent={glassDialogSx}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-        <InfoIcon sx={{ mr: 1 }} /> Server Information: {serverName}
+        <InfoIcon sx={{ mr: 1 }} /> {t('servers.infoDialog.title', { name: serverName })}
       </DialogTitle>
       <DialogContent>
         {loading ? (
@@ -44,9 +46,9 @@ export default function ServerInfoDialog({ open, onClose, serverName, loading, e
               <CpuUsage cpu={metrics.cpu} width={{ xs: '100%', md: '50%' }} />
             ) : (
               <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
-                <Typography variant="h6" gutterBottom>CPU Usage (%)</Typography>
+                <Typography variant="h6" gutterBottom>{t('servers.infoDialog.cpu')}</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                  <Typography variant="body2" color="text.secondary">Not available</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('servers.infoDialog.notAvailable')}</Typography>
                 </Box>
               </Box>
             )}
@@ -55,9 +57,9 @@ export default function ServerInfoDialog({ open, onClose, serverName, loading, e
               <MemoryUsage memory={metrics.memory} width={{ xs: '100%', md: '50%' }} />
             ) : (
               <Box sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
-                <Typography variant="h6" gutterBottom>Memory Usage (GB)</Typography>
+                <Typography variant="h6" gutterBottom>{t('servers.infoDialog.memory')}</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                  <Typography variant="body2" color="text.secondary">Not available</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('servers.infoDialog.notAvailable')}</Typography>
                 </Box>
               </Box>
             )}
@@ -65,12 +67,12 @@ export default function ServerInfoDialog({ open, onClose, serverName, loading, e
             <DiskUsage disks={metrics.disks} width={{ xs: '100%', md: '100%' }} />
           </Box>
         ) : (
-          <Typography>No information available.</Typography>
+          <Typography>{t('servers.infoDialog.noInfo')}</Typography>
         )}
       </DialogContent>
       <DialogActions>
         <Box>
-        <CancelButton onClick={onClose}>Close</CancelButton>
+        <CancelButton onClick={onClose}>{t('servers.infoDialog.close')}</CancelButton>
         </Box>
       </DialogActions>
     </Dialog>

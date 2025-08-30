@@ -4,33 +4,9 @@ import { changePassword } from '../../../api/userService';
 import ShowPasswordIconButton from '../../../common/ShowPasswordIconButton';
 import PasswordStrengthMeter from '../../../common/PasswordStrengthMeter';
 import GeneratePasswordButton from '../../../common/GeneratePasswordButton';
-import { CustomSnackbar, useSnackbar } from '../../../common';
-import { styled } from '@mui/material/styles';
-import Paper from '@mui/material/Paper';
+import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
-const GlassPaper = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.08)',
-  backdropFilter: 'blur(12px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-  borderRadius: '12px',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  padding: theme.spacing(3),
-  color: '#fff',
-}));
-
-const textFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.6)' },
-    '&.Mui-focused fieldset': { borderColor: '#FE6B8B' },
-    color: 'white',
-    borderRadius: '12px',
-  },
-  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#FE6B8B' },
-  '& .MuiFormHelperText-root': { color: 'rgba(255, 255, 255, 0.7)' }
-};
 
 const PasswordChangeForm = () => {
   const [oldPassword, setOldPassword] = useState('');
@@ -42,8 +18,8 @@ const PasswordChangeForm = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Use the custom snackbar hook
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,14 +27,14 @@ const PasswordChangeForm = () => {
     setLoading(true);
 
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match.');
+      setError(t('passwordChange.mismatch'));
       setLoading(false);
       return;
     }
 
     try {
       await changePassword({ current_password: oldPassword, new_password: newPassword });
-      showSuccess('Password changed successfully.');
+      showSuccess(t('passwordChange.success'));
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -70,10 +46,10 @@ const PasswordChangeForm = () => {
         } else if (errorData.detail) {
           setError(errorData.detail);
         } else {
-          setError('Failed to change password. Please check your old password.');
+          setError(t('passwordChange.failGeneric'));
         }
       } else {
-        setError('An unexpected error occurred.');
+        setError(t('passwordChange.unexpected'));
       }
     } finally {
       setLoading(false);
@@ -83,10 +59,10 @@ const PasswordChangeForm = () => {
   return (
     <GlassPaper>
       <Typography variant="h6" gutterBottom>
-        Password
+        {t('passwordChange.title')}
       </Typography>
       <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255,255,255,0.7)' }}>
-        Change your password to enhance your account security.
+        {t('passwordChange.description')}
       </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -95,7 +71,7 @@ const PasswordChangeForm = () => {
           required
           fullWidth
           name="oldPassword"
-          label="Old Password"
+          label={t('passwordChange.oldPassword')}
           type={showOld ? 'text' : 'password'}
           id="oldPassword"
           autoComplete="current-password"
@@ -118,7 +94,7 @@ const PasswordChangeForm = () => {
           required
           fullWidth
           name="newPassword"
-          label="New Password"
+          label={t('passwordChange.newPassword')}
           type={showNew ? 'text' : 'password'}
           id="newPassword"
           autoComplete="new-password"
@@ -148,7 +124,7 @@ const PasswordChangeForm = () => {
           required
           fullWidth
           name="confirmPassword"
-          label="Confirm New Password"
+          label={t('passwordChange.confirmNewPassword')}
           type={showConfirm ? 'text' : 'password'}
           id="confirmPassword"
           autoComplete="new-password"
@@ -171,18 +147,9 @@ const PasswordChangeForm = () => {
           variant="contained"
           disabled={loading}
           sx={{
-            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-            boxShadow: '0 3px 5px 2px rgba(255, 105, 135, .3)',
-            color: 'white',
-            borderRadius: '25px',
-            padding: '10px 25px',
-            '&:disabled': {
-              background: 'rgba(255, 255, 255, 0.3)',
-            },
-            mt: 3,
-          }}
+            ...gradientButtonSx}}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Change Password'}
+          {loading ? <CircularProgress size={20} sx={CircularProgressSx} /> : t('passwordChange.change')}
         </Button>
       </Box>
 

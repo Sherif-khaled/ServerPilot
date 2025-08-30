@@ -19,6 +19,7 @@ import {
   PasswordStrengthMeter,
   ShowPasswordIconButton,
 } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Props:
@@ -28,6 +29,7 @@ import {
  * - onSubmit: async function(password) => { ok: boolean, error?: string }
  */
 export default function ChangeServerPasswordDialog({ open, onClose, serverName, onSubmit }) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +52,7 @@ export default function ChangeServerPasswordDialog({ open, onClose, serverName, 
 
   const handleSubmit = async () => {
     if (!password) {
-      setError('Password cannot be empty.');
+      setError(t('servers.passwordDialog.emptyError'));
       return;
     }
     setSubmitting(true);
@@ -70,17 +72,17 @@ export default function ChangeServerPasswordDialog({ open, onClose, serverName, 
 
   return (
     <Dialog open={open} onClose={handleClose} PaperComponent={glassDialogSx} maxWidth="sm" fullWidth>
-      <DialogTitle>Change Server Password</DialogTitle>
+      <DialogTitle>{t('servers.passwordDialog.title')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
-          Enter a new password for the server "{serverName}".
+          {t('servers.passwordDialog.description', { name: serverName })}
         </DialogContentText>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <TextField
             autoFocus
             margin="dense"
             id="new-server-password"
-            label="New Password"
+            label={t('servers.passwordDialog.newPassword')}
             type={showPassword ? 'text' : 'password'}
             fullWidth
             variant="outlined"
@@ -107,7 +109,7 @@ export default function ChangeServerPasswordDialog({ open, onClose, serverName, 
       </DialogContent>
       <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
         <Box>
-          <CancelButton onClick={handleClose} disabled={submitting}>Cancel</CancelButton>
+          <CancelButton onClick={handleClose} disabled={submitting}>{t('servers.common.cancel')}</CancelButton>
         </Box>
         <Box>
           <Button 
@@ -117,7 +119,7 @@ export default function ChangeServerPasswordDialog({ open, onClose, serverName, 
                 submitting
                 }  
             sx={{ ...gradientButtonSx }}>
-            Change Password
+            {t('servers.passwordDialog.change')}
           </Button>
         </Box>
       </DialogActions>

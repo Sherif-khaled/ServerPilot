@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Grid, Alert, CircularProgress, Tooltip, IconButton, Tabs, Tab, Collapse, Link, useTheme, CardContent } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -20,13 +21,18 @@ const dashboardAnimations = JSON.parse(localStorage.getItem('dashboardAnimations
 
 
 const RISK_LEVELS = [
-  { key: 'critical', label: 'Critical Risks', color: 'error' },
-  { key: 'medium', label: 'Medium Risks', color: 'warning' },
-  { key: 'low', label: 'PASSED', color: 'success' },
+  { key: 'critical', color: 'error' },
+  { key: 'medium', color: 'warning' },
+  { key: 'low', color: 'success' },
 ];
 
 const SecurityAdvisorTab = ({ customerId, serverId }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
+  const riskLevels = useMemo(() => RISK_LEVELS.map(level => ({
+    ...level,
+    label: level.key === 'low' ? t('securityAdvisor.tabs.low') : (level.key === 'medium' ? t('securityAdvisor.tabs.medium') : t('securityAdvisor.tabs.critical'))
+  })), [t]);
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,9 +55,9 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
       setScan(response.data);
     } catch (err) {
       if (err.response && err.response.status === 404) {
-        setError('No security scan has been run for this server yet.');
+        setError('');
       } else {
-        setError('Failed to fetch security scan data.');
+        setError(t('securityAdvisor.rescanFail'));
       }
       console.error(err);
     } finally {
@@ -70,7 +76,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                 setLoading(false); // AI not configured, stop loading
             }
         } catch (err) {
-            setError('Could not verify AI configuration status.');
+            setError(t('securityAdvisor.rescanFail'));
             console.error(err);
             setLoading(false);
         }
@@ -85,9 +91,9 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     try {
       const response = await runSecurityScan(customerId, serverId);
       setScan(response.data);
-      setNotification({ open: true, message: 'Scan completed successfully.', severity: 'success' });
+      setNotification({ open: true, message: t('securityAdvisor.rescanSuccess'), severity: 'success' });
     } catch (err) {
-      setError('Failed to start or complete the new scan.');
+      setError(t('securityAdvisor.rescanFail'));
       console.error(err);
     } finally {
       setScanning(false);
@@ -97,7 +103,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     const handleExecuteFix = async (recommendationId) => {
     try {
       await fixRecommendation(customerId, serverId, recommendationId);
-      setNotification({ open: true, message: 'Fix has been applied successfully.', severity: 'success' });
+      setNotification({ open: true, message: t('securityAdvisor.batchSuccess'), severity: 'success' });
 
       // Optimistically update the UI
       setScan(prevScan => {
@@ -108,7 +114,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
         return { ...prevScan, recommendations: updatedRecommendations };
       });
     } catch (err) {
-      const errorMessage = err.response?.data?.details || 'Failed to apply the fix.';
+      const errorMessage = err.response?.data?.details || t('securityAdvisor.batchFail');
       setNotification({ open: true, message: errorMessage, severity: 'error' });
       console.error(err);
     }
@@ -120,7 +126,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
       setNotification({ open: true, message: `Recommendation marked as ${status}.`, severity: 'success' });
       fetchScanData(); // Refresh data
     } catch (err) {
-      setNotification({ open: true, message: 'Failed to update recommendation.', severity: 'error' });
+      setNotification({ open: true, message: t('securityAdvisor.batchFail'), severity: 'error' });
       console.error(err);
     }
   };
@@ -167,9 +173,9 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   if (!isAIConfigured) {
     return (
       <Alert severity="warning" sx={{ m: 3 }}>
-        <Typography variant="h6">AI Features Disabled</Typography>
+        <Typography variant="h6">{t('securityAdvisor.notConfiguredTitle')}</Typography>
         <Typography sx={{ my: 1 }}>
-          To activate intelligent recommendations and scanning, you must first configure your AI API Key and Security Token in the global system settings.
+          {t('securityAdvisor.notConfiguredDesc')}
         </Typography>
         <Button
           component={RouterLink}
@@ -177,7 +183,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
           variant="contained"
           color="primary"
         >
-          Go to AI Integration Settings
+          {t('securityAdvisor.goToSettings')}
         </Button>
       </Alert>
     );
@@ -208,10 +214,10 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
       for (const rec of criticalRecs) {
         await fixRecommendation(customerId, serverId, rec.id);
       }
-      setNotification({ open: true, message: 'All critical fixes have been applied.', severity: 'success' });
+      setNotification({ open: true, message: t('securityAdvisor.batchSuccess'), severity: 'success' });
       await fetchScanData();
     } catch (err) {
-      setNotification({ open: true, message: 'Failed to fix all critical issues.', severity: 'error' });
+      setNotification({ open: true, message: t('securityAdvisor.batchFail'), severity: 'error' });
       console.error(err);
     } finally {
       setScanning(false);
@@ -229,7 +235,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">AI Security Advisor</Typography>
+        <Typography variant="h5">{t('securityAdvisor.title')}</Typography>
         <Box>
           <Button
             variant="contained"
@@ -243,10 +249,18 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             }
             onClick={() => setConfirmBatch(true)}
           >
-            Fix All Critical Issues
+            {t('securityAdvisor.fixAllCritical')}
           </Button>
-          <Button variant="contained" color="primary" onClick={handleRescan} disabled={scanning || loading}>
-            {scanning ? <CircularProgress sx={CircularProgressSx}/> : 'Re-Scan Server'}
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleRescan} 
+            disabled={
+              scanning || 
+              loading} 
+            startIcon={scanning ? <CircularProgress sx={CircularProgressSx}/> : null} 
+            sx={{mr:2}}>
+            {t('securityAdvisor.rescan')}
           </Button>
         </Box>
       </Box>
@@ -256,10 +270,10 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
         open={confirmBatch}
         onClose={() => setConfirmBatch(false)}
         onConfirm={handleBatchFixCritical}
-        title="Confirm Batch Fix"
-        message="Are you sure you want to execute all critical fixes? This action cannot be undone."
-        confirmText="Yes, Fix All"
-        cancelText="Cancel"
+        title={t('securityAdvisor.confirmBatchTitle')}
+        message={t('securityAdvisor.confirmBatchMessage')}
+        confirmText={t('securityAdvisor.confirmBatchYes')}
+        cancelText={t('securityAdvisor.confirmBatchCancel')}
         severity="error"
         confirmButtonProps={{
           disabled: scanning
@@ -274,7 +288,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
               <Typography variant="h4" sx={{ color: '#ff5252', fontWeight: 'bold' }}>{summary.critical}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
                 <DangerousOutlinedIcon sx={{ mr: 1, color: '#ff5252' }} />
-                <Typography>Critical Risks</Typography>
+                <Typography>{t('securityAdvisor.summary.critical')}</Typography>
               </Box>
             </CardContent>
           </GlassCard>
@@ -285,7 +299,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
               <Typography variant="h4" sx={{ color: '#ffab40', fontWeight: 'bold' }}>{summary.medium}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
                 <WarningAmberOutlinedIcon sx={{ mr: 1, color: '#ffab40' }} />
-                <Typography>Medium Risks</Typography>
+                <Typography>{t('securityAdvisor.summary.medium')}</Typography>
               </Box>
             </CardContent>
           </GlassCard>
@@ -296,7 +310,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
               <Typography variant="h4" sx={{ color: '#69f0ae', fontWeight: 'bold' }}>{summary.passed}</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
                 <VerifiedUserOutlinedIcon sx={{ mr: 1, color: '#69f0ae' }} />
-                <Typography>Checks Passed</Typography>
+                <Typography>{t('securityAdvisor.summary.passed')}</Typography>
               </Box>
             </CardContent>
           </GlassCard>
@@ -314,7 +328,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
         variant="fullWidth"
         aria-label="Risk Level Tabs"
       >
-        {RISK_LEVELS.map((level, idx) => (
+        {riskLevels.map((level, idx) => (
           <Tab
             key={level.key}
             label={level.label}
@@ -329,7 +343,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
       </Tabs>
 
       {/* Collapsible sections for each risk group */}
-      {RISK_LEVELS.map((level, idx) => (
+      {riskLevels.map((level, idx) => (
         <Box key={level.key} sx={{ mb: 2 }}>
           <Box
             sx={{
@@ -350,7 +364,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
           <Collapse in={tab === idx || collapse[idx]}>
             {getRecsByRisk(level.key).length === 0 ? (
               <Alert severity="info" sx={{ mb: 2 }}>
-                No {level.label.replace(/^[^ ]+ /, '')} risks found.
+                {t('securityAdvisor.noneFound', { label: level.label.replace(/^[^ ]+ /, '') })}
               </Alert>
             ) : (
               getRecsByRisk(level.key).map((rec) => (
@@ -380,7 +394,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                           sx={{ ml: 2, fontSize: '0.95rem' }}
                           onClick={() => handleOpenExplainDialog(rec)}
                         >
-                          Why is this risky?
+                          {t('securityAdvisor.whyRisky')}
                         </Link>
                       </Typography>
                       <Typography variant="body2" sx={{ my: 1 }} component="span">
@@ -443,7 +457,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                                 zIndex: 2,
                               }}
                             >
-                              Copied!
+                              {t('securityAdvisor.copied')}
                             </Box>
                           )}
                         </Box>
@@ -489,21 +503,21 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                           onClick={() => handleExecuteFix(rec.id)}
                           disabled={rec.status !== 'pending'}
                         >
-                          Execute
+                          {t('securityAdvisor.execute')}
                         </Button>
                         {/* Auto-Fix Indicator */}
                         {rec.risk_level === 'high' ? (
-                          <Tooltip title="This fix requires caution. Review before applying.">
+                          <Tooltip title={t('securityAdvisor.requiresCautionTooltip')}>
                             <Box sx={{ display: 'flex', alignItems: 'center', color: 'error.main', fontWeight: 500, ml: 1 }}>
                               <InfoOutlinedIcon fontSize="small" sx={{ mr: 0.5 }} />
-                              <span>Requires Caution</span>
+                              <span>{t('securityAdvisor.requiresCaution')}</span>
                             </Box>
                           </Tooltip>
                         ) : (
-                          <Tooltip title="This fix is considered safe to apply automatically.">
+                          <Tooltip title={t('securityAdvisor.safeToApplyTooltip')}>
                             <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main', fontWeight: 500, ml: 1 }}>
                               <span role="img" aria-label="Safe" style={{ fontSize: 18, marginRight: 4 }}>🛡️</span>
-                              <span>Safe to Apply</span>
+                              <span>{t('securityAdvisor.safeToApply')}</span>
                             </Box>
                           </Tooltip>
                         )}
@@ -526,7 +540,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                         onClick={() => handleUpdateStatus(rec.id, 'ignored')}
                         disabled={rec.status !== 'pending'}
                       >
-                        Ignore
+                        {t('securityAdvisor.ignore')}
                       </Button>
                       {/* REVERT button if fix was applied */}
                       {rec.status === 'executed' && (
@@ -548,7 +562,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                           }}
                           onClick={() => handleUpdateStatus(rec.id, 'pending')}
                         >
-                          Revert
+                          {t('securityAdvisor.revert')}
                         </Button>
                       )}
                       {/* Personalization: Don't show again / Acknowledge risk */}
@@ -571,7 +585,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                         onClick={() => handleUpdateStatus(rec.id, 'acknowledged')}
                         disabled={rec.status === 'acknowledged'}
                       >
-                        {rec.status === 'acknowledged' ? 'Acknowledged' : "Don't show again"}
+                        {rec.status === 'acknowledged' ? t('securityAdvisor.acknowledged') : t('securityAdvisor.dontShowAgain')}
                       </Button>
                     </Grid>
                   </Grid>

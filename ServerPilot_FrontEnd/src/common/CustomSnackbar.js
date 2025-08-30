@@ -46,7 +46,7 @@ const CustomSnackbar = ({
   message = '',
   severity = 'success',
   onClose,
-  autoHideDuration = 6000,
+  autoHideDuration = 2000,
   anchorOrigin = { vertical: 'bottom', horizontal: 'center' },
   sx = {},
   ...props

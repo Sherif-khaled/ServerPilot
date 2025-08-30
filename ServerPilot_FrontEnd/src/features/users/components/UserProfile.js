@@ -8,6 +8,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { getProfile, updateProfile } from '../../../api/userService';
 import { textFieldSx, gradientButtonSx, CircularProgressSx, glassCardSx, ConfirmDialog } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -27,12 +28,8 @@ const RootContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
 }));
 
-
-
-
-
-
 export default function UserProfile() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({
     first_name: '',
@@ -64,7 +61,7 @@ export default function UserProfile() {
           });
           setImagePreview(res.data.profile_photo || null);
         } catch (err) {
-          setSnackbar({ open: true, message: 'Failed to load profile.', severity: 'error' });
+          setSnackbar({ open: true, message: t('userProfile.loadingError'), severity: 'error' });
         }
         setLoading(false);
     };
@@ -108,9 +105,9 @@ export default function UserProfile() {
       });
       setImagePreview(res.data.profile_photo || null);
       setProfilePhotoFile(null);
-      setSnackbar({ open: true, message: 'Profile updated successfully!', severity: 'success' });
+      setSnackbar({ open: true, message: t('userProfile.updateSuccess'), severity: 'success' });
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || 'Update failed. Please try again.';
+      const errorMessage = err.response?.data?.detail || t('userProfile.updateFailed');
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     }
     setSaving(false);
@@ -147,7 +144,7 @@ export default function UserProfile() {
     <RootContainer>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
       <Typography component="h1" variant="h3" align="left" gutterBottom sx={{ fontWeight: 'bold', color: '#fff' }}>
-            User Profile
+            {t('userProfile.title')}
           </Typography>
       </Box>
       <Container component="main" maxWidth="lg">
@@ -177,23 +174,23 @@ export default function UserProfile() {
                   <Button
                     variant="outlined"
                     component="span"
-                    startIcon={<PhotoCamera />}
+                    startIcon={<PhotoCamera sx={{ paddingLeft: '5px'}} />}
                     sx={{
                       color: '#fff',
                       borderColor: 'rgba(255, 255, 255, 0.5)',
                     }}
                   >
-                    Change Photo
+                    {t('userProfile.changePhoto')}
                   </Button>
                 </label>
                 {imagePreview && profilePhotoFile && (
-                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>New photo selected</Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('userProfile.newPhotoSelected')}</Typography>
                 )}
               </Box>
 
               <Box sx={{ width: { xs: '100%', md: '70%' }, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <TextField
-                  label="Username"
+                  label={t('userProfile.username')}
                   value={profile.username || ''}
                   fullWidth
                   disabled
@@ -201,20 +198,20 @@ export default function UserProfile() {
                   sx={textFieldSx}
                 />
                 <TextField
-                  label="Email"
+                  label={t('userProfile.email')}
                   value={profile.email || ''}
                   fullWidth
                   disabled
                   variant="filled"
-                  helperText="Email cannot be changed."
+                  helperText={t('userProfile.emailHelper')}
                   sx={textFieldSx}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
                         {profile.is_email_verified ? (
-                          <Chip icon={<CheckCircleIcon />} label="Verified" color="success" size="small" sx={{ background: 'rgba(76, 175, 80, 0.3)', color: '#98fb98' }} />
+                          <Chip icon={<CheckCircleIcon />} label={t('userProfile.verified')} color="success" size="small" sx={{ background: 'rgba(76, 175, 80, 0.3)', color: '#98fb98' }} />
                         ) : (
-                          <Chip icon={<ErrorIcon />} label="Not Verified" color="warning" size="small" sx={{ background: 'rgba(255, 152, 0, 0.3)', color: '#ffcc80' }} />
+                          <Chip icon={<ErrorIcon />} label={t('userProfile.notVerified')} color="warning" size="small" sx={{ background: 'rgba(255, 152, 0, 0.3)', color: '#ffcc80' }} />
                         )}
                       </InputAdornment>
                     ),
@@ -222,7 +219,7 @@ export default function UserProfile() {
                 />
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                   <TextField
-                    label="First Name"
+                    label={t('userProfile.firstName')}
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleChange}
@@ -232,7 +229,7 @@ export default function UserProfile() {
                     sx={textFieldSx}
                   />
                   <TextField
-                    label="Last Name"
+                    label={t('userProfile.lastName')}
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleChange}
@@ -242,23 +239,23 @@ export default function UserProfile() {
                   />
                 </Box>
                 <TextField
-                  label="Phone Number"
+                  label={t('userProfile.phoneNumber')}
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleChange}
                   fullWidth
-                  helperText="To be used for MFA in the future."
+                  helperText={t('userProfile.phoneHelper')}
                   variant="outlined"
                   sx={textFieldSx}
                 />
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                   <FormControl fullWidth sx={textFieldSx} variant="outlined">
-                    <InputLabel id="timezone-select-label">Timezone</InputLabel>
+                    <InputLabel id="timezone-select-label">{t('userProfile.timezone')}</InputLabel>
                     <Select
                       labelId="timezone-select-label"
                       name="timezone"
                       value={formData.timezone}
-                      label="Timezone"
+                      label={t('userProfile.timezone')}
                       onChange={handleChange}
                       onClose={() => setTimezoneSearch('')}
                       sx={textFieldSx}
@@ -278,7 +275,7 @@ export default function UserProfile() {
                         <TextField
                           size="small"
                           autoFocus
-                          placeholder="Search..."
+                          placeholder={t('userProfile.search')}
                           fullWidth
                           value={timezoneSearch}
                           onChange={(e) => setTimezoneSearch(e.target.value)}
@@ -294,12 +291,12 @@ export default function UserProfile() {
                     </Select>
                   </FormControl>
                   <FormControl fullWidth sx={textFieldSx} variant="outlined">
-                    <InputLabel id="dateformat-select-label">Date Format</InputLabel>
+                    <InputLabel id="dateformat-select-label">{t('userProfile.dateFormat')}</InputLabel>
                     <Select
                       labelId="dateformat-select-label"
                       name="date_format"
                       value={formData.date_format}
-                      label="Date Format"
+                      label={t('userProfile.dateFormat')}
                       onChange={handleChange}
                       MenuProps={{
                         PaperProps: {
@@ -326,7 +323,7 @@ export default function UserProfile() {
                     size="large"
                     sx={{...gradientButtonSx}}
                   >
-                    {saving ? <CircularProgress sx={CircularProgressSx} /> : 'Save Changes'}
+                    {saving ? <CircularProgress sx={CircularProgressSx} /> : t('userProfile.saveChanges')}
                   </Button>
                 </Box>
               </Box>
@@ -342,10 +339,10 @@ export default function UserProfile() {
           open={confirmOpen}
           onClose={() => setConfirmOpen(false)}
           onConfirm={handleConfirm}
-          title="Confirm Profile Update"
-          message="Are you sure you want to save these changes to your profile?"
-          confirmText="Yes, Save"
-          cancelText="Cancel"
+          title={t('userProfile.confirmTitle')}
+          message={t('userProfile.confirmMessage')}
+          confirmText={t('userProfile.confirmYes')}
+          cancelText={t('userProfile.cancel')}
           severity="info"
         />
       </Container>

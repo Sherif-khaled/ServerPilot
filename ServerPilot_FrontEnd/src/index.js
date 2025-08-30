@@ -8,6 +8,7 @@ import { createBrowserHistory } from 'history';
 import { AuthProvider } from './AuthContext';
 import { ThemeProvider } from './ThemeContext';
 import axios from 'axios';
+import './i18n';
 
 // Configure axios to send the CSRF token with every state-changing request
 axios.defaults.xsrfCookieName = 'csrftoken';

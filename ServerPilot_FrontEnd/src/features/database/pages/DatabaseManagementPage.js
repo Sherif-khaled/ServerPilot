@@ -15,6 +15,7 @@ import {
 } from '@mui/icons-material';
 import apiClient from '../../../api/apiClient';
 import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, ConfirmDialog, glassCardSx } from '../../../common';
+import { useTranslation } from 'react-i18next';
 import BackupNowCard from '../components/BackupNowCard';
 import BackupScheduleCard from '../components/BackupScheduleCard';
 
@@ -27,7 +28,6 @@ const RootContainer = styled(Box)(({ theme }) => ({
     
 }));
 
-// Styled Table Container with glassmorphism
 const GlassTableContainer = styled(TableContainer)(({ theme }) => ({
     background: 'rgba(38, 50, 56, 0.4)',
     backdropFilter: 'blur(10px)',
@@ -52,11 +52,13 @@ const GlassTableContainer = styled(TableContainer)(({ theme }) => ({
 }));
 
 const DatabaseManagementPage = () => {
+    const { t } = useTranslation();
     const [backups, setBackups] = useState([]);
     const [listLoading, setListLoading] = useState(true);
     const [listError, setListError] = useState('');
 
     const [openDialog, setOpenDialog] = useState(false);
+    const [openRestoreDialog, setOpenRestoreDialog] = useState(false);
     const [selectedBackup, setSelectedBackup] = useState(null);
 
     // State for schedule management
@@ -143,6 +145,7 @@ const DatabaseManagementPage = () => {
 
     const handleDialogClose = () => {
         setOpenDialog(false);
+        setOpenRestoreDialog(false);
         setSelectedBackup(null);
     };
 
@@ -197,6 +200,24 @@ const DatabaseManagementPage = () => {
         }
     };
 
+    const handleRestoreClick = (backup) => {
+        setSelectedBackup(backup);
+        setOpenRestoreDialog(true);
+    };
+
+    const handleConfirmRestore = async () => {
+        if (!selectedBackup) return;
+        try {
+            await apiClient.post(`/db/backups/restore/${selectedBackup.filename}/`);
+            showSuccess(t('database.restoreSuccess'));
+            fetchBackups();
+        } catch (error) {
+            console.error('Failed to restore backup:', error);
+            showError(t('database.restoreFail'));
+        }
+        handleDialogClose();
+    };
+
     const totalBackups = backups.length;
     const totalSizeBytes = useMemo(() => backups.reduce((sum, b) => sum + (b.size || 0), 0), [backups]);
     const lastBackupAt = useMemo(() => {
@@ -224,8 +245,6 @@ const DatabaseManagementPage = () => {
         })();
     };
 
-
-
     const formatBytes = (bytes, decimals = 2) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -249,7 +268,7 @@ const DatabaseManagementPage = () => {
                          mb: 0
                     }}
                 >
-                    Database Management
+                    {t('database.title')}
                 </Typography>
 
                 {listError && (
@@ -283,7 +302,7 @@ const DatabaseManagementPage = () => {
             <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
                 <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 'bold' }}>Available Backups</Typography>
+                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 'bold' }}>{t('database.availableBackups')}</Typography>
                         <IconButton onClick={fetchBackups} disabled={listLoading} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                             <RefreshIcon />
                         </IconButton>
@@ -295,14 +314,14 @@ const DatabaseManagementPage = () => {
                 ) : listError ? (
                     <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{listError}</Alert>
                 ) : (
-                        <GlassTableContainer component={Paper}>
+                        <GlassTableContainer component={Paper}  sx={{ background: 'transparent' }}>
                             <Table sx={{ minWidth: 650 }} aria-label="simple table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Filename</TableCell>
-                                        <TableCell align="right">Size</TableCell>
-                                        <TableCell align="right">Created At</TableCell>
-                                        <TableCell align="center">Actions</TableCell>
+                                        <TableCell>{t('database.table.filename')}</TableCell>
+                                        <TableCell align="right">{t('database.table.size')}</TableCell>
+                                        <TableCell align="right">{t('database.table.createdAt')}</TableCell>
+                                        <TableCell align="center">{t('database.table.actions')}</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -320,7 +339,7 @@ const DatabaseManagementPage = () => {
                                                 >
                                                     <CloudDownloadIcon />
                                                 </IconButton>
-                                                <IconButton color="primary" onClick={() => alert('Restore functionality to be implemented.')}>
+                                                <IconButton color="primary" onClick={() => handleRestoreClick(backup)}>
                                                     <RestoreIcon />
                                                 </IconButton>
                                                 <IconButton color="error" onClick={() => handleDeleteClick(backup)} >
@@ -330,7 +349,7 @@ const DatabaseManagementPage = () => {
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={4} align="center">No backups found.</TableCell>
+                                            <TableCell colSpan={4} align="center">{t('database.table.none')}</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
@@ -343,11 +362,21 @@ const DatabaseManagementPage = () => {
                 open={openDialog}
                 onClose={handleDialogClose}
                 onConfirm={handleConfirmDelete}
-                title="Confirm Deletion"
-                message={`Are you sure you want to delete the backup file ${selectedBackup?.filename}? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
+                title={t('database.confirmDelete.title')}
+                message={t('database.confirmDelete.message', { filename: selectedBackup?.filename })}
+                confirmText={t('database.confirmDelete.confirm')}
+                cancelText={t('database.confirmDelete.cancel')}
                 severity="error"
+              />
+            <ConfirmDialog
+                open={openRestoreDialog}
+                onClose={handleDialogClose}
+                onConfirm={handleConfirmRestore}
+                title={t('database.confirmRestore.title')}
+                message={t('database.confirmRestore.message', { filename: selectedBackup?.filename })}
+                confirmText={t('database.confirmRestore.confirm')}
+                cancelText={t('database.confirmRestore.cancel')}
+                severity="info"
               />
             <CustomSnackbar
                 open={snackbar.open}

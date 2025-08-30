@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { getProfile } from './api/userService';
 import apiClient from './api/apiClient';
+import i18n from './i18n';
 
 export const AuthContext = createContext(null);
 
@@ -15,6 +16,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await getProfile();
       setUser(response.data);
+      const preferred = response.data?.language;
+      if (preferred) {
+        i18n.changeLanguage(preferred);
+        document.documentElement.dir = preferred === 'ar' ? 'rtl' : 'ltr';
+      }
       return true;
     } catch (error) {
       setUser(null);

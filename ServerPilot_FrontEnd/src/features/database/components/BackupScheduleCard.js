@@ -2,6 +2,7 @@ import React from 'react';
 import { CardContent, Typography, CircularProgress, Grid } from '@mui/material';
 import { GlassCard, gradientButtonSx, textFieldSx, switchSx, CircularProgressSx } from '../../../common';
 import { Box, FormControlLabel, Switch, TextField, Button } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 const BackupScheduleCard = ({
   schedule,
@@ -11,11 +12,12 @@ const BackupScheduleCard = ({
   onSave,
 }) => {
   console.log('BackupScheduleCard props:', { schedule, scheduleLoading, scheduleSaving });
+  const { t } = useTranslation();
   return (
     <GlassCard sx={{ mb: 3 }}>
       <CardContent>
         <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 'bold' }}>
-          Automated Backup Schedule
+          {t('backups.scheduleTitle')}
         </Typography>
         {scheduleLoading ? (
           <CircularProgress sx={CircularProgressSx} />
@@ -33,13 +35,13 @@ const BackupScheduleCard = ({
                     }}
                   />
                 }
-                label="Enable Daily Backups"
+                label={t('backups.enableDaily')}
                 sx={{ color: '#fff' }}
               />
             </Grid>
             <Grid size={6}>
               <TextField
-                label="Hour (UTC)"
+                label={t('backups.hourUtc')}
                 type="number"
                 name="hour"
                 value={schedule.hour}
@@ -52,7 +54,7 @@ const BackupScheduleCard = ({
             </Grid>
             <Grid size={6}>
               <TextField
-                label="Minute (UTC)"
+                label={t('backups.minuteUtc')}
                 type="number"
                 name="minute"
                 value={schedule.minute}
@@ -78,7 +80,7 @@ const BackupScheduleCard = ({
                 {scheduleSaving ? (
                   <CircularProgress sx={CircularProgressSx} />
                 ) : (
-                  'Save Schedule'
+                  t('backups.saveSchedule')
                 )}
               </Button>
             </Grid>

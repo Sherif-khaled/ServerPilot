@@ -1,5 +1,7 @@
 import React from 'react';
 import { Button } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+
 
 // Helper function to generate a strong password
 function generateStrongPassword(length = 14) {
@@ -28,6 +30,7 @@ function generateStrongPassword(length = 14) {
  * - sx: style overrides
  */
 export default function GeneratePasswordButton({ onGenerate, disabled, sx }) {
+  const { t, i18n } = useTranslation();
   return (
     <Button
       onClick={() => onGenerate(generateStrongPassword())}
@@ -47,7 +50,7 @@ export default function GeneratePasswordButton({ onGenerate, disabled, sx }) {
       disabled={disabled}
       tabIndex={-1}
     >
-      Generate
+      {t('common.generate')}
     </Button>
   );
 }

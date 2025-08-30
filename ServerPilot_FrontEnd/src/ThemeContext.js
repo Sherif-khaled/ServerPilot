@@ -1,5 +1,9 @@
 import React, { createContext, useState, useMemo, useEffect } from 'react';
 import { createTheme, ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
+import { create } from 'jss';
+import rtl from 'jss-rtl';
+import { StylesProvider, jssPreset } from '@mui/styles';
+import i18n from './i18n';
 import { CssBaseline } from '@mui/material';
 import * as userService from './api/userService';
 import { useAuth } from './AuthContext';
@@ -19,9 +23,21 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    const isArabic = i18n.language === 'ar';
+    document.documentElement.setAttribute('dir', isArabic ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', i18n.language || 'en');
+  }, [i18n.language]);
+
   const theme = useMemo(
     () =>
       createTheme({
+        direction: i18n.language === 'ar' ? 'rtl' : 'ltr',
+        typography: {
+          fontFamily: i18n.language === 'ar'
+            ? 'Cairo, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
+            : undefined,
+        },
         palette: {
           mode,
           ...(mode === 'dark'
@@ -99,7 +115,7 @@ export const ThemeProvider = ({ children }) => {
               }),
         },
       }),
-    [mode]
+    [mode, i18n.language]
   );
 
   const toggleTheme = async () => {
@@ -114,12 +130,19 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  const jss = useMemo(() => {
+    const j = create({ plugins: [...jssPreset().plugins, rtl()] });
+    return j;
+  }, []);
+
   return (
     <ThemeContext.Provider value={{ toggleTheme, mode }}>
-      <MUIThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </MUIThemeProvider>
+      <StylesProvider jss={jss}>
+        <MUIThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </MUIThemeProvider>
+      </StylesProvider>
     </ThemeContext.Provider>
   );
 };

@@ -4,10 +4,12 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { monitorApplication } from '../../../../api/serverService';
 
 import { CircularProgressSx, glassDialogSx } from '../../../../common';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#0088FE', '#FFBB28'];
 
 const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName, appId }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -22,7 +24,7 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
         const response = await monitorApplication(customerId, serverId, appId);
         setData(response.data);
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to fetch monitoring data.');
+        setError(err.response?.data?.error || t('servers.common.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -43,19 +45,19 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperComponent={glassDialogSx}>
-      <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem' }}>Application Monitoring {appName}</DialogTitle>
+      <DialogTitle sx={{ textAlign: 'center', fontSize: '1.5rem' }}>{t('monitoring.appMonitorTitle')} {appName}</DialogTitle>
       <DialogContent>
         {loading && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', my: 4 }}>
                 <CircularProgress sx={CircularProgressSx} />
-                <Typography sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.7)' }}>Fetching data...</Typography>
+                <Typography sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.7)' }}>{t('common.loading') || 'Fetching data...'}</Typography>
             </Box>
         )}
         {error && <Alert severity="error">{error}</Alert>}
         {!loading && data && (
           <Box sx={{ display: 'flex', justifyContent: 'space-around', mt: 2 }}>
             <Box sx={{ width: '50%', textAlign: 'center' }}>
-              <Typography variant="h6">CPU Usage</Typography>
+              <Typography variant="h6">{t('monitoring.cpu')}</Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie data={cpuData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
@@ -69,7 +71,7 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
               </ResponsiveContainer>
             </Box>
             <Box sx={{ width: '50%', textAlign: 'center' }}>
-              <Typography variant="h6">Memory Usage</Typography>
+              <Typography variant="h6">{t('monitoring.memory')}</Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie data={memoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} fill="#82ca9d" label>
@@ -86,12 +88,12 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
         )}
         {!loading && !error && !data && (
           <Typography sx={{ mt: 2, textAlign: 'center', color: 'rgba(255, 255, 255, 0.8)' }}>
-            No monitoring data available.
+            {t('servers.infoDialog.noInfo')}
           </Typography>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} sx={{ color: '#fff' }}>Close</Button>
+        <Button onClick={onClose} sx={{ color: '#fff' }}>{t('servers.infoDialog.close')}</Button>
       </DialogActions>
     </Dialog>
   );

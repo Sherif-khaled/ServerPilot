@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Avatar, Typography, Box, MenuItem, CircularProgress, Button, Alert, Paper, Table, TableBody,Tooltip,
+import { Avatar, Typography, Box, MenuItem,ListItemText,ListItemIcon, CircularProgress, Button, Alert, Paper, Table, TableBody,Tooltip,
    TableCell, TableContainer, TableHead, TableRow, IconButton, InputAdornment, TablePagination, Menu, TextField } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon, Add as AddIcon, MoreVert as MoreVertIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { getAllApplications, createApplication, updateApplication, deleteApplication } from '../../../api/applicationService';
 import ApplicationForm from '../components/ApplicationForm';
 import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx, MenuActionsSx, ConfirmDialog } from '../../../common';
+import { useTranslation } from 'react-i18next';
 
 
 const ApplicationsPage = () => {
@@ -23,6 +24,8 @@ const ApplicationsPage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [appToDelete, setAppToDelete] = useState(null);
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { t, i18n } = useTranslation();
+  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
   const handleMenuOpen = (event, app) => {
     setAnchorEl(event.currentTarget);
@@ -41,7 +44,7 @@ const ApplicationsPage = () => {
       setApplications(apps);
       setError(null);
     } catch (err) {
-      setError(`Failed to fetch applications: ${err.message}`);
+      setError(t('forgotPassword.genericError'));
     } finally {
       setLoading(false);
     }
@@ -67,16 +70,16 @@ const ApplicationsPage = () => {
       let response;
       if (appId) {
         response = await updateApplication(appId, appData);
-        showSuccess('Application updated successfully!');
+        showSuccess(t('applicationForm.update'));
       } else {
         response = await createApplication(appData);
-        showSuccess('Application created successfully!');
+        showSuccess(t('applicationForm.create'));
       }
       const updatedApps = await getAllApplications();
       setApplications(updatedApps);
       handleCloseDialog();
     } catch (err) {
-      showError(`Failed to save application: ${err.message}`);
+      showError(t('forgotPassword.genericError'));
     }
   };
 
@@ -89,9 +92,9 @@ const ApplicationsPage = () => {
     try {
       await deleteApplication(appToDelete.id);
       setApplications(prev => prev.filter(app => app.id !== appToDelete.id));
-      showSuccess('Application deleted successfully!');
+      showSuccess(t('applications.confirm'));
     } catch (err) {
-      showError(`Failed to delete application: ${err.message}`);
+      showError(t('forgotPassword.genericError'));
     } finally {
       setDeleteConfirmOpen(false);
       setAppToDelete(null);
@@ -126,20 +129,20 @@ const ApplicationsPage = () => {
       />
       
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
-        <Typography variant="h3" component="h1" sx={{p: 3, fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>Applications Management</Typography>
+        <Typography variant="h3" component="h1" sx={{p: 3, fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{t('applications.management')}</Typography>
         <Box>
-          <Tooltip title="Refresh Applications">
+          <Tooltip title={t('applications.refresh')}>
               <IconButton onClick={fetchApplications} sx={{ color: 'white', mr: 1 }}>
               <RefreshIcon />
               </IconButton>
           </Tooltip>
           <Button variant="contained" 
-                startIcon={<AddIcon />} 
+                startIcon={<AddIcon sx={{ml: isRtl ? 1 : 0}} />} 
                 onClick={() => handleOpenDialog()}
                 sx={{
                 ...gradientButtonSx
               }}>
-                    Add Application
+                    {t('applications.add')}
           </Button>
         </Box>
       </Box>
@@ -147,7 +150,7 @@ const ApplicationsPage = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <TextField
                 fullWidth
-                placeholder="Search Applications..."
+                placeholder={t('applications.searchPlaceholder')}
                 sx={{...textFieldSx }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -168,16 +171,16 @@ const ApplicationsPage = () => {
         {!loading && !error && (
             <TableContainer component={Paper} sx={{ background: 'transparent' }}>
                 <Table>
-                    <TableHead>
-                        <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                            <TableCell sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Icon</TableCell>
-                            <TableCell sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Name</TableCell>
-                            <TableCell sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Description</TableCell>
-                            <TableCell sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Version</TableCell>
-                            <TableCell sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Check Command</TableCell>
-                            <TableCell align="right" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
+                  <TableHead>
+                      <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
+                          {[t('applications.headers.icon'), t('applications.headers.name'), t('applications.headers.description'), t('applications.headers.version'), t('applications.headers.checkCommand'), t('applications.headers.actions')].map((headCell, index) => (
+                              <TableCell key={headCell} align={index === 5 ? 'right' : 'left'} sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold' }}>
+                                  {headCell}
+                              </TableCell>
+                          ))}
+                      </TableRow>
+                  </TableHead>
+ 
                     <TableBody>
                         {filteredApplications.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(app => (
                             <TableRow 
@@ -188,7 +191,7 @@ const ApplicationsPage = () => {
                                   borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                               },
                               '&:hover': {
-                                  background: 'rgba(254,107,139,0.08)', // subtle glassy pink
+                                  background: 'rgba(254,107,139,0.08)',
                                   transition: 'background 0.2s',
                               }
                                 }}>   
@@ -224,6 +227,8 @@ const ApplicationsPage = () => {
                     page={page}
                     onPageChange={handleChangePage}
                     onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage={t('common.rowsPerPage')}
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
                 />
             </TableContainer>
         )}
@@ -248,14 +253,21 @@ const ApplicationsPage = () => {
           }
         }}
       >
+
         <MenuItem onClick={() => {
-          handleOpenDialog(selectedApp);
+          handleOpenDialog(selectedApp);handleOpenDialog(selectedApp);
           handleMenuClose();
-        }}><EditIcon sx={{ mr: 1 }} /> Edit</MenuItem>
+        }}>
+          <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('applications.edit')}</ListItemText>
+        </MenuItem>
         <MenuItem onClick={() => {
           handleDeleteApplication(selectedApp);
           handleMenuClose();
-        }} sx={{ color: '#f44336' }}><DeleteIcon sx={{ mr: 1 }} /> Delete</MenuItem>
+        }} sx={{ color: '#f44336' }}>
+          <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>{t('applications.delete')}</ListItemText>
+        </MenuItem>
       </Menu>
 
       <CustomSnackbar
@@ -269,10 +281,10 @@ const ApplicationsPage = () => {
         open={deleteConfirmOpen}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
-        title="Delete Application"
-        message={`Are you sure you want to delete "${appToDelete?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('applications.confirmDeleteTitle')}
+        message={t('applications.confirmDeleteMessage', { name: appToDelete?.name || '' })}
+        confirmText={t('applications.confirm')}
+        cancelText={t('applications.cancel')}
         severity="error"
       />
     </Box>
