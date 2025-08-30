@@ -46,7 +46,7 @@ const ExplainRiskDialog = ({ open, onClose, recommendation }) => {
             <DialogContent dividers>
                 {loading && (
                     <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                        <CircularProgress sx={CircularProgressSx} />
+                        <CircularProgress size={20} sx={CircularProgressSx} />
                     </Box>
                 )}
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

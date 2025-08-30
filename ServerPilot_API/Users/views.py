@@ -649,7 +649,8 @@ class MFAChallengeView(views.APIView):
             )
 
         try:
-            # Set tolerance on the device (1 step = 30 seconds)
+            # Set tolerance on the device (increase window to help with slight clock drift)
+            # 3 steps = 90 seconds total window
             device.tolerance = 1
 
             # --- DEBUG LOGGING ---

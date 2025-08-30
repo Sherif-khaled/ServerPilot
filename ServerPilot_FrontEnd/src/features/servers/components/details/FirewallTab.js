@@ -278,7 +278,7 @@ const FirewallTab = () => {
       {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>{error}</Alert>}
       
       {loading ? (
-        <CircularProgress sx={CircularProgressSx} />
+        <CircularProgress size={20} sx={CircularProgressSx} />
       ) : (
         <GlassCard sx={{ p: 2, mt: 2 }}>
           <FormControlLabel
@@ -371,7 +371,7 @@ const FirewallTab = () => {
                 </TableRow>
                 {rulesLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center"><CircularProgress sx={CircularProgressSx} /></TableCell>
+                    <TableCell colSpan={6} align="center"><CircularProgress size={20} sx={CircularProgressSx} /></TableCell>
                   </TableRow>
                 ) : filteredRules.length === 0 ? (
                   <TableRow>

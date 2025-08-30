@@ -55,7 +55,13 @@ const PasswordChangeForm = () => {
       setLoading(false);
     }
   };
-
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+        <CircularProgress  size={20} sx={CircularProgressSx} />
+      </Box>
+    );
+  }
   return (
     <GlassPaper>
       <Typography variant="h6" gutterBottom>
@@ -64,6 +70,7 @@ const PasswordChangeForm = () => {
       <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255,255,255,0.7)' }}>
         {t('passwordChange.description')}
       </Typography>
+      
         <Box component="form" onSubmit={handleSubmit} noValidate>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <TextField

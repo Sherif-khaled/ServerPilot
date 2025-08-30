@@ -20,7 +20,7 @@ const BackupScheduleCard = ({
           {t('backups.scheduleTitle')}
         </Typography>
         {scheduleLoading ? (
-          <CircularProgress sx={CircularProgressSx} />
+          <CircularProgress size={20} sx={CircularProgressSx} />
         ) : (
           <Grid container spacing={2} alignItems="center">
             <Grid size={12}>
@@ -78,7 +78,7 @@ const BackupScheduleCard = ({
                 }}
               >
                 {scheduleSaving ? (
-                  <CircularProgress sx={CircularProgressSx} />
+                  <CircularProgress size={20} sx={CircularProgressSx} />
                 ) : (
                   t('backups.saveSchedule')
                 )}

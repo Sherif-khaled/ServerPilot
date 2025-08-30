@@ -36,7 +36,7 @@ export default function ServerInfoDialog({ open, onClose, serverName, loading, e
       <DialogContent>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-            <CircularProgress sx={CircularProgressSx} />
+            <CircularProgress size={20} sx={CircularProgressSx} />
           </Box>
         ) : error ? (
           <Alert severity="error">{error}</Alert>

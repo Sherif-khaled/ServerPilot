@@ -147,7 +147,7 @@ const ApplicationForm = ({ open, handleClose, application, onSave }) => {
                 <InputAdornment position="end">
                   <Tooltip title={t('applicationForm.generate')}>
                     <IconButton onClick={handleGenerateInfo} disabled={isGenerating} edge="end">
-                      {isGenerating ? <CircularProgress size={24} sx={{ color: '#FE6B8B' }} /> : <AutoFixHighIcon />}
+                      {isGenerating ? <CircularProgress size={20} sx={{ color: '#FE6B8B' }} /> : <AutoFixHighIcon />}
                     </IconButton>
                   </Tooltip>
                 </InputAdornment>

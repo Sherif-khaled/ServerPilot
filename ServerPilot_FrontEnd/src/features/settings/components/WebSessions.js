@@ -80,7 +80,7 @@ const WebSessions = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-        <CircularProgress sx={CircularProgressSx} />
+        <CircularProgress size={20} sx={CircularProgressSx} />
       </Box>
     );
   }
@@ -165,7 +165,7 @@ const WebSessions = () => {
         severity="warning"
         confirmButtonProps={{
           disabled: revokeLoading,
-          startIcon: revokeLoading ? <CircularProgress size={18} /> : null,
+          startIcon: revokeLoading ? <CircularProgress size={20} /> : null,
         }}
       />
       <CustomSnackbar

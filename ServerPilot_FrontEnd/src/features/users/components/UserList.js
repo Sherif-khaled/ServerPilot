@@ -325,7 +325,7 @@ export default function UserList() {
 
                 {loading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-                        <CircularProgress sx={CircularProgressSx} />
+                        <CircularProgress size={20} sx={CircularProgressSx} />
                     </Box>
                 ) : (
                     <TableContainer component={Paper} sx={{ background: 'transparent' }}>

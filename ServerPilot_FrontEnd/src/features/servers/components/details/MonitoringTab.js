@@ -38,7 +38,7 @@ const MonitoringTab = ({ customerId, serverId }) => {
   if (loading && !stats) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3 }}>
-        <CircularProgress sx={CircularProgressSx}/>
+        <CircularProgress size={20}  sx={CircularProgressSx}/>
         <Typography sx={{ ml: 2 }}>{t('monitoring.common.loading')}</Typography>
       </Box>
     );

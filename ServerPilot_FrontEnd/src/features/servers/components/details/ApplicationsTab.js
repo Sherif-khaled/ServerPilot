@@ -96,7 +96,7 @@ function ApplicationsTab() {
         fetchAppStatuses();
     }, [customerId, serverId]);
 
-    if (loading) return <CircularProgress sx={{ color: '#FE6B8B' }}/>;
+    if (loading) return <CircularProgress size={20} sx={{ color: '#FE6B8B' }}/>;
     if (error) return <Alert severity="error">{error}</Alert>;
 
     return (
@@ -122,7 +122,7 @@ function ApplicationsTab() {
                                 secondaryAction={
                                     <>
                                         {actionLoading && selectedApp?.name === app.name ? (
-                                            <CircularProgress sx={CircularProgressSx} />
+                                            <CircularProgress size={20} sx={CircularProgressSx} />
                                         ) : (
                                             <IconButton
                                                 aria-label="actions"

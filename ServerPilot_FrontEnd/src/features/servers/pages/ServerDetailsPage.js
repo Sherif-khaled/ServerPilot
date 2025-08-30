@@ -79,7 +79,7 @@ export default function ServerDetailsPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress  sx={{ color: '#FE6B8B' }} /></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress size={20}  sx={CircularProgress} /></Box>;
   }
 
   if (error) {

@@ -90,7 +90,7 @@ const AISettings = () => {
             
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-                    <CircularProgress sx={{ color: '#FE6B8B' }} />
+                    <CircularProgress size={20} sx={{ color: '#FE6B8B' }} />
                 </Box>
             ) : (
                 <Box component="form" noValidate autoComplete="off">
@@ -157,7 +157,7 @@ const AISettings = () => {
                                ...gradientButtonSx
                             }}
                         >
-                            {loading ? <CircularProgress sx={CircularProgressSx} /> : t('settingsAI.save')}
+                            {loading ? <CircularProgress size={20} sx={CircularProgressSx} /> : t('settingsAI.save')}
                         </Button>
                     </Box>
                 </Box>

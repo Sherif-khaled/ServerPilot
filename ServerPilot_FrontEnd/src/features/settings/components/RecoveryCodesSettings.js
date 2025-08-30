@@ -145,7 +145,7 @@ const RecoveryCodesSettings = () => {
                             sx={{
                                 ...gradientButtonSx}}
                         >
-                            {loading ? <CircularProgress sx={CircularProgressSx} /> : t('recoveryCodes.confirmFinish')}
+                            {loading ? <CircularProgress size={20} sx={CircularProgressSx} /> : t('recoveryCodes.confirmFinish')}
                         </Button>
                     </Box>
                 </Box>

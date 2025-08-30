@@ -59,7 +59,7 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
   };
 
   if (isLoading) {
-    return <CircularProgress sx={CircularProgressSx} />;
+    return <CircularProgress size={20} sx={CircularProgressSx} />;
   }
 
   return (

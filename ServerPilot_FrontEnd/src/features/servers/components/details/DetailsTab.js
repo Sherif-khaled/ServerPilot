@@ -76,7 +76,7 @@ function DetailsTab({ server, customerId }) {
         <Box sx={{ width: '100%', p: 1.5 }}>
           <SectionHeader>{t('servers.details.sectionServer')}</SectionHeader>
           <GlassCard sx={{ p: 2 }}>
-            {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
+            {infoLoading ? <CircularProgress size={20} sx={CircularProgressSx} /> : (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
               <DetailItem label={t('servers.details.name')} value={server.server_name} />
               <DetailItem label={t('servers.details.status')} value={renderStatusChip(isOnline ? t('servers.common.statusOnline') : t('servers.common.statusOffline'), isOnline)} />
@@ -90,7 +90,7 @@ function DetailsTab({ server, customerId }) {
         <Box sx={{ width: { xs: '100%', md: '100%' }, p: 1.5 }}>
           <SectionHeader>{t('servers.details.sectionResource')}</SectionHeader>
           <GlassCard sx={{ minHeight: 150, p: 2 }}>
-            {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
+            {infoLoading ? <CircularProgress size={20} sx={CircularProgressSx} /> : (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
                 <DetailItem label={t('servers.details.cpuUsage')} value={`${serverMetrics?.cpu?.cpu_usage_percent?.toFixed(1) || t('servers.common.na')} %`} />
                 <DetailItem label={t('servers.details.cpuCores')} value={`${serverMetrics?.cpu?.cores || t('servers.common.na')} Cores`} />
@@ -107,7 +107,7 @@ function DetailsTab({ server, customerId }) {
         <Box sx={{ width: { xs: '100%', md: '100%' }, p: 1.5 }}>
           <SectionHeader>{t('servers.details.sectionSwap')}</SectionHeader>
           <GlassCard sx={{ minHeight: 150, p: 2 }}>
-          {infoLoading ? <CircularProgress sx={CircularProgressSx} /> : (
+          {infoLoading ? <CircularProgress size={20} sx={CircularProgressSx} /> : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -0.5 }}>
                     <DetailItem label={t('servers.details.enableSwap')} value={serverMetrics?.swap ? (serverMetrics.swap.enabled ? t('securityRisks.table.enabled') : t('securityRisks.table.disabled')) : t('servers.common.na')} />
           <DetailItem label={t('servers.details.totalSwap')} value={`${serverMetrics?.swap?.total_gb || t('servers.common.na')} GB`} />

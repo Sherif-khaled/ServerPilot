@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { getPasswordPolicy, updatePasswordPolicy } from '../../../api/securityService';
+import {CircularProgressSx } from '../../../common';
 
 const RootContainer = styled(Box)(({ theme }) => ({
     width: '100%',
@@ -95,7 +96,7 @@ const PasswordPolicyPage = () => {
     };
 
     if (loading && !policy) {
-        return <CircularProgress />;
+        return <CircularProgress size={20} sx={CircularProgressSx}/>;
     }
 
     if (error && !policy) {
@@ -233,7 +234,7 @@ const PasswordPolicyPage = () => {
                                         },
                                         }}
                                     >
-                                {loading ? <CircularProgress size={24} /> : 'Save Policy'}
+                                {loading ? <CircularProgress size={20} sx={CircularProgressSx} /> : 'Save Policy'}
                             </Button>
                         </Box>
                     </form>

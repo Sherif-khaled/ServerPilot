@@ -165,7 +165,7 @@ const ApplicationsPage = () => {
 
         </Box>
 
-        {loading && <CircularProgress  sx={CircularProgressSx}/>}
+        {loading && <CircularProgress size={20} sx={CircularProgressSx}/>}
         {error && <Alert severity="error">{error}</Alert>}
 
         {!loading && !error && (

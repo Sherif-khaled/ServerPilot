@@ -208,7 +208,7 @@ const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, showSuc
               ...gradientButtonSx
             }}
           >
-            {saving ? <CircularProgress sx={CircularProgressSx} /> : t('securityRiskDialog.save')}
+            {saving ? <CircularProgress size={20} sx={CircularProgressSx} /> : t('securityRiskDialog.save')}
           </Button>   
         </Box>
       </DialogActions>

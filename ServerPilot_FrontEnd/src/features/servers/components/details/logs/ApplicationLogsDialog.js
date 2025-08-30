@@ -315,7 +315,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
                 }}>
                     {loading ? (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                            <CircularProgress  sx={CircularProgressSx}/>
+                            <CircularProgress size={20}  sx={CircularProgressSx}/>
                         </Box>
                     ) : error ? (
                         <Alert severity="error" sx={{
@@ -376,7 +376,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
                     {analyzing && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, p: 2, backgroundColor: '#3c3c3c', borderRadius: 2 }}>
-                            <CircularProgress sx={CircularProgressSx} />
+                            <CircularProgress size={20} sx={CircularProgressSx} />
                             <Typography>Analyzing logs, please wait...</Typography>
                         </Box>
                     )}
@@ -387,7 +387,7 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
                     {fixing && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, p: 2, backgroundColor: '#3c3c3c', borderRadius: 2 }}>
-                            <CircularProgress sx={CircularProgressSx} />
+                            <CircularProgress size={20} sx={CircularProgressSx} />
                             <Typography>Attempting fix, please wait...</Typography>
                         </Box>
                     )}

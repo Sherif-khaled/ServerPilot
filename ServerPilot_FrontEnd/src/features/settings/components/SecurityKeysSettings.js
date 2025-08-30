@@ -83,7 +83,7 @@ const SecurityKeysSettings = () => {
             {/* {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
             {isLoading ? (
-                <CircularProgress sx={CircularProgressSx}/>
+                <CircularProgress size={20} sx={CircularProgressSx}/>
             ) : (
                 <List>
                     {keys.map((key) => (

@@ -16,6 +16,10 @@ class CustomUser(AbstractUser):
         ('light', 'Light'),
         ('dark', 'Dark'),
     )
+    LANGUAGE_CHOICES = (
+        ('en', 'English'),
+        ('ar', 'Arabic'),
+    )
     email = models.EmailField(unique=True)
     mfa_enabled = models.BooleanField(default=False)
     profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True)
@@ -23,6 +27,7 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     timezone = models.CharField(max_length=50, default='UTC')
     date_format = models.CharField(max_length=20, default='YYYY-MM-DD')
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='en')
     recovery_codes_verified = models.BooleanField(default=False)
     password_changed_at = models.DateTimeField(default=tz.now)
 

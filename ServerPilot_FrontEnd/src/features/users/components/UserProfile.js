@@ -7,7 +7,7 @@ import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { getProfile, updateProfile } from '../../../api/userService';
-import { textFieldSx, gradientButtonSx, CircularProgressSx, glassCardSx, ConfirmDialog } from '../../../common';
+import { textFieldSx, gradientButtonSx, CircularProgressSx, glassCardSx, ConfirmDialog, SelectSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -127,7 +127,7 @@ export default function UserProfile() {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'rgba(38, 50, 56, 0.6)' }}>
-        <CircularProgress sx={CircularProgressSx} />
+        <CircularProgress size={20} sx={CircularProgressSx} />
       </Box>
     );
   }
@@ -260,18 +260,14 @@ export default function UserProfile() {
                       onClose={() => setTimezoneSearch('')}
                       sx={textFieldSx}
                       MenuProps={{
-                        autoFocus: false,
                         PaperProps: {
                           sx: {
-                            background: 'rgba(40, 40, 40, 0.9)',
-                            backdropFilter: 'blur(10px)',
-                            color: '#fff',
-                            border: `1px solid rgba(255, 255, 255, 0.2)`,
-                          }
-                        }
+                            ...SelectSx
+                          },
+                        },
                       }}
                     >
-                      <ListSubheader sx={{ background: 'rgba(40, 40, 40, 0.9)', color: '#fff' }}>
+                      <ListSubheader sx={{ background: 'rgba(255, 255, 255, 0.05)', color: '#fff' }}>
                         <TextField
                           size="small"
                           autoFocus
@@ -281,7 +277,7 @@ export default function UserProfile() {
                           onChange={(e) => setTimezoneSearch(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                           onKeyDown={(e) => e.key !== 'Escape' && e.stopPropagation()}
-                          sx={textFieldSx}
+                          sx={{...textFieldSx}                          }
                           variant="outlined"
                         />
                       </ListSubheader>
@@ -301,12 +297,9 @@ export default function UserProfile() {
                       MenuProps={{
                         PaperProps: {
                           sx: {
-                            background: 'rgba(40, 40, 40, 0.9)',
-                            backdropFilter: 'blur(10px)',
-                            color: '#fff',
-                            border: `1px solid rgba(255, 255, 255, 0.2)`,
-                          }
-                        }
+                            ...SelectSx
+                          },
+                        },
                       }}
                     >
                       {dateFormats.map(format => (
@@ -323,7 +316,7 @@ export default function UserProfile() {
                     size="large"
                     sx={{...gradientButtonSx}}
                   >
-                    {saving ? <CircularProgress sx={CircularProgressSx} /> : t('userProfile.saveChanges')}
+                    {saving ? <CircularProgress size={20} sx={CircularProgressSx} /> : t('userProfile.saveChanges')}
                   </Button>
                 </Box>
               </Box>

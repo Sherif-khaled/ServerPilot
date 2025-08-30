@@ -8,7 +8,7 @@ import Chip from '@mui/material/Chip';
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ComputerIcon from '@mui/icons-material/Computer';
-import {CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx } from '../../../common';
+import {CircularProgressSx, GlassCard, gradientButtonSx, textFieldSx, SelectSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -240,6 +240,13 @@ const AuditLogList = () => {
                                             label={t('audit.filters.user')}
                                             onChange={handleFilterChange}
                                             sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                            MenuProps={{
+                                                PaperProps: {
+                                                  sx: {
+                                                    ...SelectSx
+                                                  },
+                                                },
+                                              }}
                                         >
                                             <MenuItem value=""><em>{t('audit.filters.allUsers')}</em></MenuItem>
                                             {users.map((user) => (
@@ -277,7 +284,7 @@ const AuditLogList = () => {
                             </Paper>
 
                             {loading ? (
-                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={CircularProgressSx} /></div>
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress size={20} sx={CircularProgressSx} /></div>
                             ) : error ? (
                                 <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{error}</Alert>
                             ) : (
@@ -347,6 +354,13 @@ const AuditLogList = () => {
                                             label={t('audit.filters.level')}
                                             onChange={handleSystemLogFilterChange}
                                             sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' }, '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.7)' } }}
+                                            MenuProps={{
+                                                PaperProps: {
+                                                  sx: {
+                                                    ...SelectSx
+                                                  },
+                                                },
+                                              }}
                                         >
                                             <MenuItem value=""><em>{t('audit.filters.all')}</em></MenuItem>
                                             <MenuItem value="DEBUG">{t('audit.filters.debug')}</MenuItem>
@@ -386,7 +400,7 @@ const AuditLogList = () => {
                             </Paper>
 
                             {systemLogsLoading ? (
-                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress sx={{ color: '#FE6B8B' }} /></div>
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}><CircularProgress size={20} sx={{ color: '#FE6B8B' }} /></div>
                             ) : systemLogsError ? (
                                 <Alert severity="error" style={{ margin: '20px', background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{systemLogsError}</Alert>
                             ) : (

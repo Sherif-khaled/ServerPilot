@@ -309,7 +309,7 @@ const DatabaseManagementPage = () => {
                     </Box>
                                     {listLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-                        <CircularProgress sx={CircularProgressSx} />
+                        <CircularProgress size={20} sx={CircularProgressSx} />
                     </Box>
                 ) : listError ? (
                     <Alert severity="error" sx={{ background: 'rgba(211, 47, 47, 0.8)', color: '#fff' }}>{listError}</Alert>

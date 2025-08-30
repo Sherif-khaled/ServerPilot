@@ -167,7 +167,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress sx={{ color: '#FE6B8B' }}/></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress size={20} sx={{ color: '#FE6B8B' }}/></Box>;
   }
 
   if (!isAIConfigured) {
@@ -258,7 +258,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             disabled={
               scanning || 
               loading} 
-            startIcon={scanning ? <CircularProgress sx={CircularProgressSx}/> : null} 
+            startIcon={scanning ? <CircularProgress size={20} sx={CircularProgressSx}/> : null} 
             sx={{mr:2}}>
             {t('securityAdvisor.rescan')}
           </Button>

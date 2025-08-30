@@ -257,7 +257,7 @@ export default function CustomerList() {
 
               {loading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-                      <CircularProgress sx={CircularProgressSx} />
+                      <CircularProgress size={20} sx={CircularProgressSx} />
                   </Box>
               ) : !error && filteredCustomers.length === 0 ? (
                   <Typography sx={{ textAlign: 'center', p: 3, color: 'rgba(255, 255, 255, 0.7)' }}>

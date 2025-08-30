@@ -134,7 +134,7 @@ export default function SetPasswordForm({ open, onClose, onSubmit, username, err
                         size="large"
                         onClick={handleSubmit}
                     >
-                        {loading ? <CircularProgress sx={CircularProgressSx} /> : 'Set Password'}
+                        {loading ? <CircularProgress size={20} sx={CircularProgressSx} /> : 'Set Password'}
                     </Button>
                 </Box>
             </DialogActions>

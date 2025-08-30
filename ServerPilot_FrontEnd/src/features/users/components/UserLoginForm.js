@@ -269,7 +269,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
                   variant="contained"
                   disabled={isLoading}
                   sx={{width: '100%',...gradientButtonSx }}
-                  startIcon={isLoading ? <CircularProgress sx={CircularProgressSx} /> : null}
+                  startIcon={isLoading ? <CircularProgress size={20} sx={CircularProgressSx} /> : null}
               >
                   {isLoading ? t('auth.loggingIn') : t('auth.login')}
               </Button>

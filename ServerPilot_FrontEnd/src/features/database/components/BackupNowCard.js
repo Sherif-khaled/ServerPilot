@@ -48,7 +48,7 @@ const BackupNowCard = ({ onBackupTriggered }) => {
                     >
                         {t('backups.backupNow')}
                     </Button>
-                    {loading && <CircularProgress sx={CircularProgressSx} />}
+                    {loading && <CircularProgress size={20} sx={CircularProgressSx} />}
                 </Box>
             </CardContent>
         </GlassCard>

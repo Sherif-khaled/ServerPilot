@@ -110,7 +110,7 @@ const MfaSettings = () => {
   };
 
   if (loading) {
-    return <CircularProgress />;
+    return <CircularProgress size={20} sx={CircularProgressSx} />;
   }
 
   return (

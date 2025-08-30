@@ -118,7 +118,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
       });
   };
 
-  if (loading) return <CircularProgress sx={CircularProgressSx} />;
+  if (loading) return <CircularProgress size={20} sx={CircularProgressSx} />;
   if (!settings) return <Alert severity="error">{t('generalSettings.settingsLoadFail')}</Alert>;
 
     return (
@@ -136,7 +136,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
               <input type="file" hidden accept="image/png, image/jpeg, image/x-icon" onChange={handleFaviconChange} />
             </Button>
             <Button type="submit" variant="contained" disabled={faviconSaving || !selectedFavicon} sx={{ ...gradientButtonSx }}>
-              {faviconSaving ? <CircularProgress sx={CircularProgressSx}  /> : t('generalSettings.uploadFavicon')}
+              {faviconSaving ? <CircularProgress size={20} sx={CircularProgressSx}  /> : t('generalSettings.uploadFavicon')}
             </Button>
           </Box>
           {selectedFavicon && <Typography variant="body2">{t('generalSettings.selected', { name: selectedFavicon.name })}</Typography>}

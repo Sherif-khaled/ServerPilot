@@ -319,7 +319,7 @@ export default function ServerList({ customerId: propCustomerId }) {
           </Box>
 
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress sx={CircularProgressSx} /></Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress size={20} sx={CircularProgressSx} /></Box>
           ) : filteredServers.length === 0 ? (
             <Box sx={{ textAlign: 'center', p: 5, color: 'rgba(255,255,255,0.7)' }}>
               <DnsIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />

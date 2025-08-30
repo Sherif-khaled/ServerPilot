@@ -49,7 +49,7 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
       <DialogContent>
         {loading && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', my: 4 }}>
-                <CircularProgress sx={CircularProgressSx} />
+                <CircularProgress size={20} sx={CircularProgressSx} />
                 <Typography sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.7)' }}>{t('common.loading') || 'Fetching data...'}</Typography>
             </Box>
         )}

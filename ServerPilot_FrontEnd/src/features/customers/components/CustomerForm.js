@@ -494,7 +494,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
         {/* Step Content */}
         {loading && !formData.email ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
-            <CircularProgress sx={CircularProgressSx} />
+            <CircularProgress size={20} sx={CircularProgressSx} />
           </Box>
         ) : (
           <Box sx={{ mt: 2 }}>
@@ -524,7 +524,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
               onClick={handleSubmit}
               variant="contained"
               disabled={loading}
-              startIcon={loading ? <CircularProgress sx={CircularProgressSx} /> : <SaveIcon />}
+              startIcon={loading ? <CircularProgress size={20} sx={CircularProgressSx} /> : <SaveIcon />}
               sx={{...gradientButtonSx}}
             >
               {loading ? t('customerForm.saving') : t('customerForm.save')}

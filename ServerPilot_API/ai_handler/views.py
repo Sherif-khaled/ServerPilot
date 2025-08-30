@@ -66,12 +66,19 @@ class ExplainSecurityRiskView(APIView):
             return Response({'error': 'AI settings are not configured.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            prompt = f"Explain why the following is a security risk in 3 terms for a non-technical person: \"{risk_description}\""
+            user_language = request.user.language
+            system_message = "You are a cybersecurity expert explaining risks to beginners."
+            if user_language == 'ar':
+                system_message = "You are a cybersecurity expert explaining risks to beginners. Respond only in Arabic."
+            else:
+                system_message = "You are a cybersecurity expert explaining risks to beginners."
+                
+            prompt = f"Explain why the following is a security risk in 3 bullet points for a non-technical person: \"{risk_description}\""
             client = OpenAI(api_key=settings.api_key)
             response = client.chat.completions.create(
                 model=settings.model,
                 messages=[
-                    {"role": "system", "content": "You are a cybersecurity expert explaining risks to beginners."},
+                    {"role": "system", "content": system_message},
                     {"role": "user", "content": prompt}
                 ]
             )
