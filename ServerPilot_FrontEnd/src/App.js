@@ -22,6 +22,7 @@ import ChangePasswordPage from './features/users/pages/ChangePasswordPage';
 import AdminSettingsPage from './features/administration/pages/AdminSettingsPage';
 import ForgotPassword from './features/users/components/ForgotPassword';
 import ResetPassword from './features/users/components/ResetPassword';
+import VerifyEmailPage from './features/users/pages/VerifyEmailPage';
 import ApplicationsPage from './features/applications/pages/ApplicationsPage';
 
 
@@ -33,6 +34,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
       <Route path="/register" element={<UserRegisterForm />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
+      <Route path="/activate/:uid/:token" element={<VerifyEmailPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Protected Routes */}

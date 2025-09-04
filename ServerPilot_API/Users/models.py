@@ -30,6 +30,7 @@ class CustomUser(AbstractUser):
     language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='en')
     recovery_codes_verified = models.BooleanField(default=False)
     password_changed_at = models.DateTimeField(default=tz.now)
+    email_verified = models.BooleanField(default=False)
 
     def set_password(self, raw_password):
         # If user has a usable password, save old password to history

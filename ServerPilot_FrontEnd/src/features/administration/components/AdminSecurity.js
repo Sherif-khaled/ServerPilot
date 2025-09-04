@@ -14,6 +14,7 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
     recaptcha_secret_key: '',
     recaptcha_enabled: false,
     session_expiration_hours: 24,
+    self_registration_enabled: false,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,6 +27,7 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
           recaptcha_secret_key: response.data.recaptcha_secret_key || '',
           recaptcha_enabled: response.data.recaptcha_enabled,
           session_expiration_hours: response.data.session_expiration_hours || 24,
+          self_registration_enabled: response.data.self_registration_enabled || false,
         };
         setSettings(fetchedSettings);
       } catch (err) {
@@ -50,7 +52,7 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      await api.post('/security/settings/', settings);
+      await api.put('/security/settings/', settings);
       showSuccess(t('adminSecurity.savingSuccess'));
     } catch (err) {
       showError(t('adminSecurity.saveFail'));
@@ -129,6 +131,26 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
             sx={{ ...textFieldSx }}
             helperText={t('adminSecurity.sessionHelper')}
             inputProps={{ min: 1, max: 168 }}
+          />
+        </Box>
+        
+        <Box sx={{ border: '1px solid', borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 1, p: 2, mt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            {t('adminSecurity.selfRegistrationTitle')}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2, color: 'rgba(255, 255, 255, 0.7)' }}>
+            {t('adminSecurity.selfRegistrationDescription')}
+          </Typography>
+          <FormControlLabel
+            control={<Switch 
+              checked={settings.self_registration_enabled} 
+              onChange={handleChange} 
+              name="self_registration_enabled"
+              sx={{
+                ...switchSx
+              }}
+            />}
+            label={t('adminSecurity.enableSelfRegistration')}
           />
         </Box>
         

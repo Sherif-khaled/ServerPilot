@@ -23,7 +23,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
-        user.is_active = True  # Make users active immediately
+        # Active account but not verified yet
+        user.is_active = True
+        user.email_verified = False
         user.save()
         return user
 
@@ -42,6 +44,8 @@ class LoginSerializer(serializers.Serializer):
         if user is not None:
             logger.info(f"User '{username}' authenticated successfully. Is active: {user.is_active}")
             if user.is_active:
+                if not getattr(user, 'email_verified', False):
+                    raise serializers.ValidationError("You must verify your email to login in")
                 return user
             else:
                 logger.warning(f"Login failed for '{username}': User is inactive.")
@@ -62,11 +66,20 @@ class GitHubAuthSerializer(serializers.Serializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     profile_photo = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+    is_email_verified = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'profile_photo', 'mfa_enabled', 'recovery_codes_verified', 'is_staff', 'theme', 'phone_number', 'timezone', 'date_format', 'language')
+        fields = (
+            'id', 'username', 'email', 'first_name', 'last_name', 'profile_photo',
+            'mfa_enabled', 'recovery_codes_verified', 'is_staff', 'theme', 'phone_number',
+            'timezone', 'date_format', 'language', 'is_email_verified'
+        )
         read_only_fields = ('username', 'email')
+
+    def get_is_email_verified(self, obj):
+        # Backwards-compatible flag used by frontend
+        return bool(getattr(obj, 'email_verified', False))
 
 
 class UserListSerializer(serializers.ModelSerializer):

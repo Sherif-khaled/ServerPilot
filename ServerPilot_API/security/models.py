@@ -42,7 +42,7 @@ class SecuritySettings(models.Model):
     recaptcha_secret_key = models.CharField(max_length=255, blank=True)
     recaptcha_enabled = models.BooleanField(default=False)
     session_expiration_hours = models.PositiveIntegerField(default=24, help_text="Number of hours before a user session expires.")
-
+    self_registration_enabled = models.BooleanField(default=False, help_text="Allow users to register themselves without admin approval.")
 
 
     def __str__(self):

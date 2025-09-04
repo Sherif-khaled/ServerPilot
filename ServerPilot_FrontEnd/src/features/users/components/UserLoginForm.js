@@ -10,18 +10,8 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Avatar } from '@mui/material';
 import Footer from '../../core/components/Footer';
-import { textFieldSx, gradientButtonSx, CircularProgressSx, checkBoxSx } from '../../../common';
+import { textFieldSx, gradientButtonSx, CircularProgressSx, checkBoxSx, Background } from '../../../common';
 import { useTranslation } from 'react-i18next';
-
-const Background = styled('div')({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-  zIndex: -1,
-});
 
 const MainContainer = styled(Box)({
   display: 'flex',
@@ -66,8 +56,20 @@ const IconWrapper = styled(Box)({
 
 export default function UserLoginForm({ onLoginSuccess }) {
   const { t, i18n } = useTranslation();
+  const [selfRegistrationEnabled, setSelfRegistrationEnabled] = useState(false);
+  
   useEffect(() => {
     api.get('users/csrf/').catch(err => console.error('CSRF pre-flight failed:', err));
+    
+    // Check if self-registration is enabled
+    api.get('/security/self-registration-status/')
+      .then(response => {
+        setSelfRegistrationEnabled(response.data.self_registration_enabled || false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch self-registration status:', err);
+        setSelfRegistrationEnabled(false); // Default to disabled for security
+      });
   }, []);
 
   const { loginAuth, user } = useAuth();
@@ -259,9 +261,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
                   control={<Checkbox value="remember" sx={{...checkBoxSx}}/>}
                   label={t('auth.rememberMe')}
                 />
-                <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ color: '#fff', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                  {t('auth.forgotPassword')}
-                </Link>
+               
               </Box>
               <Box sx={{ mt: 2 , width: '100%'}}>
               <Button
@@ -273,6 +273,20 @@ export default function UserLoginForm({ onLoginSuccess }) {
               >
                   {isLoading ? t('auth.loggingIn') : t('auth.login')}
               </Button>
+              </Box>
+              <Box display={'flex'} sx={{mt:2}}> 
+                <Box  justifyContent={'start'}>
+                  <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ color: '#fff', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                    {t('auth.forgotPassword')}
+                  </Link>
+                </Box>
+                {selfRegistrationEnabled && (
+                  <Box sx={{ ml: 'auto' }}>
+                    <Link component={RouterLink} to="/register" variant="body2" sx={{ color: '#fff', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                      {t('auth.signUp')}
+                    </Link>
+                  </Box>
+                )}
               </Box>
             </>
           ) : (

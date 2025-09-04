@@ -4,16 +4,7 @@ import { Button, TextField, Typography, Alert, Container } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import api from '../../../api/axiosConfig';
 import { useTranslation } from 'react-i18next';
-
-const Background = styled('div')({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-  zIndex: -1,
-});
+import {textFieldSx, gradientButtonSx, Background} from '../../../common';
 
 const FormContainer = styled(Container)({
   display: 'flex',
@@ -35,11 +26,6 @@ const StyledForm = styled('form')({
   color: '#fff',
 });
 
-const StyledButton = styled(Button)({
-  marginTop: '20px',
-  background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-  color: 'white',
-});
 
 const ResetPassword = () => {
   const { uid, token } = useParams();
@@ -49,15 +35,56 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (field, value) => {
+    switch (field) {
+      case 'password':
+        setPassword(value);
+        break;
+      case 'confirmPassword':
+        setConfirmPassword(value);
+        break;
+      default:
+        break;
+    }
+    
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!password.trim()) {
+      newErrors.password = t('resetPassword.errors.enterPassword');
+    } else if (password.length < 8) {
+      newErrors.password = t('resetPassword.errors.passwordTooShort');
+    }
+    
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = t('resetPassword.errors.confirmPassword');
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = t('resetPassword.errors.mismatch');
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError(t('resetPassword.mismatch'));
-      return;
-    }
     setError('');
     setMessage('');
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       const response = await api.post('users/password/reset/confirm/', {
@@ -89,10 +116,11 @@ const ResetPassword = () => {
             margin="normal"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            onChange={(e) => handleChange('password', e.target.value)}
+            error={!!errors.password}
+            helperText={errors.password || ''}
             InputLabelProps={{ style: { color: '#fff' } }}
-            sx={{ input: { color: 'white' } }}
+            sx={textFieldSx}
           />
           <TextField
             label={t('resetPassword.confirmNewPassword')}
@@ -101,14 +129,15 @@ const ResetPassword = () => {
             margin="normal"
             type="password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
+            onChange={(e) => handleChange('confirmPassword', e.target.value)}
+            error={!!errors.confirmPassword}
+            helperText={errors.confirmPassword || ''}
             InputLabelProps={{ style: { color: '#fff' } }}
-            sx={{ input: { color: 'white' } }}
+            sx={textFieldSx}
           />
-          <StyledButton type="submit" fullWidth variant="contained">
+          <Button type="submit" fullWidth variant="contained" sx={gradientButtonSx}>
             {t('resetPassword.submit')}
-          </StyledButton>
+          </Button>
         </StyledForm>
       </FormContainer>
     </>

@@ -11,12 +11,12 @@ class FaviconView(APIView):
 
     def get(self, request):
         favicon = Favicon.load()
-        serializer = FaviconSerializer(favicon)
+        serializer = FaviconSerializer(favicon, context={'request': request})
         return Response(serializer.data)
 
     def put(self, request):
         favicon = Favicon.load()
-        serializer = FaviconSerializer(favicon, data=request.data)
+        serializer = FaviconSerializer(favicon, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

@@ -64,8 +64,24 @@ const resources = {
       auth: {
         username: 'Username',
         password: 'Password',
+        email: 'Email',
         rememberMe: 'Remember me',
         forgotPassword: 'Forgot Password?',
+        signUp: 'Sign Up',
+        alreadyHaveAccount: 'Already have an account? Sign in',
+        register: 'Register',
+        registerPharse: 'Manage, Secure, and connect customers servers with ServerPilot',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        registrationSuccessful: 'Registration successful! Check your email to activate your account.',
+        registrationFailed: 'Registration failed',
+        selfRegistrationDisabled: 'Self-Registration Disabled',
+        selfRegistrationDisabledMessage: 'User self-registration is currently disabled. Please contact an administrator to create an account for you.',
+        backToLogin: 'Back to Login',
+        verificationSuccess: 'Email Verification',
+        verificationError: 'Verification Error',
+        emailVerified: 'Your email has been verified successfully. You can now log in.',
+        verificationFailed: 'Verification failed. The link may be invalid or expired.',
         login: 'Login',
         loggingIn: 'Logging in...'
       },
@@ -75,14 +91,24 @@ const resources = {
         email: 'Email Address',
         recaptchaRequired: 'Please complete the reCAPTCHA.',
         submit: 'Send Reset Link',
-        genericError: 'An error occurred. Please try again.'
+        genericError: 'An error occurred. Please try again.',
+        errors: {
+          enterEmail: 'Please enter your email address.',
+          invalidEmail: 'Please enter a valid email address.'
+        }
       },
       resetPassword: {
         title: 'Reset Password',
         newPassword: 'New Password',
         confirmNewPassword: 'Confirm New Password',
         mismatch: 'Passwords do not match.',
-        submit: 'Set New Password'
+        submit: 'Set New Password',
+        errors: {
+          enterPassword: 'Please enter a new password.',
+          passwordTooShort: 'Password must be at least 8 characters long.',
+          confirmPassword: 'Please confirm your new password.',
+          mismatch: 'Passwords do not match.'
+        }
       },
       users: {
         userManagement: 'User Management',
@@ -427,7 +453,13 @@ const resources = {
         save: 'Save Security Settings',
         savingSuccess: 'Settings saved successfully!',
         loadFail: 'Failed to load settings',
-        saveFail: 'Failed to save settings'
+        saveFail: 'Failed to save settings',
+        selfRegistrationTitle: 'Self Registeration',
+        enableSelfRegistration: 'Enable Self Registration',
+        selfRegistrationDescription: 'Control whether users can register themselves or if registration requires manager approval.',
+
+
+
       },
       generalSettings: {
         success: 'Settings saved successfully!',
@@ -464,7 +496,8 @@ const resources = {
         settingsSaveFail: 'Failed to save settings',
         settingsLoadFail: 'Failed to load email settings.',
         connectionSuccess: 'Connection test successful',
-        connectionFail: 'Connection test failed. Please check SMTP authentications.'
+        connectionFail: 'Connection test failed. Please check SMTP authentications.',
+
       },
       backups: {
         manualTitle: 'Manual Backup',
@@ -882,8 +915,24 @@ const resources = {
       auth: {
         username: 'اسم المستخدم',
         password: 'كلمة المرور',
+        email: 'البريد الإلكتروني',
         rememberMe: 'تذكرني',
         forgotPassword: 'هل نسيت كلمة المرور؟',
+        signUp: 'تسجيل جديد',
+        alreadyHaveAccount: 'لدي بالفعل حساب؟ تسجيل دخول',
+        register: 'تسجيل',
+        registerPharse: 'إدارة وتأمين وربط خوادم العملاء باستخدام ServerPilot',
+        firstName: 'الأسم الأول',
+        lastName: 'الأسم الأخير',
+        registrationSuccessful: 'تم التسجيل بنجاح! تحقق من بريدك الألكتروني لتفعيل حسابك.',
+        registrationFailed: 'فشل التسجيل',
+        selfRegistrationDisabled: 'التسجيل الذاتي معطل',
+        selfRegistrationDisabledMessage: 'التسجيل الذاتي معطل. يرجى الاتصال بمشرف لإنشاء حسابك.',
+        backToLogin: 'العودة للدخول',
+        verificationSuccess: 'تأكيد البريد الإلكتروني',
+        verificationError: 'فشل التحقق',
+        emailVerified: 'تم توثيق بريدك الإلكتروني بنجاح. يمكنك الآن تسجيل الدخول.',
+        verificationFailed: 'فشل التحقق. قد يكون الرابط غير صالح أو منتهي الصلاحية.',
         login: 'تسجيل الدخول',
         loggingIn: 'جاري تسجيل الدخول...'
       },
@@ -893,14 +942,24 @@ const resources = {
         email: 'البريد الإلكتروني',
         recaptchaRequired: 'يرجى إكمال reCAPTCHA.',
         submit: 'إرسال رابط إعادة التعيين',
-        genericError: 'حدث خطأ. حاول مرة أخرى.'
+        genericError: 'حدث خطأ. حاول مرة أخرى.',
+        errors: {
+          enterEmail: 'يرجى إدخال عنوان بريدك الإلكتروني.',
+          invalidEmail: 'يرجى إدخال عنوان بريد إلكتروني صحيح.'
+        }
       },
       resetPassword: {
         title: 'إعادة تعيين كلمة المرور',
         newPassword: 'كلمة المرور الجديدة',
         confirmNewPassword: 'تأكيد كلمة المرور الجديدة',
         mismatch: 'كلمتا المرور غير متطابقتين.',
-        submit: 'تعيين كلمة المرور'
+        submit: 'تعيين كلمة المرور',
+        errors: {
+          enterPassword: 'يرجى إدخال كلمة مرور جديدة.',
+          passwordTooShort: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل.',
+          confirmPassword: 'يرجى تأكيد كلمة المرور الجديدة.',
+          mismatch: 'كلمتا المرور غير متطابقتين.'
+        }
       },
       users: {
         userManagement: 'إدارة المستخدمين',
@@ -1242,6 +1301,9 @@ const resources = {
         sessionTitle: 'إدارة الجلسات',
         sessionHours: 'انتهاء الجلسة (بالساعات)',
         sessionHelper: 'عدد الساعات قبل انتهاء جلسات المستخدمين',
+        selfRegistrationTitle: 'تسجيل المستخدمين',
+        selfRegistrationDescription: 'التحكم في إمكانية تسجيل المستخدمين لأنفسهم أو إذا كان التسجيل يتطلب موافقة المدير.',
+        enableSelfRegistration: 'تفعيل التسجيل الذاتي',
         save: 'حفظ إعدادات الأمان',
         savingSuccess: 'تم حفظ الإعدادات بنجاح!',
         loadFail: 'فشل في تحميل الإعدادات',

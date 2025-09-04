@@ -3,9 +3,19 @@ from .models import EmailSettings, Favicon
 
 
 class FaviconSerializer(serializers.ModelSerializer):
+    logo_url = serializers.SerializerMethodField()
+    
+    def get_logo_url(self, obj):
+        if obj.icon:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.icon.url)
+            return obj.icon.url
+        return None
+    
     class Meta:
         model = Favicon
-        fields = ['icon']
+        fields = ['icon', 'logo_url']
 from .utils import apply_email_settings
 
 class EmailSettingsSerializer(serializers.ModelSerializer):

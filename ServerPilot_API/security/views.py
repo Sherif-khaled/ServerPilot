@@ -46,6 +46,26 @@ class SecuritySettingsView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class SelfRegistrationStatusView(APIView):
+    """
+    Public endpoint to check if self-registration is enabled.
+    This endpoint does not require authentication.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            settings, created = SecuritySettings.objects.get_or_create(pk=1)
+            return Response({
+                'self_registration_enabled': settings.self_registration_enabled
+            })
+        except Exception as e:
+            # Default to disabled for security
+            return Response({
+                'self_registration_enabled': False
+            })
+
+
 class SecurityRiskViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows security risks to be created, viewed, edited, or deleted.

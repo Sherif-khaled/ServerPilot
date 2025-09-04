@@ -41,7 +41,7 @@ export default function PasswordStrengthMeter({ password, sx }) {
           },
         }}
       />
-      <Typography sx={{ mt: 0.5, color, fontWeight: 500, fontSize: 14 }}>
+      <Typography textAlign={'left'} sx={{ mt: 0.5, color, fontWeight: 500, fontSize: 14 }}>
         {label}
       </Typography>
     </Box>

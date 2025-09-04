@@ -5,18 +5,8 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import api from '../../../api/axiosConfig';
 import Footer from '../../core/components/Footer';
-import { textFieldSx, gradientButtonSx } from '../../../common';
+import { textFieldSx, gradientButtonSx, Background } from '../../../common';
 import { useTranslation } from 'react-i18next';
-
-const Background = styled('div')({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
-  zIndex: -1,
-});
 
 const FormContainer = styled(Container)({
   display: 'flex',
@@ -44,14 +34,57 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [recaptchaEnabled, setRecaptchaEnabled] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     // Check if reCAPTCHA is enabled by checking for the site key in environment variables
     setRecaptchaEnabled(!!process.env.REACT_APP_RECAPTCHA_SITE_KEY);
   }, []);
 
+  const handleChange = (field, value) => {
+    switch (field) {
+      case 'email':
+        setEmail(value);
+        break;
+      default:
+        break;
+    }
+    
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email.trim()) {
+      newErrors.email = t('forgotPassword.errors.enterEmail');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = t('forgotPassword.errors.invalidEmail');
+    }
+    
+    if (recaptchaEnabled && !recaptchaToken) {
+      newErrors.recaptcha = t('forgotPassword.errors.recaptchaRequired');
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRecaptchaChange = (token) => {
     setRecaptchaToken(token);
+    // Clear recaptcha error when user completes it
+    if (errors.recaptcha) {
+      setErrors(prev => ({
+        ...prev,
+        recaptcha: undefined
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -59,8 +92,7 @@ const ForgotPassword = () => {
     setError('');
     setMessage('');
 
-    if (recaptchaEnabled && !recaptchaToken) {
-      setError(t('forgotPassword.recaptchaRequired'));
+    if (!validateForm()) {
       return;
     }
 
@@ -92,8 +124,9 @@ const ForgotPassword = () => {
             margin="normal"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            onChange={(e) => handleChange('email', e.target.value)}
+            error={!!errors.email}
+            helperText={errors.email || ''}
             sx={{ ...textFieldSx }}
             InputProps={{
               startAdornment: (
@@ -104,11 +137,16 @@ const ForgotPassword = () => {
             }}
           />
           {recaptchaEnabled && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
               <ReCAPTCHA
                 sitekey={process.env.REACT_APP_RECAPTCHA_SITE_KEY}
                 onChange={handleRecaptchaChange}
               />
+              {errors.recaptcha && (
+                <Typography color="error" variant="caption" sx={{ mt: 1 }}>
+                  {errors.recaptcha}
+                </Typography>
+              )}
             </Box>
           )}
           <Button 

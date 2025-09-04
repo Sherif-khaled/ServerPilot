@@ -5,7 +5,7 @@ const ADMIN_API_URL = '/users/admin'; // Base for admin-related user actions
 const CUSTOMER_API_URL = '/customers';
 
 // --- User-facing endpoints ---
-export const registerUser = (data) => apiClient.post(`${USER_API_URL}/`, data);
+export const registerUser = (data) => apiClient.post(`${USER_API_URL}/register/`, data);
 export const loginUser = (data) => apiClient.post(`${USER_API_URL}/login/`, data);
 export const getProfile = () => apiClient.get(`${USER_API_URL}/profile/`);
 export const updateProfile = (data) => apiClient.patch(`${USER_API_URL}/profile/`, data);

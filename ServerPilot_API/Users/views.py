@@ -121,6 +121,21 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        # Check if self-registration is enabled
+        try:
+            security_settings = SecuritySettings.get_settings()
+            if not security_settings.self_registration_enabled:
+                return Response(
+                    {'detail': 'Self-registration is currently disabled. Please contact an administrator.'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Exception as e:
+            # If there's an error getting security settings, default to disabled for safety
+            return Response(
+                {'detail': 'Self-registration is currently disabled. Please contact an administrator.'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -133,12 +148,21 @@ class RegisterView(generics.CreateAPIView):
         # Send activation email
         try:
             token = default_token_generator.make_token(user)
-            activation_link = f"http://localhost:3000/activate/{user.pk}/{token}"
+            activation_link = f"{settings.FRONTEND_URL}/activate/{user.pk}/{token}"
+            
+            # Import email templates
+            from ServerPilot_API.configuration.email_templates import get_signup_template
+            
+            # Get HTML email content
+            html_message = get_signup_template(activation_link, user.username, user.email)
+            plain_message = f"Click to activate: {activation_link}"
+            
             send_mail(
                 'Activate your account',
-                f'Click to activate: {activation_link}',
+                plain_message,
                 settings.DEFAULT_FROM_EMAIL,
-                [user.email]
+                [user.email],
+                html_message=html_message,
             )
             log_action(user, 'register', self.request, f'Activation email sent to {user.email}')
         except Exception as e:
@@ -150,8 +174,28 @@ class ActivateView(views.APIView):
     def get(self, request, uid, token):
         user = get_object_or_404(CustomUser, pk=uid)
         if default_token_generator.check_token(user, token):
-            user.is_active = True
+            user.email_verified = True
             user.save()
+            
+            # Send verification success email
+            try:
+                from ServerPilot_API.configuration.email_templates import get_verification_template
+                
+                html_message = get_verification_template(user.username, user.email)
+                plain_message = f"Your email has been successfully verified. Welcome to ServerPilot!"
+                
+                send_mail(
+                    'Email Verification Successful - Welcome to ServerPilot',
+                    plain_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    html_message=html_message,
+                )
+                log_action(user, 'email_verified', request, f'Verification success email sent to {user.email}')
+            except Exception as e:
+                # Log the error but don't fail the activation
+                logger.warning(f"Failed to send verification success email to {user.email}: {e}")
+            
             log_action(user, 'activate', request, 'User activated account')
             return Response({'status': 'activated'})
         return Response({'error': 'Invalid token'}, status=400)
@@ -366,13 +410,21 @@ class PasswordResetRequestView(generics.GenericAPIView):
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             reset_link = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
 
-            # Send the password reset email.
+            # Import email templates
+            from ServerPilot_API.configuration.email_templates import get_forgot_password_template
+            
+            # Get HTML email content
+            html_message = get_forgot_password_template(reset_link, user.email)
+            plain_message = f"Click the link to reset your password: {reset_link}"
+
+            # Send the password reset email with HTML content.
             send_mail(
                 'Password Reset Request',
-                f'Click the link to reset your password: {reset_link}',
+                plain_message,
                 from_email,
                 [user.email],
                 fail_silently=False,
+                html_message=html_message,
             )
             log_action(user, 'password_reset_request', request, f'Password reset email sent to {user.email}')
         except CustomUser.DoesNotExist:

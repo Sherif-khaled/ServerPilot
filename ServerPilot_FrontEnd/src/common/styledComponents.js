@@ -1,6 +1,17 @@
 import { styled, Paper } from '@mui/material';
 
 // Common styled components and styling constants
+
+export const Background = styled('div')({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: 'linear-gradient(45deg, #0f2027, #203a43, #2c5364)',
+  zIndex: -1,
+});
+
 export const textFieldSx = {
 
   '& .MuiOutlinedInput-root': {
