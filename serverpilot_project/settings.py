@@ -44,7 +44,7 @@ FRONTEND_ORIGINS = os.getenv('FRONTEND_ORIGINS', 'http://localhost:3000,http://1
 
 CORS_ALLOWED_ORIGINS = FRONTEND_ORIGINS
 
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = False
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -59,10 +59,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = FRONTEND_ORIGINS
-
-# Allow session authentication from JavaScript
-SESSION_COOKIE_HTTPONLY = True # Prevent JavaScript from accessing the session cookie
-SESSION_COOKIE_SAMESITE = 'Lax'  # Can be 'Lax' or 'None' if needed for cross-site cookies
 
 # CSRF settings
 CSRF_USE_SESSIONS = False  # Store CSRF token in cookie, not in session
@@ -81,7 +77,6 @@ CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token
 
 # Required for CSRF token cookie to be set
 CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
-SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
 
 # Redis Configuration
 REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
@@ -99,7 +94,7 @@ CACHES = {
     }
 }
 
-# Sessions
+# Sessions: keep enabled for Django admin, but prevent cookies on API via middleware
 # ------------------------------------------------------------------------------
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
@@ -110,7 +105,7 @@ SESSION_CACHE_ALIAS = "default"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -118,8 +113,6 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
-    # Add BrowsableAPIRenderer only in DEBUG mode to avoid exposing it in production
-    **({'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer', 'rest_framework.renderers.BrowsableAPIRenderer']} if DEBUG else {}),
 }
 
 AUTH_USER_MODEL = 'Users.CustomUser'
@@ -160,14 +153,16 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'ServerPilot_API.Users.middleware.DisableCSRFMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'ServerPilot_API.Users.middleware.UserSessionMiddleware',  # Added for web session tracking
+    # 'ServerPilot_API.Users.middleware.UserSessionMiddleware',  # Optional: relies on sessions
     # 'security.middleware.PasswordExpirationMiddleware', # Disabled: Middleware not implemented yet
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'ServerPilot_API.security.middleware.SessionExpirationMiddleware',
+    # 'ServerPilot_API.security.middleware.SessionExpirationMiddleware',  # Optional: relies on sessions
+    'ServerPilot_API.Users.middleware.StripSessionIdForAPIMiddleware',
     'django_otp.middleware.OTPMiddleware',
 ]
 
@@ -337,27 +332,29 @@ LOGGING = {
     },
 }
 
-# REST Framework settings
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
+# REST Framework settings (override block consolidated above)
+
+# SimpleJWT settings
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# Session settings
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = not DEBUG  # Only in production with HTTPS
-SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None' if needed for cross-site cookies
+# Session cookies disabled (no sessions in use)
 
-# CSRF settings
-CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read the CSRF token
-CSRF_COOKIE_SECURE = not DEBUG  # Only in production with HTTPS
-CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None' if needed for cross-site cookies
-CSRF_USE_SESSIONS = False  # Store CSRF token in cookie, not in session
-CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header to check for CSRF token
+# CSRF settings for token-based auth APIs
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 
 
 # Celery Configuration

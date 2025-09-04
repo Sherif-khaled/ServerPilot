@@ -855,7 +855,6 @@ class WebAuthnViewSet(viewsets.ViewSet):
 
 
 class RecoveryCodeViewSet(viewsets.GenericViewSet):
-    authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = RecoveryCodeSerializer
 

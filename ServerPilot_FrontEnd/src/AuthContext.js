@@ -14,6 +14,11 @@ export const AuthProvider = ({ children }) => {
   // Check if user is logged in by trying to fetch profile
   const checkAuth = async () => {
     try {
+      const hasAccess = !!localStorage.getItem('accessToken');
+      if (!hasAccess) {
+        setUser(null);
+        return false;
+      }
       const response = await getProfile();
       setUser(response.data);
       const preferred = response.data?.language;
@@ -45,8 +50,7 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const loginAuth = async (userData) => {
     try {
-      // The actual login is handled by the session cookie
-      // First, try to get the user profile
+      // With JWT, tokens are already stored by loginUser; just fetch profile
       const response = await getProfile();
       
       // If we get here, the user is authenticated
@@ -86,15 +90,15 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logoutAuth = async () => {
     try {
-      // Call Django's logout endpoint to clear the session
-      await apiClient.post('/users/logout/');
+      // Clear tokens (best effort call to backend logout is optional)
+      try { await apiClient.post('/users/logout/'); } catch (e) {}
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       // Clear the user state regardless of the API call result
       setUser(null);
-      // Clear any stored tokens just in case
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
     }
   };
 

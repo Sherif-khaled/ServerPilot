@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../../api/axiosConfig';
-import { challengeMfa } from '../../../api/userService';
+import apiClient from '../../../api/apiClient';
+import { challengeMfa, loginUser } from '../../../api/userService';
 import { Box, TextField, Button, Alert,Typography, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../AuthContext';
@@ -59,10 +59,8 @@ export default function UserLoginForm({ onLoginSuccess }) {
   const [selfRegistrationEnabled, setSelfRegistrationEnabled] = useState(false);
   
   useEffect(() => {
-    api.get('users/csrf/').catch(err => console.error('CSRF pre-flight failed:', err));
-    
     // Check if self-registration is enabled
-    api.get('/security/self-registration-status/')
+    apiClient.get('/security/self-registration-status/')
       .then(response => {
         setSelfRegistrationEnabled(response.data.self_registration_enabled || false);
       })
@@ -99,7 +97,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
     }
 
     const timerId = setTimeout(() => {
-        api.get(`users/profile-picture/${form.username}/`)
+        apiClient.get(`/users/profile-picture/${form.username}/`)
             .then(response => {
                 setProfilePicUrl(response.data.profile_photo_url);
             })
@@ -117,12 +115,10 @@ export default function UserLoginForm({ onLoginSuccess }) {
     setIsLoading(true);
 
     try {
-      const response = await api.post('users/login/', form, {
-        withCredentials: true,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      
-      if (response.data.mfa_required) {
+      // Obtain JWT tokens and store them
+      const response = await loginUser({ username: form.username, password: form.password });
+      // If backend still signals MFA via session flow, show it
+      if (response.data?.mfa_required) {
         setMfaRequired(true);
       } else {
         const result = await loginAuth();

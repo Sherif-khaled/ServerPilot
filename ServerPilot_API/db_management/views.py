@@ -2,7 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import SessionAuthentication
 from .tasks import backup_db
 import os
 from django.conf import settings
@@ -19,7 +18,6 @@ class BackupListView(APIView):
     """
     API View to list all available database backups.
     """
-    authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
@@ -63,7 +61,6 @@ class DatabaseBackupDownloadView(APIView):
     """
     API View to download a specific database backup file.
     """
-    authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request, filename, *args, **kwargs):
@@ -105,7 +102,6 @@ class BackupScheduleView(APIView):
     API View to manage the scheduled database backup task.
     A single periodic task named 'daily-database-backup' is managed here.
     """
-    authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     task_name = 'daily-database-backup'
     task_function = 'db_management.tasks.backup_db'
@@ -171,7 +167,6 @@ class DatabaseBackupView(APIView):
     """
     API View to trigger a database backup task.
     """
-    authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     
     def _start_backup(self):
@@ -204,7 +199,6 @@ class DatabaseBackupDeleteView(APIView):
     """
     API View to delete a specific database backup file.
     """
-    authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     
     def delete(self, request, filename, *args, **kwargs):

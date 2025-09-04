@@ -6,10 +6,23 @@ const CUSTOMER_API_URL = '/customers';
 
 // --- User-facing endpoints ---
 export const registerUser = (data) => apiClient.post(`${USER_API_URL}/register/`, data);
-export const loginUser = (data) => apiClient.post(`${USER_API_URL}/login/`, data);
+
+// JWT login: obtain tokens and persist them
+export const loginUser = async ({ username, password }) => {
+    const res = await apiClient.post(`${USER_API_URL}/token/`, { username, password });
+    const { access, refresh } = res.data || {};
+    if (access) localStorage.setItem('accessToken', access);
+    if (refresh) localStorage.setItem('refreshToken', refresh);
+    return res;
+};
 export const getProfile = () => apiClient.get(`${USER_API_URL}/profile/`);
 export const updateProfile = (data) => apiClient.patch(`${USER_API_URL}/profile/`, data);
-export const logoutUser = () => apiClient.post(`${USER_API_URL}/logout/`, {});
+export const logoutUser = async () => {
+    // Best-effort backend logout (optional with JWT), then clear local tokens
+    try { await apiClient.post(`${USER_API_URL}/logout/`, {}); } catch (e) {}
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+};
 export const changePassword = (passwords) => apiClient.post(`${USER_API_URL}/password/change/`, passwords);
 
 // --- MFA Endpoints ---

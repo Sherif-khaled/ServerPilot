@@ -1,49 +1,25 @@
 import axios from 'axios';
 
-// Helper function to get CSRF token from cookies
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-
 const API_BASE_URL = '/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Enable credentials for session/auth cookies
+  withCredentials: false,
   headers: {
     'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
   },
 });
 
-// Add CSRF token to requests
+// Attach JWT from localStorage if present
 apiClient.interceptors.request.use(
   (config) => {
-    // Add CSRF token to all requests
-    if (config.method) {
-      const csrfToken = getCookie('csrftoken');
-      if (csrfToken) {
-        config.headers['X-CSRFToken'] = csrfToken;
-      } else {
-        console.warn('CSRF token not found. Make sure you are logged in.');
-      }
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor to handle authentication and other common responses
@@ -52,16 +28,26 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle password expiration
-    if (error.response?.status === 403 && error.response.data?.error === 'password_expired') {
-      console.error('Password has expired - redirecting to change password page');
-      window.location.href = '/change-password';
-      return Promise.reject(error); // Prevent further processing
-    }
-
-    // Handle session expiration or authentication errors
     if (error.response?.status === 401) {
-      console.error('Authentication required - redirecting to login');
+      // Try refresh flow if refresh token stored
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken && !error.config.__isRetryRequest) {
+        return axios
+          .post(`${API_BASE_URL}/users/token/refresh/`, { refresh: refreshToken })
+          .then((res) => {
+            const newAccess = res.data.access;
+            localStorage.setItem('accessToken', newAccess);
+            const retryConfig = { ...error.config, __isRetryRequest: true };
+            retryConfig.headers = { ...(retryConfig.headers || {}), Authorization: `Bearer ${newAccess}` };
+            return apiClient.request(retryConfig);
+          })
+          .catch(() => {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+            return Promise.reject(error);
+          });
+      }
       window.location.href = '/login';
     }
     return Promise.reject(error);

@@ -72,3 +72,43 @@ class UserSessionMiddleware:
         except requests.RequestException as e:
             logger.warning(f"Could not get location for IP {ip}: {e}")
             return 'Location lookup failed'
+
+
+class DisableCSRFMiddleware:
+    """Disable CSRF checks for API endpoints (paths starting with /api/).
+
+    Must be placed BEFORE Django's CsrfViewMiddleware in MIDDLEWARE.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.startswith('/api/'):
+            setattr(request, '_dont_enforce_csrf_checks', True)
+        return self.get_response(request)
+
+
+class StripSessionIdForAPIMiddleware:
+    """Ensure no sessionid cookie is sent for API responses.
+
+    Place AFTER SessionMiddleware so cookies exist on response and can be removed.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.path.startswith('/api/'):
+            # Remove session cookie if present
+            cookie_name = getattr(settings, 'SESSION_COOKIE_NAME', 'sessionid')
+            if cookie_name in response.cookies:
+                # Delete cookie in response
+                response.delete_cookie(
+                    key=cookie_name,
+                    samesite=getattr(settings, 'SESSION_COOKIE_SAMESITE', 'Lax'),
+                    secure=getattr(settings, 'SESSION_COOKIE_SECURE', False),
+                    httponly=getattr(settings, 'SESSION_COOKIE_HTTPONLY', True),
+                    domain=getattr(settings, 'SESSION_COOKIE_DOMAIN', None),
+                    path=getattr(settings, 'SESSION_COOKIE_PATH', '/')
+                )
+        return response

@@ -1,4 +1,9 @@
 from django.urls import path, include
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
 
 app_name = 'users'
 from rest_framework.routers import DefaultRouter
@@ -23,6 +28,10 @@ urlpatterns = [
     path('activate/<int:uid>/<str:token>/', ActivateView.as_view(), name='activate'),
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    # JWT token endpoints
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('login/github/', GitHubAuthView.as_view(), name='login-github'),
     path('profile/', ProfileView.as_view(), name='profile'),
     # Web Session Management
