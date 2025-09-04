@@ -7,7 +7,7 @@ import { logoutUser } from '../../../api/userService';
 import { styled } from '@mui/material/styles';
 import { Avatar, Collapse } from '@mui/material';
 import Footer from './Footer';
-import axios from 'axios'; // Import the new Footer component
+import apiClient from '../../../api/apiClient'; // Import the configured API client
 import { useTranslation } from 'react-i18next';
 import { MenuActionsSx } from '../../../common';
 
@@ -65,10 +65,11 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   }, [location, i18n.language]);
 
   useEffect(() => {
-    axios.get('/api/configuration/favicon/')
+    apiClient.get('/configuration/favicon/')
       .then(res => {
         if (res.data.icon) {
-          const faviconUrl = `http://127.0.0.1:8000${res.data.icon}`;
+          console.log(res.data.icon);
+          const faviconUrl = `${res.data.icon }`;
           setFavicon(faviconUrl);
           let faviconLink = document.getElementById('favicon');
           if (!faviconLink) {
