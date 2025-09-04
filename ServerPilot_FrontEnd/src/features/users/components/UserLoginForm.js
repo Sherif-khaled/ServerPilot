@@ -42,7 +42,7 @@ const IconWrapper = styled(Box)({
   alignItems: 'center',
   justifyContent: 'center',
   margin: '0 auto 20px auto',
-  overflow: 'hidden', // to contain the avatar image
+  overflow: 'hidden',
   '& .MuiSvgIcon-root': {
     fontSize: '3rem',
     color: '#fff',

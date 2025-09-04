@@ -40,6 +40,7 @@ const getDefaultFormData = () => ({
   password2: '',
   is_active: true,
   is_staff: false,
+  inactive_reason: '',
 });
 
 
@@ -55,6 +56,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
     password2: '',
     is_active: true,
     is_staff: false,
+    inactive_reason: '',
   });
   
   const [errors, setErrors] = useState({});
@@ -78,6 +80,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
         password2: '',
         is_active: user.is_active !== false, // Default to true if not set
         is_staff: user.is_staff || false,
+        inactive_reason: '',
       });
     } else {
       setFormData(getDefaultFormData());
@@ -137,6 +140,9 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
     if (!isEditMode && formData.password !== formData.password2) {
       newErrors.password2 = t('userForm.required.passwordsMismatch');
     }
+    if (isEditMode && formData.is_active === false && !formData.inactive_reason.trim()) {
+      newErrors.inactive_reason = t('userForm.required.inactiveReason');
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -149,6 +155,10 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
     const payload = { ...formData };
     delete payload.password2;
     if (isEditMode && !payload.password) delete payload.password;
+    // Only send inactive_reason on update when user is set inactive
+    if (!isEditMode || payload.is_active) {
+      delete payload.inactive_reason;
+    }
 
     try {
       if (isEditMode) {
@@ -362,7 +372,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
                     control={
                       <Checkbox 
                         checked={formData.is_active}
-                        onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked, inactive_reason: e.target.checked ? '' : prev.inactive_reason }))}
                         sx={{...checkBoxSx}} 
                       />
                     } 
@@ -371,6 +381,27 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
                 </FormGroup>
               </FormControl>
             </Box>
+
+            {/* Inactive Reason */}
+            {isEditMode && formData.is_active === false && (
+              <Box sx={{ width: '100%' }}>
+                <TextField
+                  fullWidth
+                  label={t('userForm.inactiveReasonLabel')}
+                  name="inactive_reason"
+                  value={formData.inactive_reason}
+                  onChange={handleChange}
+                  error={!!errors.inactive_reason}
+                  helperText={errors.inactive_reason}
+                  margin="normal"
+                  variant="outlined"
+                  sx={textFieldSx}
+                  multiline
+                  minRows={2}
+                  InputProps={{ style: { color: 'white' } }}
+                />
+              </Box>
+            )}
 
           </Box>
         </DialogContent>

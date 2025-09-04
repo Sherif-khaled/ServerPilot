@@ -211,9 +211,12 @@ class UserAdminUpdateSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)
     username = serializers.CharField(required=False)
 
+    # Optional reason when admin deactivates a user
+    inactive_reason = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff', 'mfa_enabled')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff', 'mfa_enabled', 'inactive_reason')
         read_only_fields = ('profile_photo',) # Admin not updating photo via this form
 
     def update(self, instance, validated_data):

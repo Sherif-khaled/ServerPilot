@@ -15,6 +15,39 @@ axios.defaults.xsrfCookieName = 'csrftoken';
 axios.defaults.xsrfHeaderName = 'X-CSRFToken';
 axios.defaults.withCredentials = true;
 
+// Dynamically set favicon from backend configuration
+(() => {
+  const ensureFaviconLink = () => {
+    let link = document.querySelector("link[rel='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', 'icon');
+      document.head.appendChild(link);
+    }
+    return link;
+  };
+
+  const setFavicon = (href) => {
+    const link = ensureFaviconLink();
+    link.setAttribute('href', href);
+  };
+
+  // Set a sensible default immediately; CRA serves /favicon.ico from public
+  setFavicon('/favicon.ico');
+
+  // Fetch configured favicon and update if available
+  fetch('/api/configuration/favicon/')
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data && data.logo_url) {
+        setFavicon(data.logo_url);
+      }
+    })
+    .catch(() => {
+      // Silent fallback to default favicon
+    });
+})();
+
 
 const history = createBrowserHistory();
 const root = ReactDOM.createRoot(document.getElementById('root'));

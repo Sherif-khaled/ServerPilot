@@ -222,3 +222,29 @@ def get_verification_template(username, user_email):
     """
     
     return get_base_email_template(content, "Email Verification Successful - Welcome to ServerPilot", logo_url)
+
+
+def get_deactivation_template(username, reason_text):
+    """Template for account deactivation email with reason"""
+    logo_url = get_logo_url()
+
+    # Fallback reason text
+    reason_text = reason_text or 'Your account has been deactivated by an administrator.'
+
+    content = f"""
+    <h2 style="color: #333; margin-bottom: 20px;">Account Deactivated</h2>
+
+    <p>Hello <strong>{username}</strong>,</p>
+
+    <p>Your ServerPilot account has been <strong>deactivated</strong>.</p>
+
+    <div class="warning-box">
+        <strong>Reason:</strong> {reason_text}
+    </div>
+
+    <p>If you believe this is a mistake or need further assistance, please contact our support team.</p>
+
+    <p>Best regards,<br>The ServerPilot Team</p>
+    """
+
+    return get_base_email_template(content, "Your Account Has Been Deactivated", logo_url)

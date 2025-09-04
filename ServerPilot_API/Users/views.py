@@ -774,10 +774,51 @@ class UserAdminViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = serializer.save()
         log_action(user=self.request.user, action='admin_create_user', request=self.request, details=f'Admin {self.request.user.username} created user {user.username}')
+        # Send activation email to the created user
+        try:
+            token = default_token_generator.make_token(user)
+            activation_link = f"{settings.FRONTEND_URL}/activate/{user.pk}/{token}"
+            from ServerPilot_API.configuration.email_templates import get_signup_template
+            html_message = get_signup_template(activation_link, user.username, user.email)
+            plain_message = f"Click to activate: {activation_link}"
+            send_mail(
+                'Activate your account',
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+            )
+            log_action(user, 'admin_create_user_activation_email', self.request, f'Activation email sent to {user.email}')
+        except Exception as e:
+            logger.warning(f"Failed to send activation email for admin-created user {user.email}: {e}")
 
     def perform_update(self, serializer):
+        # Capture current state before saving
+        instance_before = serializer.instance
+        was_active = bool(getattr(instance_before, 'is_active', True))
+        # Pop optional inactive_reason if provided
+        inactive_reason = serializer.validated_data.pop('inactive_reason', None) if hasattr(serializer, 'validated_data') else None
         user = serializer.save()
         log_action(user=self.request.user, action='admin_update_user', request=self.request, details=f'Admin {self.request.user.username} updated user {user.username}')
+
+        # If the user has been deactivated in this update, send notification email
+        try:
+            if was_active and not user.is_active:
+                from ServerPilot_API.configuration.email_templates import get_deactivation_template
+                reason_text = inactive_reason or 'Your account has been deactivated by an administrator.'
+                subject = 'Your ServerPilot account has been deactivated'
+                html_message = get_deactivation_template(user.username, reason_text)
+                plain_message = f"Hello {user.username},\n\nYour account has been deactivated.\n\nReason: {reason_text}\n\nIf you believe this is a mistake, please contact support."
+                send_mail(
+                    subject,
+                    plain_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    html_message=html_message,
+                )
+                log_action(user, 'admin_user_deactivated_email', self.request, f'Deactivation email sent to {user.email}')
+        except Exception as e:
+            logger.warning(f"Failed to send deactivation email to {user.email}: {e}")
 
     def perform_destroy(self, instance):
         user_username = instance.username # Capture username before deletion

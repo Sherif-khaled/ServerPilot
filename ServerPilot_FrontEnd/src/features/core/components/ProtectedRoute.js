@@ -2,6 +2,8 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../../AuthContext';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import {CircularProgressSx, Background} from '../../../common';
+
 
 const ProtectedRoute = () => {
   const { user, isLoading } = useAuth();
@@ -9,8 +11,9 @@ const ProtectedRoute = () => {
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography ml={2}>Loading user...</Typography>
+        <Background />
+        <CircularProgress size={20} sx={CircularProgressSx} />
+        <Typography ml={2} sx={{ color: '#fff' }}>Loading user...</Typography>
       </Box>
     );
   }

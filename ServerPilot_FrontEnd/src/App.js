@@ -5,16 +5,16 @@ import Dashboard from './features/core/components/Dashboard';
 import UserRegisterForm from './features/users/components/UserRegisterForm';
 import UserLoginForm from './features/users/components/UserLoginForm';
 import UserProfile from './features/users/components/UserProfile';
-import DashboardPage from './features/core/components/DashboardPage'; // Import DashboardPage
+import DashboardPage from './features/core/components/DashboardPage';
 import UserList from './features/users/components/UserList';
 import CustomerList from './features/customers/components/CustomerList';
 import SshTerminalPage from './features/servers/pages/SshTerminalPage';
-import ServerList from './features/servers/components/ServerList'; // Import ServerList
-import ServerForm from './features/servers/components/ServerForm'; // Import ServerForm
-import ServerDetailsPage from './features/servers/pages/ServerDetailsPage'; // Import ServerDetailsPage
+import ServerList from './features/servers/components/ServerList';
+import ServerForm from './features/servers/components/ServerForm';
+import ServerDetailsPage from './features/servers/pages/ServerDetailsPage';
 import SettingsPage from './features/settings/pages/SettingsPage';
-import ProtectedRoute from './features/core/components/ProtectedRoute'; // Import ProtectedRoute
-import AuditLogList from './features/audit/components/AuditLogList'; // Import AuditLogList
+import ProtectedRoute from './features/core/components/ProtectedRoute';
+import AuditLogList from './features/audit/components/AuditLogList';
 import PasswordPolicyPage from './features/security/pages/PasswordPolicyPage';
 import SecurityRiskRolesPage from './features/security/pages/SecurityRiskRolesPage';
 import DatabaseManagementPage from './features/database/pages/DatabaseManagementPage';
