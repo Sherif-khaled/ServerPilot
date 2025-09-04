@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { Typography, Paper, Box, TextField, Button, FormControlLabel, Switch, CircularProgress, Link } from '@mui/material';
 import PropTypes from 'prop-types';
-import api from '../../../api/axiosConfig';
+import apiClient from '../../../api/apiClient';
 import { textFieldSx, glassPaperSx, gradientButtonSx, CircularProgressSx, switchSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
@@ -21,7 +21,7 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await api.get('/security/settings/');
+        const response = await apiClient.get('/security/settings/');
         const fetchedSettings = {
           recaptcha_site_key: response.data.recaptcha_site_key || '',
           recaptcha_secret_key: response.data.recaptcha_secret_key || '',
@@ -52,7 +52,7 @@ const AdminSecurity = ({ showSuccess, showError, showWarning, showInfo }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      await api.put('/security/settings/', settings);
+      await apiClient.put('/security/settings/', settings);
       showSuccess(t('adminSecurity.savingSuccess'));
     } catch (err) {
       showError(t('adminSecurity.saveFail'));

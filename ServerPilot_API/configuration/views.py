@@ -9,6 +9,12 @@ class FaviconView(APIView):
     permission_classes = [permissions.IsAdminUser]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
+    def get_permissions(self):
+        # Allow anyone to GET the favicon, restrict modifications to admins
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
+
     def get(self, request):
         favicon = Favicon.load()
         serializer = FaviconSerializer(favicon, context={'request': request})

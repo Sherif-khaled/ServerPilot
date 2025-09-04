@@ -1,11 +1,9 @@
 import React, { useEffect, useState, memo } from 'react';
 import { Box, Button, Typography, Alert, CircularProgress, MenuItem, TextField, Switch, FormGroup, FormControlLabel, Paper, Select, FormControl, InputLabel, FormHelperText } from '@mui/material';
-import axios from 'axios';
+import apiClient from '../../../api/apiClient';
 import PropTypes from 'prop-types';
 import { textFieldSx, glassPaperSx, gradientButtonSx, blueGradientButtonSx, CircularProgressSx, switchSx, SelectSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
-
-
 
 const securityTypes = [
   { label: 'None', value: 'none' },
@@ -25,7 +23,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
   const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
-    axios.get('/api/configuration/email-settings/')
+    apiClient.get('/configuration/email-settings/')
       .then(res => {
         setSettings(res.data);
         setLoading(false);
@@ -35,7 +33,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
         setLoading(false);
       });
 
-    axios.get('/api/configuration/favicon/')
+    apiClient.get('/configuration/favicon/')
       .then(res => {
         setFavicon(res.data.icon);
         setFaviconPreview(res.data.icon);
@@ -53,7 +51,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
   const handleSubmit = e => {
     e.preventDefault();
     setSaving(true);
-    axios.put('/api/configuration/email-settings/', settings)
+    apiClient.put('/configuration/email-settings/', settings)
       .then(() => {
         showSuccess(t('generalSettings.settingsSaved'));
         setSaving(false);
@@ -66,7 +64,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
 
   const handleTest = () => {
     setTestResult(null);
-    axios.post('/api/configuration/test-email/', settings)
+    apiClient.post('/configuration/test-email/', settings)
       .then(res => {
         setTestResult({ success: true, message: res.data.message });
         showSuccess('Connection test successful');
@@ -102,7 +100,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
     const formData = new FormData();
     formData.append('icon', selectedFavicon);
 
-    axios.put('/api/configuration/favicon/', formData, {
+    apiClient.put('/configuration/favicon/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
