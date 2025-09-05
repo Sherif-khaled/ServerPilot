@@ -10,7 +10,7 @@ import SecurityKeysSettings from '../components/SecurityKeysSettings';
 import RecoveryCodesSettings from '../components/RecoveryCodesSettings';
 import WebSessions from '../components/WebSessions';
 import AISettings from '../components/AISettings';
-import { textFieldSx, checkBoxSx, gradientButtonSx,glassDialogSx,SelectSx, CancelButton, GlassCard, glassCardSx } from '../../../common';
+import { GlassCard, glassCardSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
 const RootContainer = styled(Box)(({ theme }) => ({
@@ -43,7 +43,7 @@ function TabPanel(props) {
 }
 
 const SettingsPage = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const location = useLocation();
   const [value, setValue] = useState(location.state?.tab || 0);
 

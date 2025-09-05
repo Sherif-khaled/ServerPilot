@@ -41,7 +41,6 @@ export default function UserRegisterForm() {
   const [selfRegistrationEnabled, setSelfRegistrationEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
   useEffect(() => {

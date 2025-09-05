@@ -47,7 +47,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 const AdminSettingsPage = () => {
   const [value, setValue] = useState(0);
   const { snackbar, showSuccess, showError, showWarning, showInfo, hideSnackbar } = useSnackbar();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };

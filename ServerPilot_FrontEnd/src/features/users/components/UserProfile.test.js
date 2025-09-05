@@ -13,7 +13,7 @@ describe('UserProfile (integration)', () => {
     });
     fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Changed' } });
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
-    await waitFor(() => expect(screen.getByText(/profile updated/i)).toBeInTheDocument());
+    await screen.findByText(/profile updated/i);
   });
 
   it('shows error on update failure', async () => {
@@ -28,7 +28,7 @@ describe('UserProfile (integration)', () => {
     if (loaded) {
       fireEvent.change(screen.getByLabelText(/email/i), { target: { value: '' } });
       fireEvent.click(screen.getByRole('button', { name: /save/i }));
-      await waitFor(() => expect(screen.getByText(/update failed/i)).toBeInTheDocument());
+      await screen.findByText(/update failed/i);
     }
 
   });

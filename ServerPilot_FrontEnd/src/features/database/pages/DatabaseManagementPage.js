@@ -8,13 +8,9 @@ import {
     Restore as RestoreIcon,
     Delete as DeleteIcon,
     Refresh as RefreshIcon,
-    DataUsage as DataUsageIcon,
-    Schedule as ScheduleIcon,
-    CheckCircleOutline as CheckCircleOutlineIcon,
-    HighlightOffOutlined as HighlightOffOutlinedIcon
 } from '@mui/icons-material';
 import apiClient from '../../../api/apiClient';
-import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, ConfirmDialog, glassCardSx } from '../../../common';
+import { CustomSnackbar, useSnackbar, CircularProgressSx, GlassCard, ConfirmDialog } from '../../../common';
 import { useTranslation } from 'react-i18next';
 import BackupNowCard from '../components/BackupNowCard';
 import BackupScheduleCard from '../components/BackupScheduleCard';

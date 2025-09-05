@@ -683,6 +683,63 @@ class MFAChallengeView(views.APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # If a recovery code is provided, verify it as an alternative to OTP
+        recovery_code = request.data.get('recovery_code')
+        if recovery_code:
+            import re
+            code_input = str(recovery_code).strip().lower()
+
+            hash_candidates = set()
+
+            # Helper: from a raw token, add dashed and undashed 12-char variants
+            def add_token_variants(token: str):
+                pure = re.sub(r'[^a-z0-9]', '', token)
+                if len(pure) == 12:
+                    # undashed
+                    hash_candidates.add(RecoveryCode.hash_code(pure))
+                    # dashed xxxx-xxxx-xxxx
+                    dashed = '-'.join([pure[i:i+4] for i in range(0, 12, 4)])
+                    hash_candidates.add(RecoveryCode.hash_code(dashed))
+
+            # 1) Try the whole input as-is (covers single code with odd dashes)
+            add_token_variants(code_input)
+
+            # 2) Extract tokens that look like codes (alnum and dashes), handle multi-line/multi-code paste
+            tokens = re.findall(r'[a-z0-9\-]+', code_input)
+            for tok in tokens:
+                add_token_variants(tok)
+
+            # 3) Also split on any whitespace and commas as a fallback
+            for tok in re.split(r'[\s,]+', code_input):
+                if tok:
+                    add_token_variants(tok)
+
+            rc = RecoveryCode.objects.filter(user=user, used=False, code__in=list(hash_candidates)).first()
+            if not rc:
+                logger.warning(f"Invalid recovery code provided for user {user.username}")
+                return Response({'error': 'Invalid recovery code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Mark as used
+            rc.used = True
+            rc.save(update_fields=['used'])
+
+            # Complete login workflow (mirror OTP success path)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
+            request.session.cycle_key()
+            request.session.save()
+            # Clear the MFA session data
+            if 'mfa_user_id' in request.session:
+                del request.session['mfa_user_id']
+            if 'mfa_verified_at' in request.session:
+                del request.session['mfa_verified_at']
+            request.session.save()
+            logger.info(f"MFA login via recovery code successful for user {user.username}")
+            log_user_action(user, 'login_mfa_recovery_code', 'User logged in using a recovery code')
+            profile_data = ProfileSerializer(user, context={'request': request}).data
+            return Response(profile_data)
+
         # Get OTP token from either 'otp' or 'otp_token' field for backward compatibility
         otp_token = request.data.get('otp') or request.data.get('otp_token')
         if not otp_token:

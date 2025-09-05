@@ -7,6 +7,9 @@ const CUSTOMER_API_URL = '/customers';
 // --- User-facing endpoints ---
 export const registerUser = (data) => apiClient.post(`${USER_API_URL}/register/`, data);
 
+// Session login: used to initiate login and determine if MFA is required
+export const loginSession = (data) => apiClient.post(`${USER_API_URL}/login/`, data);
+
 // JWT login: obtain tokens and persist them
 export const loginUser = async ({ username, password }) => {
     const res = await apiClient.post(`${USER_API_URL}/token/`, { username, password });
@@ -33,7 +36,8 @@ export const disableMfa = () => apiClient.post(`${USER_API_URL}/mfa/disable/`);
 
 // --- Recovery Codes ---
 export const getRecoveryCodes = () => apiClient.get(`${USER_API_URL}/mfa/recovery-codes/`);
-export const verifyRecoveryCode = (code) => apiClient.post(`${USER_API_URL}/mfa/verify-recovery-code/`, { code });
+// Verify a recovery code during MFA challenge using the existing challenge endpoint
+export const verifyRecoveryCode = (code) => apiClient.post(`${USER_API_URL}/mfa/challenge/`, { recovery_code: code });
 export const generateNewRecoveryCodes = () => apiClient.post(`${USER_API_URL}/mfa/generate-recovery-codes/`);
 
 // --- Admin User Management Endpoints ---

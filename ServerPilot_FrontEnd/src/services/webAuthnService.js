@@ -1,4 +1,5 @@
 import axios from 'axios';
+import apiClient from '../api/apiClient';
 
 const API_URL = '/api/users/webauthn/';
 
@@ -47,11 +48,13 @@ export const completeAuthentication = (credential) => {
 
 // Function to generate new recovery codes
 export const generateRecoveryCodes = async () => {
-    const response = await axios.post('/api/users/recovery-codes/generate/');
+    // Use apiClient to ensure Authorization header and token refresh
+    const response = await apiClient.post('/users/recovery-codes/generate/');
     return response.data;
 };
 
 export const confirmRecoveryCodes = async () => {
-    const response = await axios.post('/api/users/recovery-codes/confirm/');
+    // Use apiClient to ensure Authorization header and token refresh
+    const response = await apiClient.post('/users/recovery-codes/confirm/');
     return response.data;
 };

@@ -8,7 +8,6 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Button,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import CpuUsage from './monitoring/CpuUsage';

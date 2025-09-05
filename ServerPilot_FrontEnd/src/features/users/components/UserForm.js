@@ -78,7 +78,7 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
         last_name: user.last_name || '',
         password: '',
         password2: '',
-        is_active: user.is_active !== false, // Default to true if not set
+        is_active: user.is_active !== false,
         is_staff: user.is_staff || false,
         inactive_reason: '',
       });
@@ -104,7 +104,6 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -155,7 +154,6 @@ export default function UserForm({ open, onClose, user = null, onSuccess }) {
     const payload = { ...formData };
     delete payload.password2;
     if (isEditMode && !payload.password) delete payload.password;
-    // Only send inactive_reason on update when user is set inactive
     if (!isEditMode || payload.is_active) {
       delete payload.inactive_reason;
     }

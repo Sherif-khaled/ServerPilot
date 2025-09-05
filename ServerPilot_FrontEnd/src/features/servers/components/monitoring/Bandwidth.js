@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import { GlassCard } from '../../../../common';
 import {
   ResponsiveContainer,

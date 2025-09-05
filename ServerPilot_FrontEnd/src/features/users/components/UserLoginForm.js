@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../../api/apiClient';
-import { challengeMfa, loginUser } from '../../../api/userService';
-import { Box, TextField, Button, Alert,Typography, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment } from '@mui/material';
+import { challengeMfa, loginUser, loginSession, verifyRecoveryCode } from '../../../api/userService';
+import { Box, TextField, Button, Alert,Typography, CircularProgress, Checkbox, FormControlLabel, Link, InputAdornment, Collapse, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { Avatar } from '@mui/material';
 import Footer from '../../core/components/Footer';
 import { textFieldSx, gradientButtonSx, CircularProgressSx, checkBoxSx, Background } from '../../../common';
@@ -84,6 +86,8 @@ export default function UserLoginForm({ onLoginSuccess }) {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [otp, setOtp] = useState('');
   const [profilePicUrl, setProfilePicUrl] = useState('');
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [moreOptionsOpen, setMoreOptionsOpen] = useState(false);
 
   const handleChange = (e) => {
       const { name, value } = e.target;
@@ -104,8 +108,7 @@ export default function UserLoginForm({ onLoginSuccess }) {
             .catch(() => {
                 setProfilePicUrl('');
             });
-    }, 500); // 500ms debounce
-
+    }, 500);
     return () => clearTimeout(timerId);
   }, [form.username]);
 
@@ -115,25 +118,30 @@ export default function UserLoginForm({ onLoginSuccess }) {
     setIsLoading(true);
 
     try {
-      // Obtain JWT tokens and store them
-      const response = await loginUser({ username: form.username, password: form.password });
-      // If backend still signals MFA via session flow, show it
-      if (response.data?.mfa_required) {
+      // Step 1: Use session login to detect MFA requirement
+      const sessionResp = await loginSession({ username: form.username, password: form.password });
+      if (sessionResp.data?.mfa_required) {
+        // Show MFA input; do NOT fetch JWT yet
         setMfaRequired(true);
+        return;
+      }
+
+      // Step 2: If no MFA required, obtain JWT tokens
+      await loginUser({ username: form.username, password: form.password });
+
+      // Step 3: Hydrate auth context and preferences
+      const result = await loginAuth();
+      if (result.success) {
+        try {
+          const preferred = result.user?.language;
+          if (preferred) {
+            i18n.changeLanguage(preferred);
+            document.documentElement.dir = preferred === 'ar' ? 'rtl' : 'ltr';
+          }
+        } catch {}
+        if (onLoginSuccess) onLoginSuccess();
       } else {
-        const result = await loginAuth();
-        if (result.success) {
-          try {
-            const preferred = result.user?.language;
-            if (preferred) {
-              i18n.changeLanguage(preferred);
-              document.documentElement.dir = preferred === 'ar' ? 'rtl' : 'ltr';
-            }
-          } catch {}
-          if (onLoginSuccess) onLoginSuccess();
-        } else {
-          setError(result.error || 'Login failed. Please try again.');
-        }
+        setError(result.error || 'Login failed. Please try again.');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.response?.data?.non_field_errors?.[0] || 'Login failed. Please check your credentials and try again.';
@@ -146,20 +154,32 @@ export default function UserLoginForm({ onLoginSuccess }) {
     }
   };
 
-  const handleMfaSubmit = async (e) => {
-    e.preventDefault();
+  // Shared MFA performer, supports 'auth' (OTP) and 'recovery' modes
+  const performMfa = async (mode) => {
     setError('');
     setIsLoading(true);
 
     try {
-      // Normalize OTP: remove non-digits and ensure 6 digits
-      const cleaned = (otp || '').toString().replace(/\D/g, '');
-      if (cleaned.length !== 6) {
-        setIsLoading(false);
-        setError('Enter the 6-digit verification code.');
-        return;
+      if (mode === 'recovery') {
+        const code = (otp || '').toString().trim();
+        if (!code || code.length < 6) {
+          setIsLoading(false);
+          setError('Enter your recovery code.');
+          return;
+        }
+        await verifyRecoveryCode(code);
+      } else {
+        // Normalize OTP: remove non-digits and ensure 6 digits
+        const cleaned = (otp || '').toString().replace(/\D/g, '');
+        if (cleaned.length !== 6) {
+          setIsLoading(false);
+          setError('Enter the 6-digit verification code.');
+          return;
+        }
+        await challengeMfa(cleaned);
       }
-      await challengeMfa(cleaned);
+      // After successful MFA, obtain JWT tokens
+      await loginUser({ username: form.username, password: form.password });
       const result = await loginAuth();
       if (result.success) {
         try {
@@ -193,6 +213,16 @@ export default function UserLoginForm({ onLoginSuccess }) {
       setIsLoading(false);
     }
   };
+
+  const handleMfaSubmit = async (e) => {
+    e.preventDefault();
+    // Preserve existing submit behavior: uses current selection
+    await performMfa(useRecovery ? 'recovery' : 'auth');
+  };
+
+  // More options handlers
+  const handleToggleMoreOptions = () => setMoreOptionsOpen((prev) => !prev);
+  const handleSelectRecovery = () => { setUseRecovery(true); setOtp(''); };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -286,25 +316,67 @@ export default function UserLoginForm({ onLoginSuccess }) {
               </Box>
             </>
           ) : (
-            <TextField
-              label="MFA Code"
-              variant="outlined"
-              fullWidth
-              id="otp"
-              name="otp"
-              autoFocus
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              disabled={isLoading}
-              sx={{...textFieldSx}}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockOutlinedIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <>
+              <TextField
+                label={useRecovery ? '2FA Recovery Code' : 'MFA Code'}
+                variant="outlined"
+                fullWidth
+                id="otp"
+                name="otp"
+                autoFocus
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                disabled={isLoading}
+                sx={{...textFieldSx}}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText={useRecovery ? 'You are using a recovery code for this login.' : ''}
+              />
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  type="button"
+                  fullWidth
+                  variant="contained"
+                  disabled={isLoading}
+                  sx={{ ...gradientButtonSx }}
+                  onClick={() => performMfa(useRecovery ? 'recovery' : 'auth')}
+                >
+                  Verify
+                </Button>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="inherit"
+                  onClick={handleToggleMoreOptions}
+                  disabled={isLoading}
+                  sx={{ justifyContent: 'space-between', borderColor: 'rgba(255,255,255,0.3)', color: '#fff', borderRadius: '10px' }}
+                  endIcon={moreOptionsOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                >
+                  More options
+                </Button>
+                <Collapse in={moreOptionsOpen} timeout="auto" unmountOnExit>
+                  <Divider sx={{ my: 1, borderColor: 'rgba(255,255,255,0.2)' }} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="error"
+                      onClick={handleSelectRecovery}
+                      sx={{ borderColor: 'rgba(255,255,255,0.3)', borderRadius: '10px' }}
+                    >
+                      2FA recovery code
+                    </Button>
+                  </Box>
+                </Collapse>
+              </Box>
+            </>
           )}
         </FormContainer>
       </MainContainer>

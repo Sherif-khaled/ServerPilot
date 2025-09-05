@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Tabs, Tab, CircularProgress, Alert, Paper, GlobalStyles, styled } from '@mui/material';
+import { Box, Typography, Tabs, Tab, CircularProgress, Alert, GlobalStyles, styled } from '@mui/material';
+import { CircularProgressSx } from '../../../common';
 import { getServerDetails } from '../../../api/serverService';
 import { useTranslation } from 'react-i18next';
 import SecurityAdvisorTab from '../components/details/SecurityAdvisorTab';
@@ -79,7 +80,7 @@ export default function ServerDetailsPage() {
   };
 
   if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress size={20}  sx={CircularProgress} /></Box>;
+    return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress size={20} sx={CircularProgressSx} /></Box>;
   }
 
   if (error) {

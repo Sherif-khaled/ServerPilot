@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+// import { useParams } from 'react-router-dom';
 import { Avatar, Typography, Box, MenuItem,ListItemText,ListItemIcon, CircularProgress, Button, Alert, Paper, Table, TableBody,Tooltip,
    TableCell, TableContainer, TableHead, TableRow, IconButton, InputAdornment, TablePagination, Menu, TextField } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon, Add as AddIcon, MoreVert as MoreVertIcon, Refresh as RefreshIcon } from '@mui/icons-material';
@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 
 
 const ApplicationsPage = () => {
-  const { customerId } = useParams();
+  // const { customerId } = useParams();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -48,7 +48,7 @@ const ApplicationsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchApplications();
@@ -67,7 +67,7 @@ const ApplicationsPage = () => {
 
   const handleSaveApplication = async (appData, appId) => {
     try {
-      let response;
+      let response; // eslint-disable-line no-unused-vars
       if (appId) {
         response = await updateApplication(appId, appData);
         showSuccess(t('applicationForm.update'));

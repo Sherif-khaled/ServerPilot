@@ -27,6 +27,7 @@ export const ThemeProvider = ({ children }) => {
     const isArabic = i18n.language === 'ar';
     document.documentElement.setAttribute('dir', isArabic ? 'rtl' : 'ltr');
     document.documentElement.setAttribute('lang', i18n.language || 'en');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language]);
 
   const theme = useMemo(
@@ -115,7 +116,9 @@ export const ThemeProvider = ({ children }) => {
               }),
         },
       }),
-    [mode, i18n.language]
+    // i18n.language is read from a stable singleton; rerenders are handled by i18n itself
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode]
   );
 
   const toggleTheme = async () => {

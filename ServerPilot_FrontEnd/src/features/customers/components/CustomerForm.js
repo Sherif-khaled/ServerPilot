@@ -45,7 +45,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
       console.error('Failed to fetch customer types:', err);
       setApiFormError(t('forgotPassword.genericError'));
     }
-  }, []);
+  }, [t]);
 
   const fetchCustomerData = useCallback(async () => {
     if (!isEditMode) return;
@@ -78,7 +78,7 @@ export default function CustomerForm({ open, onClose, customerId = null, onSucce
       setApiFormError(t('forgotPassword.genericError'));
     }
     setLoading(false);
-  }, [customerId, isEditMode, customerTypes]);
+  }, [customerId, isEditMode, customerTypes, t]);
 
   useEffect(() => {
     fetchCustomerTypes();

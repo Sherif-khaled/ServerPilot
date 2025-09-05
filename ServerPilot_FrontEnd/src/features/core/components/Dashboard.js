@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider, Menu, MenuItem } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Brightness4 as Brightness4Icon, Brightness7 as Brightness7Icon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -26,7 +26,7 @@ const Background = styled('div')({
 const drawerWidth = 240;
 
 export default function Dashboard({ children, toggleTheme, currentThemeMode, overrideBackground }) { // Added theme props
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user, logoutAuth } = useAuth(); // Get user and logoutAuth from context
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
@@ -44,7 +44,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const [pageTitle, setPageTitle] = React.useState(t('common.systemOverview'));
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
 
-  const pageTitles = {
+  const pageTitles = React.useMemo(() => ({
     '/dashboard': t('common.dashboard'),
     '/profile': t('common.profile'),
     '/users': t('common.users'),
@@ -56,13 +56,13 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
     '/database-management': t('common.databaseManagement'),
     '/security-risk-roles': t('common.securityRiskRoles'),
     '/settings': t('common.settings')
-  };
+  }), [t]);
 
   useEffect(() => {
     const path = location.pathname;
     const title = pageTitles[path] || t('common.systemOverview'); // Default title
     setPageTitle(title);
-  }, [location, i18n.language]);
+  }, [location, pageTitles, t]);
 
   useEffect(() => {
     apiClient.get('/configuration/favicon/')

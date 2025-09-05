@@ -20,7 +20,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testResult, setTestResult] = useState(null);
+  // const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     apiClient.get('/configuration/email-settings/')
@@ -41,7 +41,7 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
       .catch(() => {
         showError(t('generalSettings.iconLoadFail'));
       });
-  }, []);
+  }, [showError, t]);
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
@@ -63,15 +63,15 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
   };
 
   const handleTest = () => {
-    setTestResult(null);
+    // setTestResult(null);
     apiClient.post('/configuration/test-email/', settings)
       .then(res => {
-        setTestResult({ success: true, message: res.data.message });
+        // setTestResult({ success: true, message: res.data.message });
         showSuccess('Connection test successful');
       })
       .catch(err => {
         const errorMessage = err.response?.data?.message || 'Connection test failed. Please check SMTP authentications.';
-        setTestResult({ success: false, message: errorMessage });
+        // setTestResult({ success: false, message: errorMessage });
         showError(errorMessage);
       });
   };

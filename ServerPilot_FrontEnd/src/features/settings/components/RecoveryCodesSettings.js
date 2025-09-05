@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {Box,Button,Typography,List,ListItem,ListItemIcon,ListItemText,CircularProgress,Paper,Alert} from '@mui/material';
+import {Box,Button,Typography,List,ListItem,ListItemIcon,ListItemText,CircularProgress,Alert} from '@mui/material';
 import { FileCopy as FileCopyIcon, Download as DownloadIcon, VpnKey as VpnKeyIcon } from '@mui/icons-material';
 import { generateRecoveryCodes, confirmRecoveryCodes } from '../../../services/webAuthnService';
 import { getProfile } from '../../../api/userService';
 import { Checkbox, FormControlLabel } from '@mui/material';
-import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx, checkBoxSx } from '../../../common';
+import {  GlassPaper, gradientButtonSx, CircularProgressSx, checkBoxSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
 

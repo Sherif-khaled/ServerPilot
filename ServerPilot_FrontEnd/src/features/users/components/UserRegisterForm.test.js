@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import UserRegisterForm from './UserRegisterForm';
 
 describe('UserRegisterForm (integration)', () => {
@@ -12,7 +12,7 @@ describe('UserRegisterForm (integration)', () => {
     fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Test' } });
     fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'User' } });
     fireEvent.click(screen.getByRole('button', { name: /register/i }));
-    await waitFor(() => expect(screen.getByText(/registration successful/i)).toBeInTheDocument());
+    await screen.findByText(/registration successful/i);
   });
 
   it('shows error on duplicate registration', async () => {
@@ -21,6 +21,6 @@ describe('UserRegisterForm (integration)', () => {
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'sherif@example.com' } });
     fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'pass1234' } });
     fireEvent.click(screen.getByRole('button', { name: /register/i }));
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    await screen.findByRole('alert');
   });
 });

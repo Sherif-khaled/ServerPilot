@@ -30,7 +30,7 @@ function generateStrongPassword(length = 14) {
  * - sx: style overrides
  */
 export default function GeneratePasswordButton({ onGenerate, disabled, sx }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   return (
     <Button
       onClick={() => onGenerate(generateStrongPassword())}

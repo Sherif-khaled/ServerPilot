@@ -357,7 +357,7 @@ export default function CustomerList() {
           <ConfirmDialog
                     open={deleteDialogOpen}
                     onClose={closeDeleteDialog}
-                    onConfirm={deleteDialogOpen}
+                    onConfirm={handleDeleteCustomer}
                     title={t('customers.confirmDeleteTitle')}
                     message={t('customers.confirmDeleteMessage')}
                     confirmText={t('customers.yesDelete')}

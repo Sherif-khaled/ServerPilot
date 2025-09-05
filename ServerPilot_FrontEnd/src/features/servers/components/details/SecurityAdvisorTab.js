@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Grid, Alert, CircularProgress, Tooltip, IconButton, Tabs, Tab, Collapse, Link, useTheme, CardContent } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DangerousOutlinedIcon from '@mui/icons-material/DangerousOutlined';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
@@ -14,10 +13,7 @@ import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
 import 'prismjs/components/prism-bash';
 import ExplainRiskDialog from './ExplainRiskDialog';
-import { GlassCard, glassDialogSx, CircularProgressSx, ConfirmDialog, CustomSnackbar } from '../../../../common';
-
-//Enable / Disable Animation
-const dashboardAnimations = JSON.parse(localStorage.getItem('dashboardAnimations')) ?? false;
+import { GlassCard, CircularProgressSx, ConfirmDialog, CustomSnackbar } from '../../../../common';
 
 
 const RISK_LEVELS = [
@@ -35,17 +31,17 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   })), [t]);
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [setError] = useState('');
   const [scanning, setScanning] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [isAIConfigured, setIsAIConfigured] = useState(false);
   const [tab, setTab] = useState(0);
-  const [collapse, setCollapse] = useState([true, false, false]); // For collapsible sections
+  const [collapse, setCollapse] = useState([true, false, false]);
   const [confirmBatch, setConfirmBatch] = useState(false);
   const [copiedCommandId, setCopiedCommandId] = useState(null);
   const [explanationOpen, setExplanationOpen] = useState(false);
-  const [explanationLoading, setExplanationLoading] = useState(false);
-  const [riskCards, setRiskCards] = useState([]);
+  // const [explanationLoading, setExplanationLoading] = useState(false);
+  // const [riskCards, setRiskCards] = useState([]);
   const [selectedRec, setSelectedRec] = useState(null);
 
   const fetchScanData = useCallback(async () => {
@@ -73,7 +69,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             if (response.is_configured) {
                 fetchScanData();
             } else {
-                setLoading(false); // AI not configured, stop loading
+                setLoading(false);
             }
         } catch (err) {
             setError(t('securityAdvisor.rescanFail'));
@@ -105,7 +101,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
       await fixRecommendation(customerId, serverId, recommendationId);
       setNotification({ open: true, message: t('securityAdvisor.batchSuccess'), severity: 'success' });
 
-      // Optimistically update the UI
       setScan(prevScan => {
         if (!prevScan) return null;
         const updatedRecommendations = prevScan.recommendations.map(rec =>
@@ -124,14 +119,14 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     try {
       await updateRecommendationStatus(customerId, serverId, recommendationId, status);
       setNotification({ open: true, message: `Recommendation marked as ${status}.`, severity: 'success' });
-      fetchScanData(); // Refresh data
+      fetchScanData();
     } catch (err) {
       setNotification({ open: true, message: t('securityAdvisor.batchFail'), severity: 'error' });
       console.error(err);
     }
   };
 
-  const handleCloseNotification = (event, reason) => {
+  const handleCloseNotification = (reason) => {
     if (reason === 'clickaway') {
       return;
     }
@@ -145,7 +140,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   } : { critical: 0, medium: 0, passed: 0 };
 
   useEffect(() => {
-    // Highlight all code blocks after render
     Prism.highlightAll();
   });
 
@@ -155,7 +149,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     setTimeout(() => setCopiedCommandId(null), 1500);
   };
 
-  // Dummy AI explanation fetcher (replace with real API if available)
   const handleOpenExplainDialog = (rec) => {
     setSelectedRec(rec);
     setExplanationOpen(true);

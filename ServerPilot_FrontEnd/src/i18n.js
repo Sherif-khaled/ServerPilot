@@ -10,7 +10,6 @@ const resources = {
         general: 'General Settings',
         generate: 'Generate',
         settings: 'Settings',
-        general: 'General',
         passwordAndAuth: 'Password & Authentication',
         sessions: 'Sessions',
         appearance: 'Appearance',
@@ -34,7 +33,8 @@ const resources = {
         logout: 'Logout',
         adminDashboard: 'Admin Dashboard',
         systemOverview: 'System Overview',
-        rowsPerPage: 'Rows per page'
+        rowsPerPage: 'Rows per page',
+        cancel: 'Cancel'
       },
       passwordPolicy: {
         title: 'Password Policy',
@@ -886,7 +886,8 @@ const resources = {
         logout: 'تسجيل الخروج',
         adminDashboard: 'لوحة تحكم المشرف',
         systemOverview: 'نظرة عامة على النظام',
-        rowsPerPage: 'الصفوف في الصفحة'
+        rowsPerPage: 'الصفوف في الصفحة',
+        cancel: 'إلغاء'
       },
       passwordPolicy: {
         title: 'سياسة كلمة المرور',

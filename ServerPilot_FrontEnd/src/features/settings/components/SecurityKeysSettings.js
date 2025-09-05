@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Typography, List, ListItem, ListItemText, IconButton, TextField, Dialog, DialogActions, DialogContent, 
-    DialogContentText, DialogTitle, CircularProgress, Alert } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Typography } from '@mui/material';
+// import { Button, Typography, List, ListItem, ListItemText, IconButton, TextField, Dialog, DialogActions, DialogContent, 
+//         DialogContentText, DialogTitle, CircularProgress, Alert } from '@mui/material';
+// import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import * as webAuthnService from '../../../services/webAuthnService';
-import { startRegistration } from '@simplewebauthn/browser';
-import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx } from '../../../common';
+// import { startRegistration } from '@simplewebauthn/browser';
+import { GlassPaper } from '../../../common';
+// import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
 const SecurityKeysSettings = () => {
     const { t } = useTranslation();
-    const [keys, setKeys] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [open, setOpen] = useState(false);
-    const [keyName, setKeyName] = useState('');
+    const [ setKeys] = useState([]);
+    const [setIsLoading] = useState(true);
+    const [setError] = useState('');
+    const [setOpen] = useState(false);
+    const [setKeyName] = useState('');
 
-    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+    // const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
     const fetchKeys = async () => {
         try {
@@ -34,43 +36,43 @@ const SecurityKeysSettings = () => {
         fetchKeys();
     }, []);
 
-    const handleRegisterClick = () => {
-        setOpen(true);
-    };
+    // const handleRegisterClick = () => {
+    //     setOpen(true);
+    // };
 
-    const handleClose = () => {
-        setOpen(false);
-        setKeyName('');
-    };
+    // const handleClose = () => {
+    //     setOpen(false);
+    //     setKeyName('');
+    // };
 
-    const handleRegister = async () => {
-        if (!keyName) {
-            setError('Please provide a name for the key.');
-            return;
-        }
-        handleClose();
+    // const handleRegister = async () => {
+    //     if (!keyName) {
+    //         setError('Please provide a name for the key.');
+    //         return;
+    //     }
+    //     handleClose();
 
-        try {
-            const optionsResponse = await webAuthnService.beginRegistration();
-            const registrationData = await startRegistration(optionsResponse.data);
-            await webAuthnService.completeRegistration(registrationData, keyName);
-            showSuccess('Security key registered successfully!');
-            fetchKeys(); // Refresh the list of keys
-        } catch (err) {
-            const errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
-            showError(errorMessage);
-        }
-    };
+    //     try {
+    //         const optionsResponse = await webAuthnService.beginRegistration();
+    //         const registrationData = await startRegistration(optionsResponse.data);
+    //         await webAuthnService.completeRegistration(registrationData, keyName);
+    //         showSuccess('Security key registered successfully!');
+    //         fetchKeys(); // Refresh the list of keys
+    //     } catch (err) {
+    //         const errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
+    //         showError(errorMessage);
+    //     }
+    // };
 
-    const handleDelete = async (keyId) => {
-        try {
-            await webAuthnService.deleteKey(keyId);
-            showSuccess('Security key deleted successfully!');
-            fetchKeys();
-        } catch (err) {
-            showError('Failed to delete the key.');
-        }
-    };
+    // const handleDelete = async (keyId) => {
+    //     try {
+    //         await webAuthnService.deleteKey(keyId);
+    //         showSuccess('Security key deleted successfully!');
+    //         fetchKeys();
+    //     } catch (err) {
+    //         showError('Failed to delete the key.');
+    //     }
+    // };
 
     return (
         <GlassPaper>

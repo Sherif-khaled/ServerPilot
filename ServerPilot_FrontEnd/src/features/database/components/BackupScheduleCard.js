@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardContent, Typography, CircularProgress, Grid } from '@mui/material';
 import { GlassCard, gradientButtonSx, textFieldSx, switchSx, CircularProgressSx } from '../../../common';
-import { Box, FormControlLabel, Switch, TextField, Button } from '@mui/material';
+import { FormControlLabel, Switch, TextField, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 const BackupScheduleCard = ({

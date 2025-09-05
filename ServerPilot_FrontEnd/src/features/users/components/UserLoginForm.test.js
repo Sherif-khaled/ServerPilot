@@ -22,6 +22,6 @@ describe('UserLoginForm (integration)', () => {
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'notarealuser' } });
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrong' } });
     fireEvent.click(screen.getByRole('button', { name: /login/i }));
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    await screen.findByRole('alert');
   });
 });
