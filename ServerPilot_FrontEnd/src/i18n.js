@@ -121,6 +121,7 @@ const resources = {
           email: 'Email',
           role: 'Role',
           status: 'Status',
+          verified: 'Verified',
           actions: 'Actions'
         },
         noUsersFound: 'No users found',
@@ -130,6 +131,8 @@ const resources = {
         managers:'Managers',
         active: 'Active',
         inactive: 'Inactive',
+        verified: 'Verified',
+        notVerified: 'Not Verified',
         actions: 'Actions',
         edit: 'Edit',
         setPassword: 'Set Password',
@@ -975,6 +978,7 @@ const resources = {
           email: 'البريد الإلكتروني',
           role: 'الدور',
           status: 'الحالة',
+          verified: 'موثق',
           actions: 'إجراءات'
         },
         noUsersFound: 'لم يتم العثور على مستخدمين',
@@ -984,6 +988,8 @@ const resources = {
         active: 'نشط',
         managers:'مدراء',
         inactive: 'غير نشط',
+        verified: 'موثق',
+        notVerified: 'غير موثق',
         actions: 'إجراءات',
         edit: 'تعديل',
         setPassword: 'تعيين كلمة المرور',

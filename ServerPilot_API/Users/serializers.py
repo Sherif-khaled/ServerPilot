@@ -87,6 +87,7 @@ class UserListSerializer(serializers.ModelSerializer):
     Serializer for listing users in the admin panel, including status and last login.
     """
     profile_photo_url = serializers.SerializerMethodField()
+    is_email_verified = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
@@ -100,7 +101,8 @@ class UserListSerializer(serializers.ModelSerializer):
             'is_active',
             'is_staff',
             'last_login',
-            'profile_photo_url'
+            'profile_photo_url',
+            'is_email_verified',
         )
 
     def get_profile_photo_url(self, obj):
@@ -108,6 +110,10 @@ class UserListSerializer(serializers.ModelSerializer):
         if obj.profile_photo and hasattr(obj.profile_photo, 'url'):
             return request.build_absolute_uri(obj.profile_photo.url)
         return None
+
+    def get_is_email_verified(self, obj):
+        # Backwards-compatible flag mirroring ProfileSerializer
+        return bool(getattr(obj, 'email_verified', False))
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):

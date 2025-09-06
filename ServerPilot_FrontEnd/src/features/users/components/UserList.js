@@ -332,8 +332,8 @@ export default function UserList() {
                         <Table aria-label="user list">
                             <TableHead>
                                 <TableRow sx={{ '& .MuiTableCell-root': { borderBottom: '1px solid rgba(255, 255, 255, 0.2)' } }}>
-                                    {[t('users.headers.user'), t('users.headers.email'), t('users.headers.role'), t('users.headers.status'), t('users.headers.actions')].map((headCell, index) => (
-                                        <TableCell key={headCell} align={index === 4 ? 'right' : 'left'} sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold' }}>
+                                    {[t('users.headers.user'), t('users.headers.email'), t('users.headers.role'), t('users.headers.status'), t('users.headers.verified'), t('users.headers.actions')].map((headCell, index) => (
+                                        <TableCell key={headCell} align={index === 5 ? 'right' : 'left'} sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 'bold' }}>
                                             {headCell}
                                         </TableCell>
                                     ))}
@@ -342,7 +342,7 @@ export default function UserList() {
                             <TableBody>
                                 {paginatedUsers.length === 0 ? (
                                     <TableRow >
-                                        <TableCell colSpan={5} align="center" sx={{ border: 0 }}>
+                                        <TableCell colSpan={6} align="center" sx={{ border: 0 }}>
                                             <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: 'rgba(255, 255, 255, 0.7)' }}>
                                                 <SearchIcon sx={{ fontSize: 60 }} />
                                                 <Typography variant="h6">{t('users.noUsersFound')}</Typography>
@@ -403,6 +403,20 @@ export default function UserList() {
                                                     sx={{
                                                         borderColor: user.is_active ? 'rgba(102, 187, 106, 0.7)' : 'rgba(244, 67, 54, 0.7)',
                                                         color: user.is_active ? '#66bb6a' : '#f44336',
+                                                        '.MuiChip-icon': { color: 'inherit' }
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    icon={user.is_email_verified ? <CheckCircleOutlineIcon /> : <HighlightOffOutlinedIcon />}
+                                                    label={user.is_email_verified ? t('users.verified') : t('users.notVerified')}
+                                                    size="small"
+                                                    color={user.is_email_verified ? 'success' : 'warning'}
+                                                    variant="outlined"
+                                                    sx={{
+                                                        borderColor: user.is_email_verified ? 'rgba(102, 187, 106, 0.7)' : 'rgba(255, 167, 38, 0.7)',
+                                                        color: user.is_email_verified ? '#66bb6a' : '#ffa726',
                                                         '.MuiChip-icon': { color: 'inherit' }
                                                     }}
                                                 />
