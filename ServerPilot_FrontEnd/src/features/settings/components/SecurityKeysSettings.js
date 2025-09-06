@@ -11,11 +11,11 @@ import { useTranslation } from 'react-i18next';
 
 const SecurityKeysSettings = () => {
     const { t } = useTranslation();
-    const [ setKeys] = useState([]);
-    const [setIsLoading] = useState(true);
-    const [setError] = useState('');
-    const [setOpen] = useState(false);
-    const [setKeyName] = useState('');
+    const [keys, setKeys] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [open, setOpen] = useState(false);
+    const [keyName, setKeyName] = useState('');
 
     // const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 

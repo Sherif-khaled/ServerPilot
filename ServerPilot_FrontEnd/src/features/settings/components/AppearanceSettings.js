@@ -8,7 +8,7 @@ const AppearanceSettings = () => {
   const { mode, toggleTheme } = useContext(ThemeContext);
   const { t } = useTranslation();
 
-   const [dashboardAnimations, setDashboardAnimations] = useState(
+  const [dashboardAnimations, setDashboardAnimations] = useState(
     () => JSON.parse(localStorage.getItem('dashboardAnimations')) ?? false
   );
 

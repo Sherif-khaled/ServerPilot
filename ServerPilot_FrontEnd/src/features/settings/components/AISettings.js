@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {Box,Button,CircularProgress,FormControl,InputLabel,MenuItem,Select,TextField,Typography} from '@mui/material';
-import api from '../../../api/axiosConfig';
+import apiClient from '../../../api/apiClient';
+
 import { CustomSnackbar, useSnackbar, textFieldSx, gradientButtonSx,GlassPaper,SelectSx, CircularProgressSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +23,7 @@ const AISettings = () => {
             setLoading(true);
             setError('');
             try {
-                const response = await api.get('ai/settings/');
+                const response = await apiClient.get('/ai/settings/');
                 if (response.status === 200) {
                     const data = response.data;
                     setProvider(data.provider || 'OpenAI');
@@ -41,7 +42,7 @@ const AISettings = () => {
         const fetchModels = async () => {
             setModelsLoading(true);
             try {
-                const response = await api.get('ai/models/');
+                const response = await apiClient.get('/ai/models/');
                 if (response.data.models) {
                     setModelsList(response.data.models);
                 }
@@ -62,7 +63,7 @@ const AISettings = () => {
         setError('');
         setSuccess('');
         try {
-            const response = await api.put('ai/settings/', {
+            const response = await apiClient.put('/ai/settings/', {
                 provider,
                 api_key: apiKey,
                 model,

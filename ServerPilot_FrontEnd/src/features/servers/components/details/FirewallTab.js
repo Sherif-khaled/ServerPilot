@@ -256,10 +256,10 @@ const FirewallTab = () => {
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {[
-          { title: 'إجمالي القواعد', count: stats.total, icon: <ShieldOutlined sx={{ fontSize: 30 }} />, color: '#29b6f6' },
-          { title: 'المسموح بها', count: stats.allow, icon: <CheckCircleOutline sx={{ fontSize: 30 }} />, color: '#66bb6a' },
-          { title: 'المرفوضة', count: stats.deny, icon: <Block sx={{ fontSize: 30 }} />, color: '#ef5350' },
-          { title: 'المرفوضة مع إشعار', count: stats.reject, icon: <ReportProblemOutlined sx={{ fontSize: 30 }} />, color: '#ffa726' },
+          { title: t('firewall.stats.total'), count: stats.total, icon: <ShieldOutlined sx={{ fontSize: 30 }} />, color: '#29b6f6' },
+          { title: t('firewall.stats.allow'), count: stats.allow, icon: <CheckCircleOutline sx={{ fontSize: 30 }} />, color: '#66bb6a' },
+          { title: t('firewall.stats.deny'), count: stats.deny, icon: <Block sx={{ fontSize: 30 }} />, color: '#ef5350' },
+          { title: t('firewall.stats.reject'), count: stats.reject, icon: <ReportProblemOutlined sx={{ fontSize: 30 }} />, color: '#ffa726' },
         ].map((item, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <GlassCard sx={{ display: 'flex', alignItems: 'center', p: 2 }}>

@@ -218,11 +218,14 @@ class Server(models.Model):
 
         # Escape single quotes in the password to prevent shell injection issues with the echo command.
         escaped_password = new_password.replace("'", "'\\''")
-        command = f"echo '{username_to_change}:{escaped_password}' | sudo chpasswd"
+        # Use sudo only for non-root users. If already logging in as root, call chpasswd directly.
+        chpasswd_prefix = "sudo " if not self.login_using_root else ""
+        command = f"echo '{username_to_change}:{escaped_password}' | {chpasswd_prefix}chpasswd"
 
-        success, output = self.connect_ssh(command=command)
+        # connect_ssh returns (success: bool, output: str, exit_status: int)
+        success, output, exit_status = self.connect_ssh(command=command)
 
-        if success:
+        if success and exit_status == 0:
             # If the command was successful, update the password in the database.
             if self.login_using_root:
                 self.ssh_root_password = new_password

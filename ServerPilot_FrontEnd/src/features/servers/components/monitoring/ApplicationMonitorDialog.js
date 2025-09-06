@@ -3,7 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { monitorApplication } from '../../../../api/serverService';
 
-import { CircularProgressSx, glassDialogSx } from '../../../../common';
+import { CancelButton, CircularProgressSx, glassDialogSx } from '../../../../common';
 import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#0088FE', '#FFBB28'];
@@ -93,7 +93,9 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} sx={{ color: '#fff' }}>{t('servers.infoDialog.close')}</Button>
+        <Box>
+          <CancelButton onClick={onClose}>{t('servers.infoDialog.close')}</CancelButton>
+        </Box>
       </DialogActions>
     </Dialog>
   );

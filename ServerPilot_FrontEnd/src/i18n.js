@@ -34,7 +34,8 @@ const resources = {
         adminDashboard: 'Admin Dashboard',
         systemOverview: 'System Overview',
         rowsPerPage: 'Rows per page',
-        cancel: 'Cancel'
+        cancel: 'Cancel',
+        loading: 'Loading...'
       },
       passwordPolicy: {
         title: 'Password Policy',
@@ -631,7 +632,7 @@ const resources = {
           na: 'N/A',
           customerIdMissing: 'Customer ID not provided. Cannot load servers.',
           loadFailed: 'Failed to load servers.',
-          passwordChanged: "Server '{{name}}' password changed successfully."
+          passwordChanged: "Server '{{name}}' password changed successfully.",
         },
         details: {
           sectionServer: 'Server',
@@ -702,7 +703,8 @@ const resources = {
           description: 'Enter a new password for the server "{{name}}".',
           newPassword: 'New Password',
           emptyError: 'Password cannot be empty.',
-          change: 'Change Password'
+          change: 'Change Password',
+          passwordChangeFailed: 'Failed to change password. Please try again later.',
         },
         apps: {
           version: 'Version',
@@ -1551,7 +1553,8 @@ const resources = {
           description: 'أدخل كلمة مرور جديدة للخادم "{{name}}".',
           newPassword: 'كلمة المرور الجديدة',
           emptyError: 'لا يمكن أن تكون كلمة المرور فارغة.',
-          change: 'تغيير كلمة المرور'
+          change: 'تغيير كلمة المرور',
+          passwordChangeFailed: 'فشل تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
         },
         apps: {
           version: 'الإصدار',

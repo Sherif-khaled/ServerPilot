@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
-import { createServer, updateServer } from '../../../api/serverService';
 import {Box, Button, Typography, ListItemText,ListItemIcon, IconButton, CircularProgress, Alert, Tooltip, Menu, MenuItem, Grid, 
   CardContent, Table, TableBody,TableCell, TableContainer, TableHead, TableRow, TextField,InputAdornment, Paper} from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -16,7 +15,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
-import { getServers, deleteServer, getServerHealth, changeServerPassword } from '../../../api/serverService';
+import { createServer,updateServer, getServers, deleteServer, getServerHealth, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
 import { CustomSnackbar, useSnackbar } from '../../../common';
 import { useTranslation } from 'react-i18next';
@@ -87,7 +86,8 @@ export default function ServerList({ customerId: propCustomerId }) {
       showSuccess(t('servers.common.passwordChanged', { name: serverForPasswordChange.server_name }));
       return { ok: true };
     } catch (err) {
-      const errorMsg = err.response?.data?.error || t('servers.common.passwordChangeFailed');
+      const errorData = err?.response?.data || {};
+      const errorMsg = errorData.details || errorData.message || errorData.error || err.message || t('servers.passwordDialog.passwordChangeFailed');
       showError(errorMsg);
       return { ok: false, error: errorMsg };
     }
@@ -341,7 +341,12 @@ export default function ServerList({ customerId: propCustomerId }) {
 
                 <TableBody>
                   {filteredServers.map((server) => (
-                    <TableRow hover key={server.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableRow key={server.id} 
+                      sx={{ '&:last-child td, &:last-child th': { border: 0 },
+                      '&:hover': {
+                          background: 'rgba(254,107,139,0.08)',
+                          transition: 'background 0.2s',
+                      } }}>
                       <TableCell component="th" scope="row" align="center">
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           {onlineStatus[server.id] === undefined ? (

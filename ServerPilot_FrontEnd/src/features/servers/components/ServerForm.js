@@ -3,6 +3,7 @@ import { Box, Button, TextField,Dialog, DialogTitle, DialogContent, DialogAction
   Checkbox,Typography} from '@mui/material';
 import {getServerDetails, testServerConnection, testServerConnectionWithPayload } from '../../../api/serverService';
 import { IMaskInput } from 'react-imask';
+import IMask from 'imask';
 import PropTypes from 'prop-types';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { textFieldSx, gradientButtonSx, glassDialogSx, checkBoxSx, CancelButton, CircularProgressSx } from '../../../common';
@@ -13,12 +14,13 @@ const TextMaskAdapter = React.forwardRef(function TextMaskAdapter(props, ref) {
   return (
     <IMaskInput
       {...other}
+      // Normalize pasted input to use dots instead of commas
+      prepare={(str) => (typeof str === 'string' ? str.replace(/,/g, '.') : str)}
       mask="num.num.num.num"
       blocks={{
         num: {
-          mask: Number,
-          min: 0,
-          max: 255,
+          // Allow 1-3 digits per octet; overall 0-255 is enforced by form validation
+          mask: /\d{1,3}/,
         },
       }}
       inputRef={ref}

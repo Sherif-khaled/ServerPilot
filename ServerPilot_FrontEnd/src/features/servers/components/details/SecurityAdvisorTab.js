@@ -31,7 +31,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   })), [t]);
   const [scan, setScan] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [setError] = useState('');
+  const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [isAIConfigured, setIsAIConfigured] = useState(false);
@@ -40,8 +40,6 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
   const [confirmBatch, setConfirmBatch] = useState(false);
   const [copiedCommandId, setCopiedCommandId] = useState(null);
   const [explanationOpen, setExplanationOpen] = useState(false);
-  // const [explanationLoading, setExplanationLoading] = useState(false);
-  // const [riskCards, setRiskCards] = useState([]);
   const [selectedRec, setSelectedRec] = useState(null);
 
   const fetchScanData = useCallback(async () => {
