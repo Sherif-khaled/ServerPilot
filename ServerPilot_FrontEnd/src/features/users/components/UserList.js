@@ -7,7 +7,7 @@ import { textFieldSx, gradientButtonSx, CircularProgressSx, ConfirmDialog, MenuA
 
 import {Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, VpnKey as VpnKeyIcon, MoreVert as MoreVertIcon,
     Search as SearchIcon,PeopleAltOutlined as PeopleAltOutlinedIcon,CheckCircleOutline as CheckCircleOutlineIcon,
-    AdminPanelSettings as AdminPanelSettingsIcon,HighlightOffOutlined as HighlightOffOutlinedIcon} from '@mui/icons-material';
+    AdminPanelSettings as AdminPanelSettingsIcon,HighlightOffOutlined as HighlightOffOutlinedIcon, AccountCircle as AccountCircleIcon} from '@mui/icons-material';
 import { adminListUsers, adminDeleteUser, adminSetUserPassword,} from '../../../api/userService';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import SetPasswordForm from './SetPasswordForm';
 import UserForm from './UserForm';
 import { CustomSnackbar, useSnackbar } from '../../../common';
+import { useNavigate } from 'react-router-dom';
 
 const RootContainer = styled(Box)(({ theme }) => ({
     padding: theme.spacing(3),
@@ -23,6 +24,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 
 export default function UserList() {
     const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -250,6 +252,13 @@ export default function UserList() {
         handleMenuClose();
     };
 
+    const handleViewProfileFromMenu = () => {
+        if (selectedUserForMenu) {
+            navigate(`/users/${selectedUserForMenu.id}/profile`);
+        }
+        handleMenuClose();
+    };
+
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -461,6 +470,7 @@ export default function UserList() {
           disablePortal={false}
           keepMounted={false}
             >
+                <MenuItem onClick={handleViewProfileFromMenu}><AccountCircleIcon sx={{ mr: 1 }} /> {t('users.viewProfile')}</MenuItem>
                 <MenuItem onClick={handleEditFromMenu}><EditIcon sx={{ mr: 1 }} /> {t('users.edit')}</MenuItem>
                 <MenuItem onClick={handleSetPasswordFromMenu}><VpnKeyIcon sx={{ mr: 1 }} /> {t('users.setPassword')}</MenuItem>
                 <MenuItem onClick={handleDeleteFromMenu} sx={{ color: '#f44336' }}><DeleteIcon sx={{ mr: 1 }} /> {t('users.delete')}</MenuItem>

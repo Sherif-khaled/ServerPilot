@@ -73,7 +73,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 'first_name', 'last_name', 'profile_photo',
             'mfa_enabled', 'recovery_codes_verified', 'is_staff', 'theme', 'phone_number',
-            'timezone', 'date_format', 'language', 'is_email_verified'
+            'timezone', 'date_format', 'language', 'is_email_verified', 'last_login'
         )
         read_only_fields = ('username', 'email')
 
