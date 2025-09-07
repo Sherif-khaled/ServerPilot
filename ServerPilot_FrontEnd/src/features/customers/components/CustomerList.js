@@ -1,22 +1,19 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {Box, Button, Typography, Table, TableBody, TableCell,TableContainer, TableHead, TableRow, IconButton, CircularProgress,
-  Alert, Tooltip,Grid, TextField, InputAdornment, CardContent, Chip, TablePagination, Paper} from '@mui/material';
+  Alert, Tooltip,Grid, TextField, InputAdornment, CardContent, Chip, TablePagination, Paper, Menu, MenuItem, ListItemIcon, ListItemText, Divider} from '@mui/material';
 import { styled } from '@mui/material/styles';
-import {Add as AddIcon,Refresh as RefreshIcon,Edit as EditIcon,Delete as DeleteIcon,Search as SearchIcon,Dns as DnsIcon, // Servers icon
+import {Add as AddIcon,Refresh as RefreshIcon,Edit as EditIcon,Delete as DeleteIcon,Search as SearchIcon,Dns as DnsIcon, MoreVert as MoreVertIcon, Person as PersonIcon, // Servers icon
   PeopleAltOutlined as PeopleAltOutlinedIcon, CheckCircleOutline as CheckCircleOutlineIcon, HighlightOffOutlined as HighlightOffOutlinedIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getCustomers, deleteCustomer, getCustomerTypes } from '../../../api/customerService';
 import { useAuth } from '../../../AuthContext';
 import CustomerForm from './CustomerForm';
-import { CustomSnackbar, useSnackbar, gradientButtonSx, textFieldSx, CircularProgressSx, ConfirmDialog, GlassCard } from '../../../common';
+import { CustomSnackbar, useSnackbar, gradientButtonSx, textFieldSx, CircularProgressSx, ConfirmDialog, GlassCard, MenuActionsSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
 
-// Styled root component for the background
 const RootContainer = styled(Box)(({ theme }) => ({
     padding: theme.spacing(3),
 }));
-
-// Using shared GlassCard from common
 
 export default function CustomerList() {
   const { t, i18n } = useTranslation();
@@ -37,9 +34,12 @@ export default function CustomerList() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [customerFormOpen, setCustomerFormOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuCustomerId, setMenuCustomerId] = useState(null);
   
-  // Use the custom snackbar hook
-  const { snackbar, showSuccess, hideSnackbar } = useSnackbar();
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  
+  
 
   const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
@@ -174,10 +174,52 @@ export default function CustomerList() {
       await deleteCustomer(customerToDelete.id);
       setCustomers(customers.filter(c => c.id !== customerToDelete.id));
       closeDeleteDialog();
+      showSuccess(t('customers.common.deleted', { name: customerToDelete.company_name }));
     } catch (err) {
       console.error('Failed to delete customer:', err);
       setError('Failed to delete customer.');
+      showError(t('customers.common.deleteFailed', { name: customerToDelete.company_name }));
     }
+  };
+
+  // Actions Menu handlers
+  const handleOpenMenu = (event, customerId) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuCustomerId(customerId);
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setMenuCustomerId(null);
+  };
+
+  const handleMenuManageServers = () => {
+    if (menuCustomerId != null) {
+      navigate(`/customers/${menuCustomerId}/servers`);
+    }
+    handleCloseMenu();
+  };
+
+  const handleMenuEdit = () => {
+    if (menuCustomerId != null) {
+      handleEditCustomer(menuCustomerId);
+    }
+    handleCloseMenu();
+  };
+
+  const handleMenuDelete = () => {
+    if (menuCustomerId != null) {
+      const customer = customers.find(c => c.id === menuCustomerId);
+      if (customer) openDeleteDialog(customer);
+    }
+    handleCloseMenu();
+  };
+
+  const handleMenuViewProfile = () => {
+    if (menuCustomerId != null) {
+      navigate(`/customers/${menuCustomerId}/profile`);
+    }
+    handleCloseMenu();
   };
 
   if (!user) {
@@ -311,19 +353,9 @@ export default function CustomerList() {
                                       />
                                   </TableCell>
                                   <TableCell align="right">
-                                      <Tooltip title={t('customers.manageServers')}>
-                                          <IconButton onClick={() => navigate(`/customers/${customer.id}/servers`)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                              <DnsIcon />
-                                          </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title={t('customers.edit')}>
-                                          <IconButton onClick={() => handleEditCustomer(customer.id)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                              <EditIcon />
-                                          </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title={t('customers.delete')}>
-                                          <IconButton onClick={() => openDeleteDialog(customer)} size="small" sx={{ color: '#f44336' }}>
-                                              <DeleteIcon />
+                                      <Tooltip title={t('common.moreOptions') || t('customers.actions')}>
+                                          <IconButton onClick={(e) => handleOpenMenu(e, customer.id)} size="small" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                              <MoreVertIcon />
                                           </IconButton>
                                       </Tooltip>
                                   </TableCell>
@@ -331,6 +363,46 @@ export default function CustomerList() {
                             ))}
                           </TableBody>
                       </Table>
+                      {/* Actions Menu */}
+                      <Menu
+                        anchorEl={menuAnchorEl}
+                        open={Boolean(menuAnchorEl)}
+                        onClose={handleCloseMenu}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: isRtl ? 'left' : 'right' }}
+                        transformOrigin={{ vertical: 'top', horizontal: isRtl ? 'left' : 'right' }}
+                        slotProps={{
+                                  paper: {
+                                    sx: {...MenuActionsSx}
+                                  }
+                                }}
+                      >
+                        <MenuItem onClick={handleMenuViewProfile}>
+                          <ListItemIcon>
+                            <PersonIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText>{t('users.viewProfile')}</ListItemText>
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={handleMenuManageServers}>
+                          <ListItemIcon>
+                            <DnsIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText>{t('customers.manageServers')}</ListItemText>
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={handleMenuEdit}>
+                          <ListItemIcon>
+                            <EditIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText>{t('customers.edit')}</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={handleMenuDelete} sx={{ color: 'error.main' }}>
+                          <ListItemIcon sx={{ color: 'inherit' }}>
+                            <DeleteIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText>{t('customers.delete')}</ListItemText>
+                        </MenuItem>
+                      </Menu>
                       <TablePagination
                           sx={{ color: 'rgba(255, 255, 255, 0.7)', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
                           rowsPerPageOptions={[5, 10, 25]}

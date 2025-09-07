@@ -25,6 +25,7 @@ import ResetPassword from './features/users/components/ResetPassword';
 import VerifyEmailPage from './features/users/pages/VerifyEmailPage';
 import ApplicationsPage from './features/applications/pages/ApplicationsPage';
 import AdminUserProfilePage from './features/users/pages/AdminUserProfilePage';
+import CustomerProfilePage from './features/customers/pages/CustomerProfilePage';
 
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
@@ -47,6 +48,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/users/:userId/profile" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AdminUserProfilePage /></Dashboard>} />
         {/* Customer Management Routes */}
         <Route path="/customers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerList /></Dashboard>} />
+        <Route path="/customers/:customerId/profile" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerProfilePage /></Dashboard>} />
 
         {/* Server Management Routes (Nested under Customer) */}
         <Route path="/customers/:customerId/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerList /></Dashboard>} />

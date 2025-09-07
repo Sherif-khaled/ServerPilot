@@ -35,7 +35,8 @@ const resources = {
         systemOverview: 'System Overview',
         rowsPerPage: 'Rows per page',
         cancel: 'Cancel',
-        loading: 'Loading...'
+        loading: 'Loading...',
+        na: 'N/A'
       },
       passwordPolicy: {
         title: 'Password Policy',
@@ -177,13 +178,17 @@ const resources = {
         noneFound: 'No customers found matching your criteria.',
         active: 'Active',
         inactive: 'Inactive',
+        customerType: 'Customer Type',
         manageServers: 'Manage Servers',
-        edit: 'Edit Customer',
-        delete: 'Delete Customer',
+        edit: 'Edit',
+        delete: 'Delete',
         confirmDeleteTitle: 'Confirm Deletion',
         confirmDeleteMessage: 'Are you sure you want to delete this customer? This action cannot be undone.',
         yesDelete: 'Yes, Delete',
-        cancel: 'Cancel'
+        cancel: 'Cancel',
+        createdAt: 'Created At',
+        customerInfo: 'Customer Information',
+        customerProfile: 'Customer Profile',
       },
       customerForm: {
         addTitle: 'Add New Customer',
@@ -1045,15 +1050,19 @@ const resources = {
         },
         noneYet: 'لم تقم بإضافة أي عملاء بعد.',
         noneFound: 'لا يوجد عملاء مطابقون لمعاييرك.',
+        customerType: 'نوع العميل',
+        createdAt: 'تاريخ الإنشاء',
         active: 'نشط',
         inactive: 'غير نشط',
         manageServers: 'إدارة الخوادم',
-        edit: 'تعديل العميل',
-        delete: 'حذف العميل',
+        edit: 'تعديل',
+        delete: 'حذف',
         confirmDeleteTitle: 'تأكيد الحذف',
         confirmDeleteMessage: 'هل أنت متأكد من حذف هذا العميل؟ لا يمكن التراجع عن هذا الإجراء.',
         yesDelete: 'نعم، احذف',
-        cancel: 'إلغاء'
+        cancel: 'إلغاء',
+        customerInfo: 'معلومات العميل',
+        customerProfile: 'عرض ملف العميل',
       },
       customerForm: {
         addTitle: 'إضافة عميل جديد',
