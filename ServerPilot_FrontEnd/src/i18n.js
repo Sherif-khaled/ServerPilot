@@ -157,6 +157,10 @@ const resources = {
         cancel: 'Cancel'
       },
       customers: {
+        common: {
+          deleted: 'Deleted {{name}} successfully!',
+          deleteFailed: 'Failed to delete {{name}}. Please try again.'
+        },
         management: 'Customer Management',
         refresh: 'Refresh Customers',
         add: 'Add Customer',
@@ -1031,6 +1035,10 @@ const resources = {
         cancel: 'إلغاء'
       },
       customers: {
+        common: {
+          deleted: 'تم حذف {{name}} بنجاح!',
+          deleteFailed: 'فشل حذف {{name}}. يرجى المحاولة مرة أخرى.'
+        },
         management: 'إدارة العملاء',
         refresh: 'تحديث العملاء',
         add: 'إضافة عميل',
