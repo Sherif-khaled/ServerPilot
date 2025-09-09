@@ -151,6 +151,7 @@ export default function CredentialsTab({ customerId, serverId }) {
 
   return (
     <Box>
+      
       <Typography variant="h6" sx={{ mb: 2, color: '#fff' }}>
         {t('servers.credentials.title') || 'Credential Management'}
       </Typography>
@@ -158,6 +159,9 @@ export default function CredentialsTab({ customerId, serverId }) {
       {/* Add Credential Form */}
       <GlassCard sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
+          {loading ? (
+            <CircularProgress size={20} sx={CircularProgressSx} />
+          ) : (
           <form onSubmit={onSubmit} autoComplete="off">
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
@@ -191,6 +195,7 @@ export default function CredentialsTab({ customerId, serverId }) {
               </Typography>
             )}
           </form>
+          )}
         </CardContent>
       </GlassCard>
 
