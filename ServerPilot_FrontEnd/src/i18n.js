@@ -621,7 +621,8 @@ const resources = {
             applications: 'Applications',
             monitoring: 'Monitoring',
             securityAdvisor: 'Security Advisor',
-            firewall: 'Firewall'
+            firewall: 'Firewall',
+            credentials: 'Credential Vault'
           }
         },
         common: {
@@ -704,6 +705,8 @@ const resources = {
           keepOrKey: 'Leave blank to keep current or if using SSH key.',
           connectionSuccess: 'Connection successful.',
           connectionFailed: 'Connection failed.',
+          credentialsManagedInTab: 'SSH credentials (password/private key) are managed securely in the Credentials tab.',
+          useCredentialsTabForTest: 'Please add credentials in the Credentials tab and test from there.',
           errors: {
             enterServerName: 'Please enter the server name first.',
             enterServerIp: 'Please enter the server IP address first.',
@@ -739,6 +742,30 @@ const resources = {
           start: 'Start',
           stop: 'Stop',
           restart: 'Restart'
+        },
+        credentials: {
+          title: 'Credential Vault',
+          username: 'Username',
+          secret: 'Password / Private Key',
+          add: 'Add',
+          createdAt: 'Created At',
+          actions: 'Actions',
+          reveal: 'Reveal Secret',
+          test: 'Test Connection',
+          empty: 'No credentials yet.',
+          revealTitle: 'Revealed Secret',
+          testTitle: 'Test Connection',
+          output: 'Output',
+          revealFailed: 'Failed to reveal secret',
+          testFailed: 'Failed to test connection',
+          testSuccess: 'Connection successful',
+          created: 'Credential added successfully',
+          updated: 'Credential updated successfully',
+          deleted: 'Credential deleted successfully',
+          usernameRequired: 'Username is required',
+          secretRequired: 'Secret is required',
+          usernameTooShort: 'Username must be at least 2 characters',
+          secretTooShort: 'Secret must be at least 4 characters',
         }
       },
       monitoring: {
@@ -1495,7 +1522,8 @@ const resources = {
             applications: 'التطبيقات',
             monitoring: 'المراقبة',
             securityAdvisor: 'مستشار الأمان',
-            firewall: 'الجدار الناري'
+            firewall: 'الجدار الناري',
+            credentials: 'خزنة بيانات الاعتماد'
           }
         },
         common: {
@@ -1604,6 +1632,30 @@ const resources = {
           emptyError: 'لا يمكن أن تكون كلمة المرور فارغة.',
           change: 'تغيير كلمة المرور',
           passwordChangeFailed: 'فشل تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
+        },
+        credentials: {
+          title: 'خزنة بيانات الاعتماد',
+          username: 'اسم المستخدم',
+          secret: 'كلمة المرور / المفتاح الخاص',
+          add: 'إضافة',
+          createdAt: 'تاريخ الإنشاء',
+          actions: 'الإجراءات',
+          reveal: 'إظهار السر',
+          test: 'اختبار الاتصال',
+          empty: 'لا توجد بيانات اعتماد بعد.',
+          revealTitle: 'السر المكشوف',
+          testTitle: 'اختبار الاتصال',
+          output: 'المخرجات',
+          revealFailed: 'فشل في إظهار السر',
+          testFailed: 'فشل اختبار الاتصال',
+          testSuccess: 'تم الاتصال بنجاح',
+          created: 'تمت إضافة بيانات الاعتماد بنجاح',
+          updated: 'تم تحديث بيانات الاعتماد بنجاح',
+          deleted: 'تم حذف بيانات الاعتماد بنجاح',
+          usernameRequired: 'اسم المستخدم مطلوب',
+          secretRequired: 'السر مطلوب',
+          usernameTooShort: 'يجب أن لا يقل اسم المستخدم عن حرفين',
+          secretTooShort: 'يجب أن لا يقل السر عن 4 أحرف',
         },
         apps: {
           version: 'الإصدار',
@@ -1753,7 +1805,7 @@ const resources = {
           failedToLoad: 'فشل تحميل مقاييس اللوحة الرئيسية.',
           failedToFetch: 'فشل تحميل مقاييس اللوحة الرئيسية:'
         },
-        welcome: 'مرحباً، {{name}}!'
+        welcome: 'مرحباً، {{name}}!',
       }
     }
   }

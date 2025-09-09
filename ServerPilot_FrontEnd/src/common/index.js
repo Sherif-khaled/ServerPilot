@@ -10,3 +10,4 @@ export * from './styledComponents';
 export {default as CancelButton} from './CancelButton';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export { default as GlassCard } from './GlassCard';
+export { default as IpMaskInput } from './IpMaskInput';

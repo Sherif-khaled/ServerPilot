@@ -9,6 +9,7 @@ import DetailsTab from '../components/details/DetailsTab';
 import ApplicationsTab from '../components/details/ApplicationsTab';
 import MonitoringTab from '../components/details/MonitoringTab';
 import FirewallTab from '../components/details/FirewallTab';
+import CredentialsTab from '../components/details/CredentialsTab';
 
 const RootContainer = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -116,6 +117,7 @@ export default function ServerDetailsPage() {
               <Tab label={t('servers.pages.serverDetailsTabs.monitoring')} />
               <Tab label={t('servers.pages.serverDetailsTabs.securityAdvisor')} />
               <Tab label={t('servers.pages.serverDetailsTabs.firewall')} />
+              <Tab label={t('servers.pages.serverDetailsTabs.credentials') || 'Credentials'} />
             </Tabs>
           </Box>
           <TabPanel value={tabValue} index={0}>
@@ -132,6 +134,9 @@ export default function ServerDetailsPage() {
           </TabPanel>
           <TabPanel value={tabValue} index={4}>
             <FirewallTab server={server} customerId={customerId} serverId={serverId} />
+          </TabPanel>
+          <TabPanel value={tabValue} index={5}>
+            <CredentialsTab customerId={customerId} serverId={serverId} />
           </TabPanel>
         </GlassCard>
       </RootContainer>

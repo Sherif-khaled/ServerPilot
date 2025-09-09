@@ -120,6 +120,23 @@ const executeFix = (customerId, serverId, commands) => {
   return apiClient.post(`/customers/${customerId}/servers/${serverId}/installed-applications/execute-fix/`, { commands });
 };
 
+// Credentials API
+const listCredentials = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/credentials/`);
+};
+
+const createCredential = (customerId, serverId, { username, secret }) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/credentials/`, { username, secret });
+};
+
+const revealCredential = (customerId, serverId, credId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/credentials/${credId}/reveal/`);
+};
+
+const testCredentialConnection = (customerId, serverId, credId) => {
+  return apiClient.post(`/customers/${customerId}/servers/${serverId}/credentials/${credId}/test_connection/`);
+};
+
 export {
   getServers,
   getServerDetails,
@@ -150,4 +167,8 @@ export {
   getServerMetrics,
   getServerLogs,
   executeFix,
+  listCredentials,
+  createCredential,
+  revealCredential,
+  testCredentialConnection,
 };
