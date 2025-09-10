@@ -13,14 +13,12 @@ const securityTypes = [
 
 const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
   const { t } = useTranslation();
-  const [favicon, setFavicon] = useState(null);
   const [selectedFavicon, setSelectedFavicon] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
   const [faviconSaving, setFaviconSaving] = useState(false);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  // const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     apiClient.get('/configuration/email-settings/')
@@ -35,7 +33,6 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
 
     apiClient.get('/configuration/favicon/')
       .then(res => {
-        setFavicon(res.data.icon);
         setFaviconPreview(res.data.icon);
       })
       .catch(() => {
@@ -66,8 +63,16 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
     // setTestResult(null);
     apiClient.post('/configuration/test-email/', settings)
       .then(res => {
-        // setTestResult({ success: true, message: res.data.message });
-        showSuccess('Connection test successful');
+        const ok = res?.data?.success;
+        const message = res?.data?.message;
+        if (ok) {
+          // setTestResult({ success: true, message });
+          showSuccess(message || 'Connection test successful');
+        } else {
+          // Backend now returns 200 even on failure; handle gracefully
+          // setTestResult({ success: false, message });
+          showError(message || 'Connection test failed. Please check SMTP authentications.');
+        }
       })
       .catch(err => {
         const errorMessage = err.response?.data?.message || 'Connection test failed. Please check SMTP authentications.';
@@ -106,7 +111,6 @@ const GeneralSettings = ({ showSuccess, showError, showWarning, showInfo }) => {
       },
     })
       .then((res) => {
-        setFavicon(res.data.icon);
         showSuccess(t('generalSettings.iconUpdated'));
         setFaviconSaving(false);
       })

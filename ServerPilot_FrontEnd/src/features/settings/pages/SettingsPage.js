@@ -6,7 +6,6 @@ import GeneralSettings from '../components/GeneralSettings';
 import MfaSettings from '../components/MfaSettings';
 import PasswordChangeForm from '../components/PasswordChangeForm';
 import AppearanceSettings from '../components/AppearanceSettings';
-import SecurityKeysSettings from '../components/SecurityKeysSettings';
 import RecoveryCodesSettings from '../components/RecoveryCodesSettings';
 import WebSessions from '../components/WebSessions';
 import AISettings from '../components/AISettings';
@@ -91,10 +90,6 @@ const SettingsPage = () => {
             <PasswordChangeForm />
             <Divider sx={{ my: 3, borderColor: 'divider' }} />
             <MfaSettings />
-            <Divider sx={{ my: 3, borderColor: 'divider' }} />
-            <Box sx={{ mt: 2 }}>
-              <SecurityKeysSettings />
-            </Box>
             <Divider sx={{ my: 3, borderColor: 'divider' }} />
             <Box sx={{ mt: 2 }}>
               <RecoveryCodesSettings />

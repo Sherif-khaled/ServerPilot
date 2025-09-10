@@ -67,12 +67,11 @@ const ApplicationsPage = () => {
 
   const handleSaveApplication = async (appData, appId) => {
     try {
-      let response; // eslint-disable-line no-unused-vars
       if (appId) {
-        response = await updateApplication(appId, appData);
+        await updateApplication(appId, appData);
         showSuccess(t('applicationForm.update'));
       } else {
-        response = await createApplication(appData);
+        await createApplication(appData);
         showSuccess(t('applicationForm.create'));
       }
       const updatedApps = await getAllApplications();

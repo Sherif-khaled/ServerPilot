@@ -18,7 +18,7 @@ const PasswordChangeForm = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { snackbar, showSuccess, hideSnackbar } = useSnackbar();
   const { t } = useTranslation();
 
   const handleSubmit = async (e) => {

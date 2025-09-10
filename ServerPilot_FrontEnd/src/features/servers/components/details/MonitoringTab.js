@@ -27,7 +27,7 @@ const MonitoringTab = ({ customerId, serverId }) => {
     } finally {
       setLoading(false);
     }
-  }, [customerId, serverId]);
+  }, [customerId, serverId, t]);
 
   useEffect(() => {
     fetchStats();

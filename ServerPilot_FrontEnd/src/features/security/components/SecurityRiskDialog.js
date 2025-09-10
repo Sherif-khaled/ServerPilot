@@ -25,7 +25,6 @@ const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, showSuc
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [apiFormError, setApiFormError] = useState('');
-  const [loading, setLoading] = useState(false);
   const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
 
   useEffect(() => {
@@ -152,7 +151,6 @@ const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, showSuc
                   <InputLabel id="securityrisk-risk-level" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('securityRiskDialog.riskLevel')}</InputLabel>
                   <Select 
                     fullWidth 
-                    margin="normal" 
                     label={t('securityRiskDialog.riskLevel')} 
                     name="risk_level" value={formData.risk_level} 
                     onChange={handleChange} sx={textFieldSx} 
@@ -203,7 +201,7 @@ const SecurityRiskDialog = ({ open, onClose, editingRisk, onSaveSuccess, showSuc
             onClick={handleSave} 
             disabled={saving} 
             variant="contained"
-            startIcon={loading ? <CircularProgress size={20} sx={CircularProgressSx}/> : <SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
+            startIcon={saving ? <CircularProgress size={20} sx={CircularProgressSx}/> : <SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
             sx={{
               ...gradientButtonSx
             }}

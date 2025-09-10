@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, CircularProgress, Alert } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, CircularProgress, Alert } from '@mui/material';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { monitorApplication } from '../../../../api/serverService';
 
@@ -31,7 +31,7 @@ const ApplicationMonitorDialog = ({ open, onClose, customerId, serverId, appName
     };
 
     fetchData();
-  }, [open, customerId, serverId, appName]);
+  }, [open, customerId, serverId, appName, appId, t]);
 
   const cpuData = data ? [
     { name: 'Used', value: data.cpu_usage },

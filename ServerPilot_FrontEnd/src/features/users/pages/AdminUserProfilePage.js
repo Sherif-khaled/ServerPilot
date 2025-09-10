@@ -14,25 +14,11 @@ import {
 } from '@mui/material';
 import { CheckCircleOutline as CheckCircleOutlineIcon, HighlightOffOutlined as HighlightOffOutlinedIcon, AdminPanelSettings as AdminPanelSettingsIcon, PeopleAltOutlined as PeopleAltOutlinedIcon } from '@mui/icons-material';
 import { adminGetUser } from '../../../api/userService';
-import { GlassCard, CircularProgressSx } from '../../../common';
+import { GlassCard } from '../../../common';
 
 const RootContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
 }));
-
-const SectionHeader = styled(Box)(({ theme }) => ({
-    padding: theme.spacing(1, 2),
-    color: theme.palette.common.white,
-    background: 'rgb(110, 108, 109)',
-    backdropFilter: 'blur(10px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(10px) saturate(180%)',
-    border: '1px solid rgba(255, 255, 255, 0.125)',
-    borderBottom: 'none',
-    borderRadius: '12px 12px 0 0',
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-  }));
 
 const DetailItem = ({ label, value, valueNode }) => (
   <Box sx={{ width: { xs: '100%', sm: '100%' }, display: 'flex', py: 0.5, px: 1 }}>
@@ -51,13 +37,13 @@ export default function AdminUserProfilePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [infoLoading, setInfoLoading] = useState(true);
+  
 
   useEffect(() => {
     const loadUser = async () => {
       try {
         setLoading(true);
-        setInfoLoading(true);
+        
 
         setError('');
         const res = await adminGetUser(userId);
@@ -66,8 +52,7 @@ export default function AdminUserProfilePage() {
         setError(e?.response?.data?.detail || e.message || 'Failed to load user.');
       } finally {
         setLoading(false);
-        setInfoLoading(false);
-
+        
       }
     };
     loadUser();
@@ -92,7 +77,6 @@ export default function AdminUserProfilePage() {
   if (!user) return null;
 
   const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-  const formattedLastLogin = user.last_login ? new Date(user.last_login).toLocaleString() : t('users.na') || 'N/A';
 
   return (
     <RootContainer>
@@ -201,7 +185,7 @@ export default function AdminUserProfilePage() {
               </Paper>
 
               <Paper sx={{ p: 2, background: 'rgba(255,255,255,0.04)' }}>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 
                   <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                     <Box sx={{ flex: 1 }}>

@@ -10,18 +10,14 @@ const BackupNowCard = ({ onBackupTriggered }) => {
     const { showSuccess, showError } = useSnackbar();
 
     const handleBackupNow = async () => {
-        console.log('Backup button clicked');
         setLoading(true);
         try {
-            console.log('Making backup API call...');
-            const response = await apiClient.post('/db/backup/');
-            console.log('Backup response:', response);
+            await apiClient.post('/db/backup/');
             showSuccess(t('backups.started'));
             if (typeof onBackupTriggered === 'function') {
                 onBackupTriggered();
             }
         } catch (error) {
-            console.error('Backup error:', error);
             const errorMessage = error.response?.data?.error || t('backups.unexpectedError');
             showError(`${t('backups.failedPrefix')}: ${errorMessage}`);
         }

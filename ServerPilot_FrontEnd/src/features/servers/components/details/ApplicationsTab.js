@@ -94,7 +94,7 @@ function ApplicationsTab() {
         };
 
         fetchAppStatuses();
-    }, [customerId, serverId]);
+    }, [customerId, serverId, t]);
 
     if (loading) return <CircularProgress size={20} sx={{ color: '#FE6B8B' }}/>;
     if (error) return <Alert severity="error">{error}</Alert>;

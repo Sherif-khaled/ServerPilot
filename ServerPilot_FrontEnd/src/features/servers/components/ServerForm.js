@@ -22,8 +22,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
   const serverId = isEditMode ? serverData.id : null;
 
   const [formData, setFormData] = useState(initialFormData);
-  const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(isEditMode);
+  const [loading] = useState(false);
   const [apiFormError, setApiFormError] = useState('');
   const [validationError, setValidationError] = useState({});
   const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
@@ -43,7 +42,6 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
       } catch (err) {
         setApiFormError(t('servers.common.loadingError'));
       }
-      setPageLoading(false);
     };
 
     if (isEditMode && serverId) {
@@ -57,16 +55,14 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
         ssh_user: serverData.ssh_user || '',
         is_active: serverData.is_active === undefined ? true : serverData.is_active,
       });
-      setPageLoading(false);
     } else {
       // Reset form for new server
       setFormData(initialFormData);
-      setPageLoading(false);
     }
     
     setValidationError({});
     setApiFormError('');
-  }, [customerId, serverId, isEditMode, serverData]);
+  }, [customerId, serverId, isEditMode, serverData, t]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;

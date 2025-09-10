@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Button, TextField, Typography, Alert, CircularProgress } from '@mui/material';
 import { getProfile, setupMfa, verifyMfa, disableMfa } from '../../../api/userService';
 import { CustomSnackbar, useSnackbar, textFieldSx, GlassPaper, gradientButtonSx, CircularProgressSx } from '../../../common';
@@ -15,7 +15,7 @@ const MfaSettings = () => {
   const { t } = useTranslation();
 
 
-  const fetchMfaStatus = async () => {
+  const fetchMfaStatus = useCallback(async () => {
     try {
       const { data } = await getProfile();
       setMfaEnabled(data.mfa_enabled);
@@ -25,12 +25,12 @@ const MfaSettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
 
   useEffect(() => {
     fetchMfaStatus();
-  }, []);
+  }, [fetchMfaStatus]);
 
   const handleEnableMfa = async () => {
     setError('');
@@ -57,7 +57,7 @@ const MfaSettings = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await verifyMfa(otp);
+      const { error } = await verifyMfa(otp);
       
       if (error) {
         if (error.code === 'mfa_not_setup') {

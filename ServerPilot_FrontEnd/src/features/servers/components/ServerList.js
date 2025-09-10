@@ -93,7 +93,7 @@ export default function ServerList({ customerId: propCustomerId }) {
     }
   };
 
-    const checkAllServerStatus = async (serversToCheck) => {
+    const checkAllServerStatus = useCallback(async (serversToCheck) => {
     const statusPromises = serversToCheck.map(server => 
       getServerHealth(customerId, server.id)
         .then(() => ({ [server.id]: 'Online' }))
@@ -102,7 +102,7 @@ export default function ServerList({ customerId: propCustomerId }) {
     const results = await Promise.all(statusPromises);
     const newStatuses = Object.assign({}, ...results);
     setOnlineStatus(prev => ({ ...prev, ...newStatuses }));
-  };
+  }, [customerId]);
 
   const fetchServers = useCallback(async () => {
     if (!customerId) return;
@@ -131,7 +131,7 @@ export default function ServerList({ customerId: propCustomerId }) {
     } finally {
       setLoading(false);
     }
-  }, [customerId]);
+  }, [customerId, checkAllServerStatus, t]);
 
   useEffect(() => {
     fetchServers();
@@ -283,7 +283,7 @@ export default function ServerList({ customerId: propCustomerId }) {
 
       <Grid container spacing={4} sx={{ mb: 4, position: 'relative', zIndex: 2 }}>
                 {statItems.map((item, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
                         <GlassCard>
                             <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
                                 {isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8, ml: 2 } })}

@@ -295,7 +295,7 @@ export default function UserList() {
 
             <Grid container spacing={4} sx={{ mb: 4, position: 'relative', zIndex: 2 }}>
                 {statItems.map((item, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
                         <GlassCard>
                             <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
                                 {isRtl && React.cloneElement(item.icon, { sx: { fontSize: 48, color: '#fff', opacity: 0.8, ml: 2 } })}

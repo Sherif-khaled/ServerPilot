@@ -10,6 +10,7 @@ import Footer from './Footer';
 import apiClient from '../../../api/apiClient'; // Import the configured API client
 import { useTranslation } from 'react-i18next';
 import { MenuActionsSx } from '../../../common';
+import { useSnackbar } from '../../../common';
 
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
@@ -43,6 +44,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const [favicon, setFavicon] = useState(null);
   const [pageTitle, setPageTitle] = React.useState(t('common.systemOverview'));
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const { showSuccess, showError } = useSnackbar();
 
   const pageTitles = React.useMemo(() => ({
     '/dashboard': t('common.dashboard'),
@@ -68,9 +70,9 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
     apiClient.get('/configuration/favicon/')
       .then(res => {
         if (res.data.icon) {
-          console.log(res.data.icon);
           const faviconUrl = `${res.data.icon }`;
           setFavicon(faviconUrl);
+          showSuccess('Favicon loaded successfully');
           let faviconLink = document.getElementById('favicon');
           if (!faviconLink) {
             faviconLink = document.createElement('link');
@@ -82,9 +84,9 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
         }
       })
       .catch(err => {
-        console.error('Failed to load favicon', err);
+        showError('Failed to load favicon');
       });
-  }, []);
+  }, [showSuccess, showError]);
 
   // When screen size changes, force open on desktop, close on mobile
   React.useEffect(() => {
@@ -116,7 +118,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
       await logoutUser(); // Call API to logout
       // No need to re-initialize CSRF token here as userService.logoutUser already does it.
     } catch (error) {
-      console.error('Logout API call failed:', error);
+      showError('Logout API call failed');
       // Proceed with frontend logout even if API call fails to ensure user is logged out on client-side
     } finally {
       logoutAuth(); // Clear user from AuthContext and localStorage

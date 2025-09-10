@@ -46,7 +46,6 @@ export default function CredentialsTab({ customerId, serverId }) {
 
   const [revealOpen, setRevealOpen] = useState(false);
   const [revealed, setRevealed] = useState({ username: '', secret: '', encoding: 'utf-8' });
-  const [testResult, setTestResult] = useState({ status: '', message: '', output: '' });
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [currentCredForMenu, setCurrentCredForMenu] = useState(null);
 
@@ -79,11 +78,9 @@ export default function CredentialsTab({ customerId, serverId }) {
   const onTestConnection = async (credId) => {
     try {
       const res = await testCredentialConnection(customerId, serverId, credId);
-      setTestResult({ status: res.data.status, message: res.data.message, output: res.data.output || '' });
       showSuccess(res?.data?.message || t('servers.credentials.testSuccess') || 'Connection successful');
     } catch (e) {
       const data = e?.response?.data || {};
-      setTestResult({ status: 'error', message: data.message || 'Failed to test connection.', output: data.details || '' });
       showError(data.message || t('servers.credentials.testFailed') || 'Failed to test connection');
     } finally {
       // No dialog; results are shown inline
@@ -146,8 +143,6 @@ export default function CredentialsTab({ customerId, serverId }) {
     setRevealOpen(false);
     setTimeout(() => setRevealed({ username: '', secret: '', encoding: 'utf-8' }), 0);
   };
-
-  const clearTestResult = () => setTestResult({ status: '', message: '', output: '' });
 
   return (
     <Box>

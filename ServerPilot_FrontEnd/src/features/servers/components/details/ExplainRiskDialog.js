@@ -38,7 +38,7 @@ const ExplainRiskDialog = ({ open, onClose, recommendation }) => {
             };
             fetchExplanation();
         }
-    }, [open, recommendation]);
+    }, [open, recommendation, t]);
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperComponent={glassDialogSx}>

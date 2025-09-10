@@ -48,7 +48,6 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
     const [summary, setSummary] = useState('');
     const [recommendation, setRecommendation] = useState('');
     const [docLink, setDocLink] = useState(null);
-    const [errorCode, setErrorCode] = useState(null);
     const [isAnalysisExpanded, setAnalysisExpanded] = useState(false);
     const [analysisError, setAnalysisError] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -168,8 +167,6 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
         setRecommendation('');
         setCommands([]);
         setFixResult(null);
-        setErrorCode(null);
-        setDocLink(null);
         try {
             const response = await analyzeLogs(logs, appName);
             const recommendationText = response.data.recommendation || '';
@@ -179,7 +176,6 @@ function ApplicationLogsDialog({ open, onClose, appName, customerId, serverId })
 
             setRecommendation(recommendationText);
             setCommands(commandsList);
-            setErrorCode(response.data.error_code || null);
             setDocLink(response.data.doc_link || null);
 
             if (recommendationText) {

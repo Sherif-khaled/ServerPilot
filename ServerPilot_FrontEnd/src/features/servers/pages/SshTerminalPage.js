@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -19,8 +19,6 @@ const SshTerminalPage = () => {
     const [connectionDetails, setConnectionDetails] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [copyStatus, setCopyStatus] = useState('');
-    const [serverInfo, setServerInfo] = useState(null);
-    const [customerInfo, setCustomerInfo] = useState(null);
     const [sessionTimer, setSessionTimer] = useState({
         duration: 0,
         idleTime: 0,
@@ -231,7 +229,7 @@ const SshTerminalPage = () => {
     };
 
     // Start session timers
-    const startSessionTimers = () => {
+    const startSessionTimers = useCallback(() => {
         // Clear existing timers
         if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
         if (idleTimerRef.current) clearInterval(idleTimerRef.current);
@@ -266,17 +264,21 @@ const SshTerminalPage = () => {
                 // Auto logout
                 if (idleTime > AUTO_LOGOUT_TIME) {
                     console.log('Auto-logout triggered due to inactivity');
-                    handleCloseTerminal();
+                    // Inline close to avoid callback dependency cycle
+                    if (socketRef.current) {
+                        try { socketRef.current.close(); } catch (e) { /* noop */ }
+                    }
+                    navigate(`/customers/${customerId}/servers`);
                     return prev; // Don't update state if logging out
                 }
 
                 return newState;
             });
         }, 1000);
-    };
+    }, [AUTO_LOGOUT_TIME, IDLE_WARNING_TIME, customerId, navigate]);
 
     // Stop session timers
-    const stopSessionTimers = () => {
+    const stopSessionTimers = useCallback(() => {
         if (sessionTimerRef.current) {
             clearInterval(sessionTimerRef.current);
             sessionTimerRef.current = null;
@@ -291,7 +293,7 @@ const SshTerminalPage = () => {
             showIdleWarning: false,
             autoLogoutCountdown: 0
         });
-    };
+    }, []);
 
     // Get client IP address
     useEffect(() => {
@@ -695,7 +697,7 @@ const SshTerminalPage = () => {
         }, 100);
     };
 
-    const handleEscapeKey = (event) => {
+    const handleEscapeKey = useCallback((event) => {
         if (event.key === 'Escape' && isFullscreen) {
             setIsFullscreen(false);
             setTimeout(() => {
@@ -708,7 +710,7 @@ const SshTerminalPage = () => {
                 }
             }, 100);
         }
-    };
+    }, [isFullscreen]);
 
     useEffect(() => {
         if (isFullscreen) {
@@ -720,7 +722,7 @@ const SshTerminalPage = () => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [isFullscreen]);
+    }, [isFullscreen, handleEscapeKey]);
 
     useEffect(() => {
         const fetchCredentials = async () => {
@@ -760,7 +762,6 @@ const SshTerminalPage = () => {
                 const response = await fetch(`/api/customers/${customerId}/servers/${serverId}/`);
                 if (response.ok) {
                     const data = await response.json();
-                    setServerInfo(data);
                     setSecurityInfo(prev => ({
                         ...prev,
                         hostname: data.hostname || data.server_name || `server-${serverId}`
@@ -771,26 +772,13 @@ const SshTerminalPage = () => {
             }
         };
 
-        const fetchCustomerInfo = async () => {
-            try {
-                const response = await fetch(`/api/customers/${customerId}/`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setCustomerInfo(data);
-                }
-            } catch (error) {
-                console.error('Error fetching customer info:', error);
-            }
-        };
-
         if (customerId && serverId) {
             fetchCredentials();
             fetchServerInfo();
-            fetchCustomerInfo();
         }
     }, [customerId, serverId]);
 
-    const connectWebSocket = () => {
+    const connectWebSocket = useCallback(() => {
         if (!connectionDetails) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -854,7 +842,7 @@ const SshTerminalPage = () => {
                 term.current.write(event.data); // Assume raw string output
             }
         };
-    };
+    }, [connectionDetails, serverId]);
 
     useEffect(() => {
         // This effect handles the terminal and WebSocket setup.
@@ -948,7 +936,7 @@ const SshTerminalPage = () => {
             }
             fitAddonRef.current = null;
         };
-    }, [connectionDetails, serverId]); // Depend on connectionDetails
+    }, [connectionDetails, serverId, connectWebSocket]); // Depend on connectionDetails and callback
 
     // Container styles based on fullscreen state
     const containerStyle = isFullscreen ? {
@@ -1021,7 +1009,7 @@ const SshTerminalPage = () => {
         return () => {
             stopSessionTimers();
         };
-    }, [connectionStatus]);
+    }, [connectionStatus, startSessionTimers, stopSessionTimers]);
 
     return (
         <div style={containerStyle}>

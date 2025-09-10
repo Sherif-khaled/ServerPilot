@@ -12,26 +12,12 @@ import {
   Divider,
   Link,
 } from '@mui/material';
-import { CheckCircleOutline as CheckCircleOutlineIcon, HighlightOffOutlined as HighlightOffOutlinedIcon, Business as BusinessIcon, Person as PersonIcon, Email as EmailIcon, Phone as PhoneIcon } from '@mui/icons-material';
+import { CheckCircleOutline as CheckCircleOutlineIcon, HighlightOffOutlined as HighlightOffOutlinedIcon, Business as BusinessIcon } from '@mui/icons-material';
 import { getCustomerDetails } from '../../../api/customerService';
 import { GlassCard, CircularProgressSx } from '../../../common';
 
 const RootContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
-}));
-
-const SectionHeader = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1, 2),
-  color: theme.palette.common.white,
-  background: 'rgb(110, 108, 109)',
-  backdropFilter: 'blur(10px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(10px) saturate(180%)',
-  border: '1px solid rgba(255, 255, 255, 0.125)',
-  borderBottom: 'none',
-  borderRadius: '12px 12px 0 0',
-  fontSize: '1.1rem',
-  fontWeight: 'bold',
-  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
 }));
 
 const DetailItem = ({ label, value, valueNode }) => (

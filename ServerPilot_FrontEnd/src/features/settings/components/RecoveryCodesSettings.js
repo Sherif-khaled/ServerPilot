@@ -28,7 +28,7 @@ const RecoveryCodesSettings = () => {
         };
 
         fetchProfile();
-    }, []);
+    }, [t]);
 
     const handleGenerateCodes = async () => {
         setLoading(true);

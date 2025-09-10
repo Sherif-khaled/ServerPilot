@@ -74,7 +74,7 @@ export default function ServerDetailsPage() {
     };
 
     fetchServerDetails();
-  }, [customerId, serverId]);
+  }, [customerId, serverId, t]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);

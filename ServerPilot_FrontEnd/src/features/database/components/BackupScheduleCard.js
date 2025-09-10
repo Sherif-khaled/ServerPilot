@@ -11,7 +11,6 @@ const BackupScheduleCard = ({
   onChange,
   onSave,
 }) => {
-  console.log('BackupScheduleCard props:', { schedule, scheduleLoading, scheduleSaving });
   const { t } = useTranslation();
   return (
     <GlassCard sx={{ mb: 3 }}>
@@ -69,7 +68,6 @@ const BackupScheduleCard = ({
               <Button
                 variant="contained"
                 onClick={() => {
-                  console.log('Save schedule clicked');
                   onSave();
                 }}
                 disabled={scheduleSaving || !schedule.enabled}

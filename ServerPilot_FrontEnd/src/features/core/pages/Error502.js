@@ -12,12 +12,6 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
-const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-`;
-
 export default function Error503() {
   const theme = useTheme();
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,CardContent,CircularProgress,
-    IconButton, Alert, Grid, Tooltip} from '@mui/material';
+    IconButton, Alert} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import {
     CloudDownload as CloudDownloadIcon,
@@ -63,7 +63,7 @@ const DatabaseManagementPage = () => {
     const [scheduleSaving, setScheduleSaving] = useState(false);
 
     // Use the custom snackbar hook
-    const { snackbar, showSuccess, showError, showInfo, hideSnackbar } = useSnackbar();
+    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
     const fetchBackups = useCallback(async () => {
         setListLoading(true);
@@ -72,13 +72,12 @@ const DatabaseManagementPage = () => {
             const response = await apiClient.get('/db/backups/');
             setBackups(response.data);
         } catch (error) { 
-            console.error('Failed to fetch backups:', error);
             setListError('Failed to load backups. Please try again.');
             showError('Failed to load backups.');
         } finally {
             setListLoading(false);
         }
-    }, []);
+    }, [showError]);
 
     useEffect(() => {
         const fetchSchedule = async () => {
@@ -91,7 +90,6 @@ const DatabaseManagementPage = () => {
                     minute: response.data.minute !== undefined ? String(response.data.minute) : '0',
                 });
             } catch (error) {
-                console.error('Failed to fetch schedule:', error);
                 showError('Failed to load backup schedule.');
             } finally {
                 setScheduleLoading(false);
@@ -100,14 +98,13 @@ const DatabaseManagementPage = () => {
 
         fetchBackups();
         fetchSchedule();
-    }, [fetchBackups]);
+    }, [fetchBackups, showError]);
 
     const handleBackupTriggered = () => {
         fetchBackups();
     };
 
     const handleScheduleChange = (event) => {
-        console.log('Schedule change event:', event.target);
         const { name, value, checked, type } = event.target;
         setSchedule(prev => ({
             ...prev,
@@ -116,18 +113,15 @@ const DatabaseManagementPage = () => {
     };
 
     const handleSaveSchedule = async () => {
-        console.log('Saving schedule:', schedule);
         setScheduleSaving(true);
         try {
-            const response = await apiClient.post('/db/schedule/', {
+            await apiClient.post('/db/schedule/', {
                 enabled: schedule.enabled,
                 hour: parseInt(schedule.hour, 10),
                 minute: parseInt(schedule.minute, 10),
             });
-            console.log('Schedule save response:', response);
             showSuccess('Schedule updated successfully!');
         } catch (error) {
-            console.error('Failed to save schedule:', error);
             showError('Failed to save schedule.');
         } finally {
             setScheduleSaving(false);
@@ -152,16 +146,13 @@ const DatabaseManagementPage = () => {
             showSuccess('Backup deleted successfully!');
             fetchBackups();
         } catch (error) {
-            console.error('Failed to delete backup:', error);
             showError('Failed to delete backup.');
         }
         handleDialogClose();
     };
 
     const handleDownloadBackup = async (backup) => {
-        try {
-            console.log('Starting download for backup:', backup.filename);
-            
+        try {            
             const response = await apiClient.get(`/db/backups/download/${backup.filename}/`, {
                 responseType: 'blob', // Important for file downloads
             });
@@ -179,10 +170,6 @@ const DatabaseManagementPage = () => {
             
             showSuccess('Backup download started!');
         } catch (error) {
-            console.error('Failed to download backup:', error);
-            console.error('Error response:', error.response);
-            console.error('Error status:', error.response?.status);
-            console.error('Error data:', error.response?.data);
             
             if (error.response?.status === 401) {
                 showError('Authentication required. Please log in again.');
@@ -208,37 +195,9 @@ const DatabaseManagementPage = () => {
             showSuccess(t('database.restoreSuccess'));
             fetchBackups();
         } catch (error) {
-            console.error('Failed to restore backup:', error);
             showError(t('database.restoreFail'));
         }
         handleDialogClose();
-    };
-
-    const totalBackups = backups.length;
-    const totalSizeBytes = useMemo(() => backups.reduce((sum, b) => sum + (b.size || 0), 0), [backups]);
-    const lastBackupAt = useMemo(() => {
-        if (!backups.length) return null;
-        const latest = backups.reduce((acc, b) => {
-            const t = new Date(b.created_at).getTime();
-            return t > acc ? t : acc;
-        }, 0);
-        return new Date(latest);
-    }, [backups]);
-
-    const handleHeaderRefresh = () => {
-        fetchBackups();
-        (async () => {
-            try {
-                const response = await apiClient.get('/db/schedule/');
-                setSchedule({
-                    enabled: response.data.enabled,
-                    hour: response.data.hour !== undefined ? String(response.data.hour) : '2',
-                    minute: response.data.minute !== undefined ? String(response.data.minute) : '0',
-                });
-            } catch (error) {
-                console.error('Failed to refresh schedule:', error);
-            }
-        })();
     };
 
     const formatBytes = (bytes, decimals = 2) => {
@@ -283,7 +242,6 @@ const DatabaseManagementPage = () => {
              </Box>
 
             <Box sx={{ position: 'relative', zIndex: 2 }}>
-                {console.log('Rendering backup components')}
                 <BackupNowCard onBackupTriggered={handleBackupTriggered} />
 
                 <BackupScheduleCard 

@@ -66,7 +66,7 @@ export default function UserProfile() {
         setLoading(false);
     };
     fetchProfile();
-  }, []);
+  }, [t]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 

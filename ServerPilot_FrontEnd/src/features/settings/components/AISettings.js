@@ -13,15 +13,12 @@ const AISettings = () => {
     const [modelsList, setModelsList] = useState([]);
     const [modelsLoading, setModelsLoading] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
     const { t } = useTranslation();
 
     useEffect(() => {
         const fetchSettings = async () => {
             setLoading(true);
-            setError('');
             try {
                 const response = await apiClient.get('/ai/settings/');
                 if (response.status === 200) {
@@ -31,9 +28,9 @@ const AISettings = () => {
                 }
             } catch (err) {
                 if (err.response && err.response.status !== 404) {
-                    setError(t('settingsAI.loadFail'));
+                    showError(t('settingsAI.loadFail'));
                 } else if (!err.response) {
-                    setError(t('settingsAI.loadGenericFail'));
+                    showError(t('settingsAI.loadGenericFail'));
                 }
             } finally {
                 setLoading(false);
@@ -47,8 +44,7 @@ const AISettings = () => {
                     setModelsList(response.data.models);
                 }
             } catch (err) {
-                console.error('Failed to fetch AI models:', err);
-                // Optionally set an error state here to inform the user
+                showError(t('settingsAI.loadModelsFail'));
             } finally {
                 setModelsLoading(false);
             }
@@ -56,12 +52,25 @@ const AISettings = () => {
 
         fetchSettings();
         fetchModels();
-    }, []);
+    }, [showError, showSuccess, t]);
+
+    // Ensure that the currently selected model is available in the options
+    // once models are loaded, to avoid MUI out-of-range value warnings.
+    useEffect(() => {
+        if (model && modelsList.length && !modelsList.includes(model)) {
+            setModelsList((prev) => [model, ...prev]);
+        }
+    }, [model, modelsList]);
+
+    // If the backend returns no models, still provide the current model as the only option
+    useEffect(() => {
+        if (!modelsLoading && model && modelsList.length === 0) {
+            setModelsList([model]);
+        }
+    }, [modelsLoading, model, modelsList.length]);
 
     const handleSave = async () => {
         setLoading(true);
-        setError('');
-        setSuccess('');
         try {
             const response = await apiClient.put('/ai/settings/', {
                 provider,
@@ -137,7 +146,9 @@ const AISettings = () => {
                               }}
                         >
                             {modelsLoading ? (
-                                <MenuItem value="">
+                                // Provide a temporary option that matches the current value
+                                // so the Select does not warn about an out-of-range value.
+                                <MenuItem value={model}>
                                     <CircularProgress size={20} sx={{ color: '#FE6B8B' }} />
                                 </MenuItem>
                             ) : (

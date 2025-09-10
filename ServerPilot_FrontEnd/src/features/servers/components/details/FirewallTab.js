@@ -106,7 +106,7 @@ const FirewallTab = () => {
     } finally {
       setLoading(false);
     }
-  }, [customerId, serverId]);
+  }, [customerId, serverId, t]);
 
   const fetchRules = useCallback(async () => {
     if (isFirewallEnabled) {
@@ -127,7 +127,7 @@ const FirewallTab = () => {
       // If firewall is not enabled, ensure rules are cleared.
       setRules([]);
     }
-  }, [customerId, serverId, isFirewallEnabled]);
+  }, [customerId, serverId, isFirewallEnabled, t]);
 
   useEffect(() => {
     fetchStatus();
@@ -261,7 +261,7 @@ const FirewallTab = () => {
           { title: t('firewall.stats.deny'), count: stats.deny, icon: <Block sx={{ fontSize: 30 }} />, color: '#ef5350' },
           { title: t('firewall.stats.reject'), count: stats.reject, icon: <ReportProblemOutlined sx={{ fontSize: 30 }} />, color: '#ffa726' },
         ].map((item, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
             <GlassCard sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
               <Avatar sx={{ bgcolor: item.color, width: 56, height: 56, mr: 2 }}>
                 {item.icon}

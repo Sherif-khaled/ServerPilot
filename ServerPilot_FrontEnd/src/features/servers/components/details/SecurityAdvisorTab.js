@@ -57,7 +57,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     } finally {
       setLoading(false);
     }
-  }, [customerId, serverId]);
+  }, [customerId, serverId, t]);
 
   useEffect(() => {
     const checkAIConfig = async () => {
@@ -77,7 +77,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
     };
 
     checkAIConfig();
-  }, [fetchScanData]);
+  }, [fetchScanData, t]);
 
   const handleRescan = async () => {
     setScanning(true);
@@ -217,6 +217,11 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
 
     return (
     <Box sx={{ p: 3 }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       {selectedRec && (
         <ExplainRiskDialog
           open={explanationOpen}
@@ -273,7 +278,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <GlassCard sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h4" sx={{ color: '#ff5252', fontWeight: 'bold' }}>{summary.critical}</Typography>
@@ -284,7 +289,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             </CardContent>
           </GlassCard>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <GlassCard sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h4" sx={{ color: '#ffab40', fontWeight: 'bold' }}>{summary.medium}</Typography>
@@ -295,7 +300,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
             </CardContent>
           </GlassCard>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <GlassCard sx={{ textAlign: 'center' }}>
             <CardContent>
               <Typography variant="h4" sx={{ color: '#69f0ae', fontWeight: 'bold' }}>{summary.passed}</Typography>
@@ -376,7 +381,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                   }}
                 >
                   <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', color: 'white' }}>
                         {rec.title} ({rec.risk_level})
                         <Link
@@ -455,9 +460,7 @@ const SecurityAdvisorTab = ({ customerId, serverId }) => {
                       )}
                     </Grid>
                     <Grid
-                      item
-                      xs={12}
-                      md={4}
+                      size={{ xs: 12, md: 4 }}
                       sx={{
                         textAlign: { xs: 'left', md: 'right' },
                         mt: { xs: 2, md: 0 },

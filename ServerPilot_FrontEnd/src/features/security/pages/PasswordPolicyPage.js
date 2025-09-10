@@ -51,7 +51,7 @@ const PasswordPolicyPage = () => {
         };
 
         fetchPolicy();
-    }, []);
+    }, [t]);
 
     const handleChange = (event) => {
         const { name, value, type, checked } = event.target;

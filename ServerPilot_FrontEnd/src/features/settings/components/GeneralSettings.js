@@ -10,7 +10,7 @@ const GeneralSettings = () => {
   const { user, setUser } = useAuth();
   const [language, setLanguage] = useState(user?.language || 'en');
   const [saving, setSaving] = useState(false);
-  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { snackbar, showSuccess, hideSnackbar } = useSnackbar();
 
   const direction = useMemo(() => (language === 'ar' ? 'rtl' : 'ltr'), [language]);
 
