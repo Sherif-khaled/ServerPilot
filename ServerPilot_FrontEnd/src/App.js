@@ -29,6 +29,7 @@ import CustomerProfilePage from './features/customers/pages/CustomerProfilePage'
 import Error404 from './features/core/pages/Error404';
 import Error502 from './features/core/pages/Error502';
 import Error503 from './features/core/pages/Error503';
+import AllServersPage from './features/servers/pages/AllServersPage';
 
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
@@ -55,6 +56,8 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         {/* Customer Management Routes */}
         <Route path="/customers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerList /></Dashboard>} />
         <Route path="/customers/:customerId/profile" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><CustomerProfilePage /></Dashboard>} />
+        {/* All Servers route with customer filter */}
+        <Route path="/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AllServersPage /></Dashboard>} />
 
         {/* Server Management Routes (Nested under Customer) */}
         <Route path="/customers/:customerId/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerList /></Dashboard>} />

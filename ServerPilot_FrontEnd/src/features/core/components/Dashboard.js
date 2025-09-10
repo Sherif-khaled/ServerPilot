@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider, Menu, MenuItem } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon, Dns as DnsIcon } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -327,6 +327,11 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
                         <ListItem component={NavLink} to="/customers" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
                           <ListItemIcon sx={{ minWidth: '40px' }}><ContactsIcon /></ListItemIcon>
                           <ListItemText primary={t('common.customers')} />
+                        </ListItem>
+                        {/* Servers (All) */}
+                        <ListItem component={NavLink} to="/servers" onClick={isSmUp ? undefined : handleDrawerToggle} sx={nestedNavLinkSx}>
+                          <ListItemIcon sx={{ minWidth: '40px' }}><DnsIcon /></ListItemIcon>
+                          <ListItemText primary={t('common.servers')} />
                         </ListItem>
                       </List>
                     </Collapse>

@@ -20,6 +20,7 @@ import ServerForm from './ServerForm';
 import { CustomSnackbar, useSnackbar } from '../../../common';
 import { useTranslation } from 'react-i18next';
 import { textFieldSx, gradientButtonSx, CircularProgressSx, ConfirmDialog, MenuActionsSx, GlassCard } from '../../../common';
+import { getCustomerDetails } from '../../../api/customerService';
 import ChangeServerPasswordDialog from './ChangeServerPasswordDialog';
 import ServerInfoDialog from './ServerInfoDialog';
 
@@ -28,7 +29,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 }));
 
 
-export default function ServerList({ customerId: propCustomerId }) {
+export default function ServerList({ customerId: propCustomerId, beforeSearch, titleLabel }) {
   const { t, i18n } = useTranslation();
   const { customerId: paramCustomerId } = useParams(); 
   const customerId = propCustomerId || paramCustomerId;
@@ -57,6 +58,26 @@ export default function ServerList({ customerId: propCustomerId }) {
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
+
+  // Derive title when accessed directly without a provided titleLabel
+  const [customerLabel, setCustomerLabel] = useState(null);
+  useEffect(() => {
+    let mounted = true;
+    if (!titleLabel && customerId) {
+      getCustomerDetails(customerId)
+        .then(res => {
+          if (!mounted) return;
+          const c = res?.data || {};
+          const label = ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || c.company_name || c.email || `#${c.id}`;
+          setCustomerLabel(label);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          setCustomerLabel(null);
+        });
+    }
+    return () => { mounted = false; };
+  }, [titleLabel, customerId]);
 
   const handleMenuOpen = (event, server) => {
     setMenuAnchorEl(event.currentTarget);
@@ -255,11 +276,22 @@ export default function ServerList({ customerId: propCustomerId }) {
     { title: t('servers.common.inactive'), value: inactiveServers, icon: <HighlightOffOutlinedIcon sx={{ fontSize: 30 }} />, color: 'warning.main' }, 
   ];
 
+  // Resolve title to show customer name even if i18n doesn't use interpolation
+  const serversTitleTemplate = t('servers.common.servers');
+  const effectiveTitleLabel = titleLabel || customerLabel || (customerId ? `#${customerId}` : null);
+  const resolvedTitle = effectiveTitleLabel
+    ? (serversTitleTemplate.includes('{{name}}')
+        ? t('servers.common.servers', { name: effectiveTitleLabel })
+        : serversTitleTemplate.includes('[Customer Name]')
+          ? serversTitleTemplate.replace('[Customer Name]', effectiveTitleLabel)
+          : `${effectiveTitleLabel} ${serversTitleTemplate}`)
+    : serversTitleTemplate;
+
   return (
     <RootContainer>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 2 }}>
         <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-          {t('servers.pages.serverDetailsTabs.details')}
+          {resolvedTitle}
         </Typography>
         <Box>
           <Tooltip title={t('servers.common.refresh')}>
@@ -300,6 +332,8 @@ export default function ServerList({ customerId: propCustomerId }) {
 
       <GlassCard sx={{ position: 'relative', zIndex: 2 }}>
         <CardContent sx={{ p: 3 }}>
+          {/* Optional slot rendered above the search input */}
+          {beforeSearch}
           <Box sx={{ mb: 2 }}>
             <TextField
               fullWidth

@@ -23,6 +23,7 @@ const resources = {
         profile: 'Profile',
         users: 'Users',
         customers: 'Customers',
+        servers: 'Servers',
         systemSettings: 'System Settings',
         applications: 'Applications',
         passwordPolicy: 'Password Policy',
@@ -626,6 +627,7 @@ const resources = {
           }
         },
         common: {
+          servers: '[Customer Name] Servers',
           loadingError: 'Failed to fetch server details.',
           notFound: 'Server not found.',
           refresh: 'Refresh Servers',
@@ -930,6 +932,7 @@ const resources = {
         profile: 'الملف الشخصي',
         users: 'المستخدمون',
         customers: 'العملاء',
+        servers: 'الخوادم',
         systemSettings: 'إعدادات النظام',
         applications: 'التطبيقات',
         passwordPolicy: 'سياسة كلمة المرور',
