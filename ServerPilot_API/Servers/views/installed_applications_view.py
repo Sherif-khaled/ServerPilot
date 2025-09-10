@@ -321,7 +321,7 @@ class InstalledApplicationViewSet(viewsets.ViewSet):
 
             combined_command = "\n".join(commands)
 
-            async with Server.async_connect_ssh(server) as conn:
+            async with await Server.async_connect_ssh(server) as conn:
                 result = await conn.run(combined_command, check=False)
                 results = await self._process_application_results(conn, result.stdout, app_map)
 
@@ -573,7 +573,7 @@ class InstalledApplicationViewSet(viewsets.ViewSet):
             )
 
         try:
-            async with Server.async_connect_ssh(server) as conn:
+            async with await Server.async_connect_ssh(server) as conn:
                 last_error = ""
                 
                 for command in self._build_log_retrieval_commands(app_name):
@@ -647,13 +647,7 @@ class InstalledApplicationViewSet(viewsets.ViewSet):
         Returns:
             List of command execution results
         """
-        async with asyncssh.connect(
-            server.server_ip,
-            port=server.ssh_port,
-            username='root',
-            password=server.ssh_root_password,
-            known_hosts=None
-        ) as conn:
+        async with await Server.async_connect_ssh(server) as conn:
             results = []
             for command in commands:
                 result = await conn.run(command, check=False)

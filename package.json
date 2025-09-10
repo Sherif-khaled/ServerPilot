@@ -3,6 +3,9 @@
     "env-cmd": "^10.1.0"
   },
   "dependencies": {
-    "prismjs": "^1.30.0"
+    "@react-input/mask": "^2.0.4",
+    "inputmask": "^5.0.9",
+    "prismjs": "^1.30.0",
+    "react-input-mask": "^3.0.0-alpha.2"
   }
 }

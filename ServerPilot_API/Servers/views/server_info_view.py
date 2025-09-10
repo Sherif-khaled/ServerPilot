@@ -528,11 +528,25 @@ class ServerInfoViewSet(viewsets.ViewSet):
             
             return Response(response_data, status=status.HTTP_200_OK)
 
+        except (asyncio.TimeoutError, OSError) as e:
+            # Handle network/timeout errors explicitly (e.g., Errno 110)
+            logger.warning(
+                f"SSH connection timeout or network error for server {server.id} at {server.server_ip}:{server.ssh_port}: {e}",
+                exc_info=False
+            )
+            return Response(
+                {
+                    "error": "SSH connection timed out",
+                    "host": str(server.server_ip),
+                    "port": server.ssh_port,
+                },
+                status=status.HTTP_504_GATEWAY_TIMEOUT,
+            )
         except asyncssh.Error as e:
             logger.error(f"SSH connection failed for server {server.id}: {e}", exc_info=True)
             return Response(
                 {"error": f"SSH connection failed: {str(e)}"}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_502_BAD_GATEWAY
             )
         except Exception as e:
             logger.error(f"Unexpected error retrieving info for server {server.id}: {e}", exc_info=True)
@@ -620,11 +634,10 @@ class ServerInfoViewSet(viewsets.ViewSet):
         """
         try:
             server = self.get_object()
-            ssh_config = self._build_ssh_connection_config(server)
             
             async def check_connectivity():
                 try:
-                    async with await self._create_ssh_connection(ssh_config) as conn:
+                    async with await Server.async_connect_ssh(server) as conn:
                         result = await conn.run('echo "OK"', check=False)
                         return result.exit_status == 0
                 except Exception:
@@ -642,6 +655,23 @@ class ServerInfoViewSet(viewsets.ViewSet):
             return Response(
                 {"error": "Server not found"}, 
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except (asyncio.TimeoutError, OSError) as e:
+            logger.warning(f"Health check timeout or network error for server {pk}: {e}")
+            try:
+                server = self.get_object()
+                host, port = str(server.server_ip), server.ssh_port
+            except Exception:
+                host, port = None, None
+            return Response(
+                {"error": "SSH connection timed out", "host": host, "port": port},
+                status=status.HTTP_504_GATEWAY_TIMEOUT
+            )
+        except asyncssh.Error as e:
+            logger.error(f"Health check SSH error for server {pk}: {e}", exc_info=True)
+            return Response(
+                {"error": f"SSH connection failed: {str(e)}"},
+                status=status.HTTP_502_BAD_GATEWAY
             )
         except Exception as e:
             logger.error(f"Health check failed for server {pk}: {e}", exc_info=True)

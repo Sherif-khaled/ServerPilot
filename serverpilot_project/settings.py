@@ -155,13 +155,11 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'ServerPilot_API.Users.middleware.DisableCSRFMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'ServerPilot_API.security.middleware.DatabaseAvailabilityMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 'ServerPilot_API.Users.middleware.UserSessionMiddleware',  # Optional: relies on sessions
-    # 'security.middleware.PasswordExpirationMiddleware', # Disabled: Middleware not implemented yet
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'ServerPilot_API.security.middleware.SessionExpirationMiddleware',  # Optional: relies on sessions
     'ServerPilot_API.Users.middleware.StripSessionIdForAPIMiddleware',
     'django_otp.middleware.OTPMiddleware',
 ]
@@ -171,7 +169,9 @@ ROOT_URLCONF = 'serverpilot_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

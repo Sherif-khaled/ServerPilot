@@ -12,17 +12,19 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
-from ServerPilot_API.Servers.models import Server, FirewallRule
+from ServerPilot_API.Servers.models import Server, FirewallRule, ServerCredential
 from ServerPilot_API.Customers.models import Customer
 from ServerPilot_API.Servers.serializers import (
     ServerSerializer, SecurityScanSerializer, 
     SecurityRecommendationSerializer, FirewallRuleSerializer, 
-    InstalledApplicationSerializer
+    InstalledApplicationSerializer,
+    ServerCredentialListSerializer, ServerCredentialCreateSerializer,
 )
 from ServerPilot_API.Servers.models import SecurityScan, SecurityRecommendation
 from ServerPilot_API.Servers.permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
 from ServerPilot_API.audit_log.services import log_action
 from ServerPilot_API.security.models import SecurityRisk
+from ServerPilot_API.security.crypto import encrypt_secret, decrypt_secret
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,107 @@ class ServerViewSet(viewsets.ModelViewSet):
             if customer_pk:
                 queryset = queryset.filter(customer__pk=customer_pk)
             return queryset.order_by('-created_at')
+
+    @action(detail=True, methods=['get', 'post'], url_path='credentials')
+    def credentials(self, request, pk=None, customer_pk=None):
+        """
+        GET: List stored credentials metadata for the server.
+        POST: Create a new encrypted credential for the server.
+
+        RBAC: Only admins or server owners can list or add credentials.
+        """
+        # Authentication check
+        if not request.user or not request.user.is_authenticated:
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Fetch server and verify ownership
+        try:
+            server = Server.objects.get(pk=pk, customer__pk=customer_pk)
+        except Server.DoesNotExist:
+            return Response({"detail": "Server not found for the specified customer."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not (request.user.is_staff or server.customer.owner == request.user):
+            # Hide existence
+            return Response({"detail": "Server not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method.lower() == 'get':
+            creds = ServerCredential.objects.filter(server=server).order_by('-created_at')
+            data = ServerCredentialListSerializer(creds, many=True).data
+            return Response(data, status=status.HTTP_200_OK)
+
+        # POST create
+        serializer = ServerCredentialCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        username = serializer.validated_data['username']
+        secret = serializer.validated_data['secret']
+
+        try:
+            enc = encrypt_secret(secret.encode('utf-8'))
+            cred = ServerCredential.objects.create(
+                server=server,
+                username=username,
+                ciphertext=enc['ciphertext'],
+                nonce=enc['nonce'],
+                encrypted_dek=enc['encrypted_dek'],
+            )
+            log_action(
+                request.user,
+                'server_credential_created',
+                request,
+                f'Created credential for user {username} on server {server.server_name} (ID: {server.id})'
+            )
+            return Response(ServerCredentialListSerializer(cred).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error("Error creating server credential", exc_info=True)
+            return Response({"detail": "Failed to store credential."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'], url_path='credentials/(?P<cred_id>[^/.]+)/reveal')
+    def reveal_credential(self, request, pk=None, customer_pk=None, cred_id=None):
+        """
+        Reveal plaintext secret for a specific credential.
+        RBAC: Only admins or server owners (operator) may access.
+        """
+        if not request.user or not request.user.is_authenticated:
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            server = Server.objects.get(pk=pk, customer__pk=customer_pk)
+        except Server.DoesNotExist:
+            return Response({"detail": "Server not found for the specified customer."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not (request.user.is_staff or server.customer.owner == request.user):
+            return Response({"detail": "Server not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            cred = ServerCredential.objects.get(pk=cred_id, server=server)
+        except ServerCredential.DoesNotExist:
+            return Response({"detail": "Credential not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            plaintext = decrypt_secret({
+                'ciphertext': bytes(cred.ciphertext),
+                'nonce': bytes(cred.nonce),
+                'encrypted_dek': bytes(cred.encrypted_dek),
+            })
+            # Return as UTF-8 if possible, else base64
+            try:
+                value = plaintext.decode('utf-8')
+                encoding = 'utf-8'
+            except UnicodeDecodeError:
+                import base64
+                value = base64.b64encode(plaintext).decode('ascii')
+                encoding = 'base64'
+
+            log_action(
+                request.user,
+                'server_credential_revealed',
+                request,
+                f'Revealed credential for user {cred.username} on server {server.server_name} (ID: {server.id})'
+            )
+            return Response({'id': cred.id, 'username': cred.username, 'secret': value, 'encoding': encoding}, status=status.HTTP_200_OK)
+        except Exception:
+            logger.error("Error decrypting credential", exc_info=True)
+            return Response({"detail": "Failed to decrypt credential."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # For non-staff users
         queryset = Server.objects.filter(customer__owner=user)
@@ -69,68 +172,101 @@ class ServerViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(customer__pk=customer_pk)
         return queryset.order_by('-created_at')
 
-    @action(detail=True, methods=['get'], url_path='credentials', url_name='server-credentials',
-            permission_classes=[])
-    def get_credentials(self, request, pk=None, customer_pk=None):
+    @action(detail=True, methods=['post'], url_path='credentials/(?P<cred_id>[^/.]+)/test_connection')
+    def test_connection_with_credential(self, request, pk=None, customer_pk=None, cred_id=None):
         """
-        Retrieve server credentials.
-        Only the server owner or admin can view the credentials.
+        Test SSH connection using a stored encrypted credential.
+
+        Tries to detect whether the secret is a password or an SSH private key.
+        Does not log plaintext. Returns status and output.
         """
-        # Check authentication first
         if not request.user or not request.user.is_authenticated:
-            return Response(
-                {"detail": "Authentication credentials were not provided."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-            
+            return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
-            # First check if the server exists and belongs to the specified customer
+            server = Server.objects.get(pk=pk, customer__pk=customer_pk)
+        except Server.DoesNotExist:
+            return Response({"detail": "Server not found for the specified customer."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not (request.user.is_staff or server.customer.owner == request.user):
+            return Response({"detail": "Server not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            cred = ServerCredential.objects.get(pk=cred_id, server=server)
+        except ServerCredential.DoesNotExist:
+            return Response({"detail": "Credential not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            secret_bytes = decrypt_secret({
+                'ciphertext': bytes(cred.ciphertext),
+                'nonce': bytes(cred.nonce),
+                'encrypted_dek': bytes(cred.encrypted_dek),
+            })
+        except Exception:
+            logger.error("Error decrypting credential for test_connection", exc_info=True)
+            return Response({"detail": "Failed to decrypt credential."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Attempt SSH using paramiko without persisting secret
+        import paramiko, io
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            username = cred.username
+            hostname = str(server.server_ip)
+            port = server.ssh_port
+            # Try interpreting secret as private key first
+            secret_str = None
             try:
-                server = Server.objects.get(pk=pk, customer__pk=customer_pk)
-            except Server.DoesNotExist:
-                return Response(
-                    {"detail": "Server not found for the specified customer."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Check if the user has permission to view these credentials
-            if not (request.user.is_staff or server.customer.owner == request.user):
-                # Return 404 for security reasons to not leak information about server existence
-                return Response(
-                    {"detail": "Server not found."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Prepare the response with sensitive information
-            response_data = {
-                'id': server.id,
-                'server_name': server.server_name,
-                'server_ip': server.server_ip,
-                'ssh_port': server.ssh_port,
-                'login_using_root': server.login_using_root,
-                'ssh_user': server.ssh_user if not server.login_using_root else 'root',
-                'ssh_password': server.ssh_root_password if server.login_using_root else server.ssh_password,
-                'ssh_key_available': bool(server.ssh_key),
-                'created_at': server.created_at,
-                'updated_at': server.updated_at
+                secret_str = secret_bytes.decode('utf-8')
+            except Exception:
+                secret_str = None
+
+            connection_args = {
+                'hostname': hostname,
+                'port': port,
+                'username': username,
+                'timeout': 10,
+                'look_for_keys': False,
+                'allow_agent': False,
             }
-            
-            # Log the access to credentials
-            log_action(
-                user=request.user,
-                action='server_credentials_viewed',
-                request=request,
-                details=f'Viewed credentials for server {server.server_name} (ID: {server.id}) from IP {request.META.get("REMOTE_ADDR")}'
-            )
-            
-            return Response(response_data)
-            
+
+            used_key = False
+            if secret_str:
+                key_types = [paramiko.RSAKey, paramiko.Ed25519Key, paramiko.ECDSAKey]
+                for kt in key_types:
+                    try:
+                        key_file_obj = io.StringIO(secret_str)
+                        pkey = kt.from_private_key(key_file_obj, password=None)
+                        connection_args['pkey'] = pkey
+                        connection_args['password'] = None
+                        used_key = True
+                        break
+                    except paramiko.SSHException:
+                        continue
+
+            if not used_key:
+                # Fallback: use as password
+                connection_args['password'] = secret_bytes.decode('utf-8', errors='ignore')
+
+            client.connect(**connection_args)
+            stdin, stdout, stderr = client.exec_command('echo "Connection successful!"', timeout=10)
+            output = stdout.read().decode('utf-8', errors='replace').strip()
+            error_out = stderr.read().decode('utf-8', errors='replace').strip()
+            if error_out:
+                output += f"\n{error_out}"
+            log_action(request.user, 'server_test_connection_with_credential', request, f'Tested connection with credential id={cred.id} on server {server.server_name} (ID: {server.id})')
+            return Response({'status': 'success', 'message': 'Connection test successful.', 'output': output}, status=status.HTTP_200_OK)
+        except paramiko.AuthenticationException as e:
+            return Response({'status': 'error', 'message': 'Authentication failed.', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Error retrieving server credentials: {str(e)}", exc_info=True)
-            return Response(
-                {"detail": "An error occurred while retrieving server credentials."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            logger.error("Error testing connection with credential", exc_info=True)
+            return Response({'status': 'error', 'message': 'Connection test failed.', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        finally:
+            try:
+                client.close()
+            except Exception:
+                pass
+
         
     def perform_create(self, serializer):
         """
@@ -199,101 +335,83 @@ class ServerViewSet(viewsets.ModelViewSet):
     def test_connection_with_payload(self, request, *args, **kwargs):
         """
         Tests SSH connection using credentials provided in the request body.
-        This is useful before creating a server or when testing unsaved edits.
+        Uses direct paramiko connection (no legacy Server fields).
         Expected payload fields:
           - server_ip (str)
           - ssh_port (int, optional, default 22)
-          - login_using_root (bool, optional, default False)
-          - ssh_user (str, required if not login_using_root)
-          - ssh_password (str, optional)
-          - ssh_root_password (str, optional)
-          - ssh_key (str, optional)
+          - username (str, required)
+          - secret (str, required)  # password or PEM private key
           - command (str, optional)
         """
-        customer_pk = self.kwargs.get('customer_pk')
-
         # Basic validation of presence
         server_ip = request.data.get('server_ip')
         if not server_ip:
-            return Response({
-                'status': 'error',
-                'message': 'Validation error.',
-                'details': 'server_ip is required.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'status': 'error', 'message': 'Validation error.', 'details': 'server_ip is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        ssh_port = request.data.get('ssh_port', 22)
-        login_using_root = request.data.get('login_using_root', False)
-        ssh_user = request.data.get('ssh_user')
-        ssh_password = request.data.get('ssh_password')
-        ssh_root_password = request.data.get('ssh_root_password')
-        ssh_key = request.data.get('ssh_key')
+        ssh_port = int(request.data.get('ssh_port', 22))
+        username = request.data.get('username')
+        secret = request.data.get('secret')
         command = request.data.get('command', 'echo "Connection successful!"')
 
-        # Build a transient Server instance for connection testing
+        if not username or not secret:
+            return Response({'status': 'error', 'message': 'Validation error.', 'details': 'username and secret are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Attempt paramiko connection
+        import paramiko, io
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            # Customer is optional for transient object but attach if present and accessible
-            customer = None
-            if customer_pk:
-                try:
-                    customer = Customer.objects.get(pk=customer_pk)
-                except Customer.DoesNotExist:
-                    customer = None
+            connection_args = {
+                'hostname': str(server_ip),
+                'port': ssh_port,
+                'username': username,
+                'timeout': 10,
+                'look_for_keys': False,
+                'allow_agent': False,
+            }
 
-            transient_server = Server(
-                customer=customer,
-                server_name=f"transient-test-{server_ip}",
-                server_ip=server_ip,
-                ssh_port=ssh_port,
-                login_using_root=login_using_root,
-                ssh_user=ssh_user,
-                ssh_password=ssh_password,
-                ssh_root_password=ssh_root_password,
-                ssh_key=ssh_key,
-                is_active=True,
-            )
+            # Try PEM key first
+            used_key = False
+            try:
+                if 'BEGIN' in secret and 'KEY' in secret:
+                    key_types = [paramiko.RSAKey, paramiko.Ed25519Key, paramiko.ECDSAKey]
+                    for kt in key_types:
+                        try:
+                            key_file_obj = io.StringIO(secret)
+                            pkey = kt.from_private_key(key_file_obj, password=None)
+                            connection_args['pkey'] = pkey
+                            connection_args['password'] = None
+                            used_key = True
+                            break
+                        except paramiko.SSHException:
+                            continue
+            except Exception:
+                used_key = False
 
-            success, output, exit_status = transient_server.connect_ssh(command=command)
+            if not used_key:
+                connection_args['password'] = secret
 
-            if success and exit_status == 0:
-                log_action(
-                    request.user,
-                    'server_test_connection',
-                    request,
-                    f'Successfully tested connection to server IP {server_ip} (transient)'
-                )
-                return Response({
-                    'status': 'success',
-                    'message': 'Connection test successful.',
-                    'output': output
-                }, status=status.HTTP_200_OK)
-            else:
-                log_action(
-                    request.user,
-                    'server_test_connection_failed',
-                    request,
-                    f'Failed to test connection to server IP {server_ip} (transient). Error: {output}'
-                )
-                return Response({
-                    'status': 'error',
-                    'message': 'Connection test failed.',
-                    'details': output
-                }, status=status.HTTP_400_BAD_REQUEST)
+            client.connect(**connection_args)
+            stdin, stdout, stderr = client.exec_command(command, timeout=10)
+            output = stdout.read().decode('utf-8', errors='replace').strip()
+            error_out = stderr.read().decode('utf-8', errors='replace').strip()
+            if error_out:
+                output += f"\n{error_out}"
+
+            log_action(request.user, 'server_test_connection', request, f'Successfully tested connection to server IP {server_ip} (transient)')
+            return Response({'status': 'success', 'message': 'Connection test successful.', 'output': output}, status=status.HTTP_200_OK)
+        except paramiko.AuthenticationException as e:
+            log_action(request.user, 'server_test_connection_failed', request, f'Authentication failed testing server IP {server_ip}: {str(e)}')
+            return Response({'status': 'error', 'message': 'Authentication failed.', 'details': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(
-                f"Unexpected error during transient connection test for IP {server_ip}: {str(e)}",
-                exc_info=True
-            )
-            log_action(
-                request.user,
-                'server_test_connection_error',
-                request,
-                f'Error testing connection to server IP {server_ip} (transient). Error: {str(e)}'
-            )
-            return Response({
-                'status': 'error',
-                'message': 'An unexpected error occurred.',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Unexpected error during transient connection test for IP {server_ip}: {str(e)}", exc_info=True)
+            log_action(request.user, 'server_test_connection_error', request, f'Error testing connection to server IP {server_ip}. Error: {str(e)}')
+            return Response({'status': 'error', 'message': 'An unexpected error occurred.', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            try:
+                client.close()
+            except Exception:
+                pass
 
     @action(detail=True, methods=['post'])
     def test_connection(self, request, *args, **kwargs):

@@ -26,10 +26,13 @@ servers_router.register(r'servers', ServerViewSet, basename='customer-servers')
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(servers_router.urls)),
-    # Add the credentials endpoint to the nested router
-    path('customers/<int:customer_pk>/servers/<int:pk>/credentials/', 
-         ServerViewSet.as_view({'get': 'get_credentials'}), 
+    # Explicit credentials endpoints (also available via router action URLs)
+    path('customers/<int:customer_pk>/servers/<int:pk>/credentials/',
+         ServerViewSet.as_view({'get': 'credentials', 'post': 'credentials'}),
          name='server-credentials'),
+    path('customers/<int:customer_pk>/servers/<int:pk>/credentials/<int:cred_id>/reveal/',
+         ServerViewSet.as_view({'get': 'reveal_credential'}),
+         name='server-credential-reveal'),
 
 
 ]

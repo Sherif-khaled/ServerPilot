@@ -71,4 +71,5 @@ class TestEmailConnectionView(APIView):
             server.quit()
             return Response({'success': True, 'message': 'Connection successful.'})
         except Exception as e:
-            return Response({'success': False, 'message': str(e)}, status=400)
+            # Return 200 with success flag to avoid browser console network errors
+            return Response({'success': False, 'message': str(e)}, status=status.HTTP_200_OK)

@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from serverpilot_project import views as project_views
 
 from ServerPilot_API.api_root import api_root
 
@@ -34,7 +35,13 @@ urlpatterns = [
     path('api/configuration/', include('ServerPilot_API.configuration.urls')),
     path('api/ai/', include('ServerPilot_API.ai_handler.urls')),
     path('api/applications/', include('ServerPilot_API.server_applications.urls')),
+    # Error page previews (non-auth)
+    path('error/502/', project_views.error_502, name='error-502'),
+    path('error/503/', project_views.error_503, name='error-503'),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Custom error handlers
+handler404 = 'serverpilot_project.views.custom_404'
