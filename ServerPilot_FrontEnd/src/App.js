@@ -26,6 +26,9 @@ import VerifyEmailPage from './features/users/pages/VerifyEmailPage';
 import ApplicationsPage from './features/applications/pages/ApplicationsPage';
 import AdminUserProfilePage from './features/users/pages/AdminUserProfilePage';
 import CustomerProfilePage from './features/customers/pages/CustomerProfilePage';
+import Error404 from './features/core/pages/Error404';
+import Error502 from './features/core/pages/Error502';
+import Error503 from './features/core/pages/Error503';
 
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
@@ -38,6 +41,9 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
       <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
       <Route path="/activate/:uid/:token" element={<VerifyEmailPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Error pages (public) */}
+      <Route path="/error/502" element={<Error502 />} />
+      <Route path="/error/503" element={<Error503 />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
@@ -65,6 +71,8 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/admin/settings" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><AdminSettingsPage /></Dashboard>} />
         <Route path="/applications" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ApplicationsPage /></Dashboard>} />
       </Route>
+      {/* Catch-all 404 route */}
+      <Route path="*" element={<Error404 />} />
     </Routes>
   );
 }
