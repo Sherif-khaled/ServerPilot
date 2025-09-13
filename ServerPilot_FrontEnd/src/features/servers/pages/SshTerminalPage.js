@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { listCredentials, revealCredential, getServerDetails } from '../../../api/serverService';
+import { CustomSnackbar, useSnackbar } from '../../../common';
 
 const SshTerminalPage = () => {
     const { customerId, serverId } = useParams();
@@ -18,7 +20,7 @@ const SshTerminalPage = () => {
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const [connectionDetails, setConnectionDetails] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [copyStatus, setCopyStatus] = useState('');
+    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
     const [sessionTimer, setSessionTimer] = useState({
         duration: 0,
         idleTime: 0,
@@ -263,7 +265,7 @@ const SshTerminalPage = () => {
 
                 // Auto logout
                 if (idleTime > AUTO_LOGOUT_TIME) {
-                    console.log('Auto-logout triggered due to inactivity');
+                    showSuccess('Auto-logout triggered due to inactivity');
                     // Inline close to avoid callback dependency cycle
                     if (socketRef.current) {
                         try { socketRef.current.close(); } catch (e) { /* noop */ }
@@ -275,7 +277,7 @@ const SshTerminalPage = () => {
                 return newState;
             });
         }, 1000);
-    }, [AUTO_LOGOUT_TIME, IDLE_WARNING_TIME, customerId, navigate]);
+    }, [AUTO_LOGOUT_TIME, IDLE_WARNING_TIME, customerId, navigate, showSuccess]);
 
     // Stop session timers
     const stopSessionTimers = useCallback(() => {
@@ -309,13 +311,13 @@ const SshTerminalPage = () => {
                     setSecurityInfo(prev => ({ ...prev, clientIP: fallbackData.ip }));
                 }
             } catch (error) {
-                console.error('Error fetching client IP:', error);
+                showError('Error fetching client IP');
                 setSecurityInfo(prev => ({ ...prev, clientIP: 'Unknown' }));
             }
         };
 
         fetchClientIP();
-    }, []);
+    }, [showError]);
 
     // Add activity listeners
     useEffect(() => {
@@ -373,7 +375,7 @@ const SshTerminalPage = () => {
             <div style={modalOverlayStyle}>
                 <div style={modalStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                        <span style={{ fontSize: '24px', marginRight: '12px' }}>⚠️</span>
+                        <span style={{ fontSize: '24px' }}>⚠️</span>
                         <h3 style={{ margin: 0, color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>
                             ROOT ACCESS WARNING
                         </h3>
@@ -650,8 +652,7 @@ const SshTerminalPage = () => {
 
     const handleCopyOutput = async () => {
         if (!term.current) {
-            setCopyStatus('❌ No terminal content');
-            setTimeout(() => setCopyStatus(''), 2000);
+            showError('No terminal content to copy');
             return;
         }
 
@@ -674,12 +675,9 @@ const SshTerminalPage = () => {
             }
 
             await navigator.clipboard.writeText(content);
-            setCopyStatus('✅ Copied!');
-            setTimeout(() => setCopyStatus(''), 2000);
+            showSuccess('Terminal output copied');
         } catch (error) {
-            console.error('Failed to copy terminal output:', error);
-            setCopyStatus('❌ Copy failed');
-            setTimeout(() => setCopyStatus(''), 2000);
+            showError('Copy failed');
         }
     };
 
@@ -691,7 +689,7 @@ const SshTerminalPage = () => {
                 try {
                     fitAddonRef.current.fit();
                 } catch (e) {
-                    console.error("Error fitting terminal on fullscreen toggle:", e);
+                    showError('Error fitting terminal on fullscreen toggle');
                 }
             }
         }, 100);
@@ -705,12 +703,12 @@ const SshTerminalPage = () => {
                     try {
                         fitAddonRef.current.fit();
                     } catch (e) {
-                        console.error("Error fitting terminal on escape:", e);
+                        showError('Error fitting terminal on escape');
                     }
                 }
             }, 100);
         }
-    }, [isFullscreen]);
+    }, [isFullscreen, showError]);
 
     useEffect(() => {
         if (isFullscreen) {
@@ -731,44 +729,60 @@ const SshTerminalPage = () => {
             setConnectionStatus('connecting');
 
             try {
-                const response = await fetch(`/api/customers/${customerId}/servers/${serverId}/credentials/`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch credentials');
+                // 1) Get server details (host/port/hostname)
+                const serverRes = await getServerDetails(customerId, serverId);
+                const serverData = serverRes.data || {};
+                const host = serverData.server_ip || serverData.ip || serverData.host;
+                const port = serverData.ssh_port || serverData.port || 22;
+                if (serverData.hostname || serverData.server_name) {
+                    setSecurityInfo(prev => ({
+                        ...prev,
+                        hostname: serverData.hostname || serverData.server_name
+                    }));
                 }
-                const data = await response.json();
+
+                // 2) Load available credentials
+                const credsRes = await listCredentials(customerId, serverId);
+                const creds = Array.isArray(credsRes.data) ? credsRes.data : [];
+                if (!creds.length) {
+                    throw new Error('No credentials available for this server');
+                }
+                const selected = creds[0]; // TODO: allow user selection if multiple
+
+                // 3) Reveal selected credential (server returns username/secret)
+                const revealRes = await revealCredential(customerId, serverId, selected.id);
+                const revealed = revealRes.data || {};
+
                 const credentials = {
-                    host: data.server_ip,
-                    port: data.ssh_port,
-                    username: data.ssh_user,
-                    password: data.ssh_password
+                    host,
+                    port,
+                    username: revealed.username,
+                    password: revealed.secret
                 };
                 setConnectionDetails(credentials);
-                
+
                 // Update security info with connection details
                 setSecurityInfo(prev => ({
                     ...prev,
                     isRootUser: credentials.username === 'root',
                     currentUser: credentials.username
                 }));
-                
             } catch (error) {
-                console.error('Error fetching credentials:', error);
+                showError('Error fetching credentials');
                 setConnectionStatus('error');
             }
         };
 
         const fetchServerInfo = async () => {
             try {
-                const response = await fetch(`/api/customers/${customerId}/servers/${serverId}/`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setSecurityInfo(prev => ({
-                        ...prev,
-                        hostname: data.hostname || data.server_name || `server-${serverId}`
-                    }));
-                }
+                const response = await getServerDetails(customerId, serverId);
+                const data = response.data || {};
+                setSecurityInfo(prev => ({
+                    ...prev,
+                    hostname: data.hostname || data.server_name || `server-${serverId}`
+                }));
             } catch (error) {
-                console.error('Error fetching server info:', error);
+                showError('Error fetching server info');
             }
         };
 
@@ -776,37 +790,56 @@ const SshTerminalPage = () => {
             fetchCredentials();
             fetchServerInfo();
         }
-    }, [customerId, serverId]);
+    }, [customerId, serverId, showError]);
 
     const connectWebSocket = useCallback(() => {
         if (!connectionDetails) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.hostname}:5000/ws/servers/${serverId}/ssh`;
-        console.log('Connecting to:', wsUrl);
+        // Build WS URL; token will be sent via subprotocol and also included in query as fallback
+        const baseUrl = `${protocol}//${window.location.hostname}:5000/ws/servers/${serverId}/ssh`;
+        const url = new URL(baseUrl);
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            url.searchParams.set('token', token); // fallback for servers reading from query
+        }
+        const wsUrl = url.toString();
         
         // Close existing connection if any
         if (socketRef.current) {
             socketRef.current.close();
         }
         
-        socketRef.current = new WebSocket(wsUrl);
+        // Provide token via Sec-WebSocket-Protocol header: ['jwt', '<token>']
+        socketRef.current = token ? new WebSocket(wsUrl, ['jwt', token]) : new WebSocket(wsUrl);
         
         socketRef.current.onopen = () => {
-            console.log('WebSocket connected');
+            showSuccess('WebSocket connected');
             setConnectionStatus('connected');
             setSecurityInfo(prev => ({
                 ...prev,
                 sessionStartTime: new Date().toISOString()
             }));
-            
-            socketRef.current.send(JSON.stringify({
-                host: connectionDetails.host,
-                port: connectionDetails.port,
-                username: connectionDetails.username,
-                password: connectionDetails.password
-            }));
-            
+
+            // Send initial connection parameters for backend bootstrapping (host/port/username/password)
+            // Backend will use these if server_store lacks an entry
+            try {
+                if (connectionDetails?.host && connectionDetails?.username) {
+                    const initPayload = {
+                        host: connectionDetails.host,
+                        port: connectionDetails.port,
+                        username: connectionDetails.username,
+                    };
+                    // Only include password if available
+                    if (connectionDetails.password) {
+                        initPayload.password = connectionDetails.password;
+                    }
+                    socketRef.current.send(JSON.stringify(initPayload));
+                }
+            } catch (e) {
+                // non-fatal
+            }
+
             // Only show connection message in terminal, status is handled by UI
             if (term.current) {
                 term.current.clear(); // Clear previous messages
@@ -815,12 +848,16 @@ const SshTerminalPage = () => {
         };
         
         socketRef.current.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            showError('WebSocket error');
             setConnectionStatus('error');
         };
         
-        socketRef.current.onclose = () => {
-            console.log('WebSocket closed');
+        socketRef.current.onclose = (evt) => {
+            // Provide more context for debugging (policy violation 1008, try again 1013, etc.)
+            const code = evt?.code;
+            const reason = evt?.reason || '';
+            const msg = code ? `WebSocket closed (code ${code})${reason ? `: ${reason}` : ''}` : 'WebSocket closed';
+            showError(msg);
             setConnectionStatus('disconnected');
             if (term.current) {
                 term.current.writeln('\x1B[1;33m=== SSH Session Ended ===\x1B[0m');
@@ -842,7 +879,7 @@ const SshTerminalPage = () => {
                 term.current.write(event.data); // Assume raw string output
             }
         };
-    }, [connectionDetails, serverId]);
+    }, [connectionDetails, serverId, showError, showSuccess]);
 
     useEffect(() => {
         // This effect handles the terminal and WebSocket setup.
@@ -895,13 +932,26 @@ const SshTerminalPage = () => {
 
         const handleResize = () => {
             try {
-                fitAddon.fit();
+                // Guard against calling fit after dispose or before render service is ready
+                if (!term.current || !fitAddonRef.current) return;
+                fitAddonRef.current.fit();
             } catch (e) {
-                console.error("Error fitting terminal:", e);
+                // Swallow occasional race conditions during mount/unmount
+                showError('Error fitting terminal');
             }
         };
-        
-        handleResize(); // Initial fit
+
+        // Delay the initial fit until after the element is laid out
+        if (typeof window.requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => {
+                handleResize();
+                // Some environments need an extra tick to finalize dimensions
+                setTimeout(handleResize, 50);
+            });
+        } else {
+            setTimeout(handleResize, 0);
+            setTimeout(handleResize, 50);
+        }
         window.addEventListener('resize', handleResize);
 
         // Setup WebSocket connection
@@ -936,7 +986,7 @@ const SshTerminalPage = () => {
             }
             fitAddonRef.current = null;
         };
-    }, [connectionDetails, serverId, connectWebSocket]); // Depend on connectionDetails and callback
+    }, [connectionDetails, serverId, connectWebSocket, showError, showSuccess]); // Depend on connectionDetails and callback
 
     // Container styles based on fullscreen state
     const containerStyle = isFullscreen ? {
@@ -1021,17 +1071,6 @@ const SshTerminalPage = () => {
                     {getStatusText(connectionStatus)}
                 </span>
                 
-                {/* Copy Status Display */}
-                {copyStatus && (
-                    <span style={{ 
-                        marginLeft: '10px', 
-                        color: copyStatus.includes('✅') ? '#28a745' : '#dc3545',
-                        fontSize: '12px'
-                    }}>
-                        {copyStatus}
-                    </span>
-                )}
-                
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginLeft: 'auto' }}>
                     <button
@@ -1110,6 +1149,12 @@ const SshTerminalPage = () => {
             {/* Modal Components */}
             <IdleWarningModal />
             <RootWarningModal />
+            <CustomSnackbar
+                open={snackbar.open}
+                onClose={hideSnackbar}
+                message={snackbar.message}
+                severity={snackbar.severity}
+            />
         </div>
     );
 };

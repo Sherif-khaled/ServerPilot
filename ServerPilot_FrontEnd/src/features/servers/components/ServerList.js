@@ -15,6 +15,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import { createServer,updateServer, getServers, deleteServer, getServerHealth, changeServerPassword } from '../../../api/serverService';
 import ServerForm from './ServerForm';
 import { CustomSnackbar, useSnackbar } from '../../../common';
@@ -447,6 +448,16 @@ export default function ServerList({ customerId: propCustomerId, beforeSearch, t
           >
             <ListItemIcon><InfoIcon fontSize="small" /></ListItemIcon>
             <ListItemText>{t('servers.common.viewStats')}</ListItemText>
+          </MenuItem>,
+          <MenuItem
+            key="connect"
+            component={Link}
+            to={`/customers/${customerId}/servers/${currentServerForMenu.id}/console`}
+            onClick={handleMenuClose}
+            disabled={onlineStatus[currentServerForMenu.id] === 'Offline'}
+          >
+            <ListItemIcon><TerminalIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>{t('servers.common.connect')}</ListItemText>
           </MenuItem>,
           <MenuItem key="edit" onClick={() => { handleOpenModal(currentServerForMenu); handleMenuClose(); }}>
             <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>

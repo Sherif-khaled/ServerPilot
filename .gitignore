@@ -67,6 +67,8 @@ ServerPilot_FrontEnd/build/
 
 # Other
 .env
+.windsurf
+.pytest_cache
 debug.log
 cookies.txt
 .DS_Store

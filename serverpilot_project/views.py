@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 
 
 def custom_404(request: HttpRequest, exception=None) -> HttpResponse:
@@ -16,3 +16,14 @@ def error_502(request: HttpRequest) -> HttpResponse:
 def error_503(request: HttpRequest) -> HttpResponse:
     """Preview or manual route to a 503 page. Useful during maintenance windows."""
     return render(request, 'errors/503.html', status=503)
+
+
+def client_ip(request: HttpRequest) -> JsonResponse:
+    """Return the client's IP address. Honors X-Forwarded-For if present."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        # In case of multiple IPs, take the first one
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR', '')
+    return JsonResponse({"ip": ip})

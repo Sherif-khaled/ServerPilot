@@ -1,0 +1,36 @@
+version: "3.9"
+
+secrets:
+  jwt_secret:
+    file: ./secrets/jwt_secret
+
+services:
+  ws-ssh:
+    build:
+      context: ./ServerPilot_Web_Socket
+      dockerfile: Dockerfile
+    image: serverpilot/ws-ssh:local
+    ports:
+      - "5000:5000"
+    environment:
+      # Provide sensitive secret via file mount; do NOT put JWT_SECRET directly in compose
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret
+      # CORS allowed origins. Comma-separated list or * to allow all
+      - ALLOWED_ORIGINS=*
+      # JWT algorithm, must match your token issuer
+      - JWT_ALGORITHM=HS256
+      # Rate limiting and connection constraints
+      - MAX_REQS_PER_MINUTE=30
+      - MAX_CONCURRENT_CONNECTIONS_PER_SERVER=3
+      - WEBSOCKET_PING_INTERVAL=20
+    secrets:
+      - jwt_secret
+    restart: unless-stopped
+    # If you deploy behind a reverse proxy (e.g., Traefik/Nginx), you may remove the ports section
+    # and attach a label-based router instead.
+
+# Usage:
+# 1) Create a strong JWT signing secret file at ./secrets/jwt_secret
+#    Example: mkdir -p secrets && openssl rand -base64 48 > secrets/jwt_secret
+# 2) docker compose up --build
+# 3) Connect a WebSocket client to ws://localhost:5000/ws/servers/1/ssh with a valid JWT

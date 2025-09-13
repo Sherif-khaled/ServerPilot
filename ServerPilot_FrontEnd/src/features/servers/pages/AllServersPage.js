@@ -13,8 +13,7 @@ const RootContainer = styled(Box)(({ theme }) => ({
 }));
 
 export default function AllServersPage() {
-  const { t, i18n } = useTranslation();
-  const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
+  const { t } = useTranslation();
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
