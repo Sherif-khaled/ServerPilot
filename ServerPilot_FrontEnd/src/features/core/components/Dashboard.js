@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider, Menu, MenuItem } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon, Dns as DnsIcon } from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, useTheme, useMediaQuery, Divider, Menu, MenuItem, Badge } from '@mui/material';
+import { Menu as MenuIcon, AccountCircle, People, Contacts as ContactsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon, Settings as SettingsIcon, Storage as StorageIcon, Policy as PolicyIcon, AdminPanelSettings as AdminPanelSettingsIcon, ExpandMore, History as HistoryIcon, SupervisorAccount as SupervisorAccountIcon, Tune as TuneIcon, Security as SecurityIcon, Dns as DnsIcon, Terminal as TerminalIcon, ErrorOutline as ErrorOutlineIcon, WarningAmber as WarningAmberIcon, Info as InfoIcon, CheckCircle as CheckCircleIcon, DeleteSweep as DeleteSweepIcon } from '@mui/icons-material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'; // Use NavLink for active link styling
 import { useAuth } from '../../../AuthContext'; // Import useAuth
 import { logoutUser } from '../../../api/userService';
@@ -9,9 +9,8 @@ import { Avatar, Collapse } from '@mui/material';
 import Footer from './Footer';
 import apiClient from '../../../api/apiClient'; // Import the configured API client
 import { useTranslation } from 'react-i18next';
-import { MenuActionsSx } from '../../../common';
-import { useSnackbar } from '../../../common';
-
+import { MenuActionsSx, useSnackbar } from '../../../common';
+import { useNotifications } from './NotificationsContext';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const Background = styled('div')({
@@ -45,6 +44,32 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
   const [pageTitle, setPageTitle] = React.useState(t('common.systemOverview'));
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const { showSuccess, showError } = useSnackbar();
+  const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
+  const [notifAnchorEl, setNotifAnchorEl] = useState(null);
+
+  const renderNotifIcon = (n) => {
+    const type = n?.meta?.type;
+    const severity = n?.severity || 'info';
+    const colorMap = {
+      error: 'error.main',
+      warning: 'warning.main',
+      info: 'info.main',
+      success: 'success.main',
+    };
+    const sx = { color: (theme) => theme.palette?.[severity] ? theme.palette[severity].main : theme.palette.info.main };
+    const baseIconProps = { sx };
+    const iconBySeverity = {
+      error: <ErrorOutlineIcon {...baseIconProps} />,
+      warning: <WarningAmberIcon {...baseIconProps} />,
+      info: <InfoIcon {...baseIconProps} />,
+      success: <CheckCircleIcon {...baseIconProps} />,
+    };
+    // Prefer SSH terminal icon when meta.type === 'ssh'
+    if (type === 'ssh') {
+      return <TerminalIcon {...baseIconProps} />;
+    }
+    return iconBySeverity[severity] || <InfoIcon {...baseIconProps} />;
+  };
 
   const pageTitles = React.useMemo(() => ({
     '/dashboard': t('common.dashboard'),
@@ -99,6 +124,18 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
 
   const handleDrawerToggle = () => {
     setDrawerOpen((prev) => !prev);
+  };
+
+  const handleNotifOpen = (event) => {
+    setNotifAnchorEl(event.currentTarget);
+    // Mark notifications as read when opening the menu
+    if (unreadCount > 0) {
+      markAllRead();
+    }
+  };
+
+  const handleNotifClose = () => {
+    setNotifAnchorEl(null);
   };
 
   const handleAccountsClick = () => setAccountsOpen(!accountsOpen);
@@ -175,9 +212,55 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
           {/* <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
             {currentThemeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton> */}
-          <IconButton color="inherit" sx={{ ml: 1 }}>
-            <NotificationsIcon />
+          <IconButton color="inherit" sx={{ ml: 1 }} aria-controls={Boolean(notifAnchorEl) ? 'notifications-menu' : undefined} aria-haspopup="true" aria-expanded={Boolean(notifAnchorEl) ? 'true' : undefined} onClick={handleNotifOpen}>
+            <Badge color="error" badgeContent={unreadCount} overlap="circular">
+              <NotificationsIcon />
+            </Badge>
           </IconButton>
+          <Menu
+            id="notifications-menu"
+            anchorEl={notifAnchorEl}
+            open={Boolean(notifAnchorEl)}
+            onClose={handleNotifClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            slotProps={{
+              paper: {
+                sx: {...MenuActionsSx, minWidth: 320, maxWidth: 360 }
+              }
+            }}
+          >
+            {notifications.length > 0 && (
+              <MenuItem onClick={() => { clearAll(); handleNotifClose(); }} sx={{ justifyContent: 'flex-end', gap: 1 }}>
+                <DeleteSweepIcon fontSize="small" />
+                <ListItemText primaryTypographyProps={{ sx: { textAlign: 'right', fontWeight: 600 } }} primary={t('common.clearAll') || 'Clear all'} />
+              </MenuItem>
+            )}
+            {notifications.length > 0 && <Divider />}
+            {notifications.length === 0 ? (
+              <MenuItem disabled>
+                <ListItemText primary={t('common.noNotifications') || 'No notifications'} />
+              </MenuItem>
+            ) : (
+              notifications.slice(0, 10).map((n) => (
+                <MenuItem key={n.id} onClick={handleNotifClose} sx={{ alignItems: 'flex-start', whiteSpace: 'normal' }}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    {renderNotifIcon(n)}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={n.title}
+                    secondary={
+                      <>
+                        <span>{n.message}</span>
+                        <br />
+                        <span style={{ opacity: 0.7, fontSize: 12 }}>{new Date(n.createdAt).toLocaleString()}</span>
+                      </>
+                    }
+                  />
+                </MenuItem>
+              ))
+            )}
+          </Menu>
           {/* <IconButton color="inherit" component={NavLink} to="/settings">
             <SettingsIcon />
           </IconButton> */}

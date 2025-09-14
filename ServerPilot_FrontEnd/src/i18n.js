@@ -6,6 +6,9 @@ const resources = {
   en: {
     translation: {
       common: {
+        noNotifications: 'No notifications',
+        markAllRead: 'Mark all as read',
+        clearAll: 'Clear all',
         security: 'Security',
         general: 'General Settings',
         generate: 'Generate',
@@ -915,6 +918,9 @@ const resources = {
   ar: {
     translation: {
       common: {
+        noNotifications: 'لا توجد إشعارات',
+        markAllRead: 'الإشعارات الماركة كمقروءة',
+        clearAll: 'مسح الكل',
         security: 'الأمان',
         general: 'الإعدادات العامة',
         generate: 'توليد',

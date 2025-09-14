@@ -5,6 +5,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { listCredentials, revealCredential, getServerDetails } from '../../../api/serverService';
 import { CustomSnackbar, useSnackbar } from '../../../common';
+import { useNotifications } from '../../core/components/NotificationsContext';
 
 const SshTerminalPage = () => {
     const { customerId, serverId } = useParams();
@@ -21,6 +22,7 @@ const SshTerminalPage = () => {
     const [connectionDetails, setConnectionDetails] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+    const { addNotification } = useNotifications();
     const [sessionTimer, setSessionTimer] = useState({
         duration: 0,
         idleTime: 0,
@@ -266,6 +268,14 @@ const SshTerminalPage = () => {
                 // Auto logout
                 if (idleTime > AUTO_LOGOUT_TIME) {
                     showSuccess('Auto-logout triggered due to inactivity');
+                    try {
+                        addNotification({
+                            severity: 'warning',
+                            title: 'SSH session auto-logout',
+                            message: `Session auto-logged out due to inactivity on server ${serverId}`,
+                            meta: { type: 'ssh', serverId }
+                        });
+                    } catch (_) { /* noop */ }
                     // Inline close to avoid callback dependency cycle
                     if (socketRef.current) {
                         try { socketRef.current.close(); } catch (e) { /* noop */ }
@@ -850,6 +860,14 @@ const SshTerminalPage = () => {
         socketRef.current.onerror = (error) => {
             showError('WebSocket error');
             setConnectionStatus('error');
+            try {
+                addNotification({
+                    severity: 'error',
+                    title: 'SSH session error',
+                    message: 'An error occurred in the SSH WebSocket connection',
+                    meta: { type: 'ssh', serverId }
+                });
+            } catch (_) { /* noop */ }
         };
         
         socketRef.current.onclose = (evt) => {
@@ -859,6 +877,14 @@ const SshTerminalPage = () => {
             const msg = code ? `WebSocket closed (code ${code})${reason ? `: ${reason}` : ''}` : 'WebSocket closed';
             showError(msg);
             setConnectionStatus('disconnected');
+            try {
+                addNotification({
+                    severity: 'info',
+                    title: 'SSH session closed',
+                    message: reason ? `${reason} (code ${code})` : `Connection closed (code ${code || '—'})`,
+                    meta: { type: 'ssh', serverId, code, reason }
+                });
+            } catch (_) { /* noop */ }
             if (term.current) {
                 term.current.writeln('\x1B[1;33m=== SSH Session Ended ===\x1B[0m');
             }

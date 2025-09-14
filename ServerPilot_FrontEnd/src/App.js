@@ -30,6 +30,7 @@ import Error404 from './features/core/pages/Error404';
 import Error502 from './features/core/pages/Error502';
 import Error503 from './features/core/pages/Error503';
 import AllServersPage from './features/servers/pages/AllServersPage';
+import { NotificationsProvider } from './features/core/components/NotificationsContext';
 
 
 function AppRoutes({ toggleTheme, currentThemeMode }) {
@@ -84,8 +85,11 @@ function App() {
   const { mode, toggleTheme } = useContext(ThemeContext);
 
   return (
-    <AppRoutes toggleTheme={toggleTheme} currentThemeMode={mode} />
+    <NotificationsProvider>
+      <AppRoutes toggleTheme={toggleTheme} currentThemeMode={mode} />
+    </NotificationsProvider>
   );
 }
 
 export default App;
+
