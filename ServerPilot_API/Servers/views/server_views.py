@@ -285,14 +285,15 @@ class ServerViewSet(viewsets.ModelViewSet):
                 try:
                     transport.close()
                 except Exception:
-                    pass
+                    logger.error("Failed to close transport connection for IP %s", server_ip)
                 try:
                     sock.close()
                 except Exception:
-                    pass
+                    logger.error("Failed to close socket connection for IP %s", server_ip)
 
             client.connect(**connection_args)
-            stdin, stdout, stderr = client.exec_command('echo "Connection successful!"', timeout=10)
+            # Paramiko exec_command is safe here because the command is a constant string with no user input
+            stdin, stdout, stderr = client.exec_command('echo "Connection successful!"', timeout=10)  # nosec B601
             output = stdout.read().decode('utf-8', errors='replace').strip()
             error_out = stderr.read().decode('utf-8', errors='replace').strip()
             if error_out:
@@ -308,7 +309,7 @@ class ServerViewSet(viewsets.ModelViewSet):
             try:
                 client.close()
             except Exception:
-                pass
+                logger.error("Failed to close SSH client connection for IP %s", server_ip)
 
     # --- TOFU: Prepare Add ---
     @action(detail=False, methods=['post'], url_path='prepare_add')
@@ -343,11 +344,11 @@ class ServerViewSet(viewsets.ModelViewSet):
             try:
                 transport.close()
             except Exception:
-                pass
+                logger.error("Failed to close transport connection for IP %s", server_ip)
             try:
                 sock.close()
             except Exception:
-                pass
+                logger.error("Failed to close socket connection for IP %s", server_ip)
 
     # --- TOFU: Confirm Add ---
     @action(detail=False, methods=['post'], url_path='confirm_add')
@@ -387,11 +388,11 @@ class ServerViewSet(viewsets.ModelViewSet):
             try:
                 transport.close()
             except Exception:
-                pass
+                logger.error("Failed to close transport connection for IP %s", server_ip)
             try:
                 sock.close()
             except Exception:
-                pass
+                logger.error("Failed to close socket connection for IP %s", server_ip)
 
         if current_sha256 != sha256_fp or current_hex != hex_fp:
             return Response({'detail': 'Provided fingerprint does not match the current server fingerprint.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -559,14 +560,15 @@ class ServerViewSet(viewsets.ModelViewSet):
             try:
                 transport.close()
             except Exception:
-                pass
+                logger.error("Failed to close transport connection for IP %s", server_ip)
             try:
                 sock.close()
             except Exception:
-                pass
+                logger.error("Failed to close socket connection for IP %s", server_ip)
 
             client.connect(**connection_args)
-            stdin, stdout, stderr = client.exec_command(command, timeout=10)
+            # NOTE: This endpoint executes a remote command for connectivity tests; ensure inputs are validated upstream.
+            stdin, stdout, stderr = client.exec_command(command, timeout=10)  # nosec B601
             output = stdout.read().decode('utf-8', errors='replace').strip()
             error_out = stderr.read().decode('utf-8', errors='replace').strip()
             if error_out:
@@ -585,7 +587,7 @@ class ServerViewSet(viewsets.ModelViewSet):
             try:
                 client.close()
             except Exception:
-                pass
+                logger.error("Failed to close SSH client connection for IP %s", server_ip)
 
     @action(detail=True, methods=['post'])
     def test_connection(self, request, *args, **kwargs):
