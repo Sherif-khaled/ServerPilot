@@ -3,6 +3,10 @@ import re
 import shlex
 import asyncio
 import asyncssh
+import socket
+import hashlib
+import base64
+import paramiko
 from asgiref.sync import async_to_sync, sync_to_async
 from django.core.mail import send_mail
 from django.http import Http404
@@ -12,13 +16,14 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
-from ServerPilot_API.Servers.models import Server, FirewallRule, ServerCredential
+from ServerPilot_API.Servers.models import Server, FirewallRule, ServerCredential, ServerNotification
 from ServerPilot_API.Customers.models import Customer
 from ServerPilot_API.Servers.serializers import (
     ServerSerializer, SecurityScanSerializer, 
     SecurityRecommendationSerializer, FirewallRuleSerializer, 
     InstalledApplicationSerializer,
     ServerCredentialListSerializer, ServerCredentialCreateSerializer,
+    ServerNotificationSerializer,
 )
 from ServerPilot_API.Servers.models import SecurityScan, SecurityRecommendation
 from ServerPilot_API.Servers.permissions import IsOwnerOrAdmin, AsyncSessionAuthentication
@@ -206,10 +211,10 @@ class ServerViewSet(viewsets.ModelViewSet):
             logger.error("Error decrypting credential for test_connection", exc_info=True)
             return Response({"detail": "Failed to decrypt credential."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Attempt SSH using paramiko without persisting secret
-        import paramiko, io
+        # Attempt SSH using paramiko without persisting secret and with strict host key verification
+        import io
         client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
         try:
             username = cred.username
             hostname = str(server.server_ip)
@@ -248,6 +253,44 @@ class ServerViewSet(viewsets.ModelViewSet):
                 # Fallback: use as password
                 connection_args['password'] = secret_bytes.decode('utf-8', errors='ignore')
 
+            # Verify fingerprint: if server is trusted, enforce match; else fetch current and trust only in-memory
+            # Fetch server host key via handshake
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            sock.connect((hostname, port))
+            transport = paramiko.Transport(sock)
+            transport.start_client(timeout=10)
+            host_key = transport.get_remote_server_key()
+            try:
+                current_sha256 = "SHA256:" + base64.b64encode(hashlib.sha256(host_key.asbytes()).digest()).decode('ascii')
+                current_hex = ":".join(host_key.get_fingerprint().hex()[i:i+2] for i in range(0, len(host_key.get_fingerprint().hex()), 2))
+                if server.trusted and server.stored_fingerprint:
+                    if server.stored_fingerprint.get('sha256') != current_sha256 or server.stored_fingerprint.get('hex') != current_hex:
+                        ServerNotification.objects.create(
+                            server=server,
+                            notification_type='fingerprint_mismatch',
+                            severity='critical',
+                            old_fingerprint=server.stored_fingerprint,
+                            new_fingerprint={'sha256': current_sha256, 'hex': current_hex},
+                            message=f"SSH host key fingerprint changed for {server.server_name} ({server.server_ip})."
+                        )
+                        log_action(request.user, 'server_fingerprint_mismatch', request, f'Fingerprint mismatch on server {server.server_name} (ID: {server.id}). Old={server.stored_fingerprint}, New={{"sha256": "{current_sha256}", "hex": "{current_hex}"}}')
+                        return Response({'status': 'error', 'message': 'Host key fingerprint mismatch. Connection refused.'}, status=status.HTTP_400_BAD_REQUEST)
+                # inject key
+                host_keys = paramiko.HostKeys()
+                host_keys.add(hostname, host_key.get_name(), host_key)
+                client._host_keys = host_keys
+                client._host_keys_filename = None
+            finally:
+                try:
+                    transport.close()
+                except Exception:
+                    pass
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+
             client.connect(**connection_args)
             stdin, stdout, stderr = client.exec_command('echo "Connection successful!"', timeout=10)
             output = stdout.read().decode('utf-8', errors='replace').strip()
@@ -266,6 +309,117 @@ class ServerViewSet(viewsets.ModelViewSet):
                 client.close()
             except Exception:
                 pass
+
+    # --- TOFU: Prepare Add ---
+    @action(detail=False, methods=['post'], url_path='prepare_add')
+    def prepare_add(self, request, *args, **kwargs):
+        """
+        Fetch the SSH host key fingerprint for a provided server without creating it.
+        Payload: server_ip (or hostname), ssh_port, username, server_name (for later), optional customer in URL
+        Returns: { sha256: 'SHA256:...', hex: 'aa:bb:...' }
+        """
+        customer_pk = self.kwargs.get('customer_pk')
+        server_ip = request.data.get('server_ip')
+        ssh_port = int(request.data.get('ssh_port', 22))
+        if not server_ip:
+            return Response({'detail': 'server_ip is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            sock.connect((str(server_ip), ssh_port))
+            transport = paramiko.Transport(sock)
+            transport.start_client(timeout=10)
+            key = transport.get_remote_server_key()
+            sha256_b64 = base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode('ascii')
+            sha256_fp = f"SHA256:{sha256_b64}"
+            md5_hex = key.get_fingerprint().hex()
+            hex_fp = ":".join(md5_hex[i:i+2] for i in range(0, len(md5_hex), 2))
+            return Response({'sha256': sha256_fp, 'hex': hex_fp}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error('Error fetching host key for prepare_add', exc_info=True)
+            return Response({'detail': f'Failed to fetch fingerprint: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        finally:
+            try:
+                transport.close()
+            except Exception:
+                pass
+            try:
+                sock.close()
+            except Exception:
+                pass
+
+    # --- TOFU: Confirm Add ---
+    @action(detail=False, methods=['post'], url_path='confirm_add')
+    def confirm_add(self, request, *args, **kwargs):
+        """
+        Confirm and create a server record with stored_fingerprint and trusted=True after out-of-band verification.
+        Payload required: server_name, server_ip, ssh_port, fingerprint {sha256, hex}
+        """
+        customer_pk = self.kwargs.get('customer_pk')
+        try:
+            customer = Customer.objects.get(pk=customer_pk, owner=request.user)
+        except Customer.DoesNotExist:
+            return Response({'detail': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        server_name = request.data.get('server_name')
+        server_ip = request.data.get('server_ip')
+        ssh_port = int(request.data.get('ssh_port', 22))
+        fingerprint = request.data.get('fingerprint') or {}
+        sha256_fp = fingerprint.get('sha256')
+        hex_fp = fingerprint.get('hex')
+        if not (server_name and server_ip and sha256_fp and hex_fp):
+            return Response({'detail': 'server_name, server_ip and fingerprint.sha256 and fingerprint.hex are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # As a safety, re-fetch current fingerprint and ensure it matches provided
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            sock.connect((str(server_ip), ssh_port))
+            transport = paramiko.Transport(sock)
+            transport.start_client(timeout=10)
+            key = transport.get_remote_server_key()
+            sha256_b64 = base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode('ascii')
+            current_sha256 = f"SHA256:{sha256_b64}"
+            md5_hex = key.get_fingerprint().hex()
+            current_hex = ":".join(md5_hex[i:i+2] for i in range(0, len(md5_hex), 2))
+        finally:
+            try:
+                transport.close()
+            except Exception:
+                pass
+            try:
+                sock.close()
+            except Exception:
+                pass
+
+        if current_sha256 != sha256_fp or current_hex != hex_fp:
+            return Response({'detail': 'Provided fingerprint does not match the current server fingerprint.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        server = Server.objects.create(
+            customer=customer,
+            server_name=server_name,
+            server_ip=server_ip,
+            ssh_port=ssh_port,
+            stored_fingerprint={'sha256': sha256_fp, 'hex': hex_fp},
+            trusted=True,
+        )
+        log_action(request.user, 'server_confirm_add', request, f'Added server {server.server_name} with TOFU fingerprint stored.')
+        return Response(ServerSerializer(server).data, status=status.HTTP_201_CREATED)
+
+    # --- Notifications ---
+    @action(detail=True, methods=['get'], url_path='notifications')
+    def notifications(self, request, pk=None, customer_pk=None):
+        try:
+            server = Server.objects.get(pk=pk, customer__pk=customer_pk)
+        except Server.DoesNotExist:
+            return Response({"detail": "Server not found for the specified customer."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not (request.user.is_staff or server.customer.owner == request.user):
+            return Response({"detail": "Server not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        notifs = ServerNotification.objects.filter(server=server).order_by('-created_at')
+        return Response(ServerNotificationSerializer(notifs, many=True).data, status=status.HTTP_200_OK)
 
         
     def perform_create(self, serializer):
@@ -357,9 +511,9 @@ class ServerViewSet(viewsets.ModelViewSet):
             return Response({'status': 'error', 'message': 'Validation error.', 'details': 'username and secret are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Attempt paramiko connection
-        import paramiko, io
+        import io
         client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
         try:
             connection_args = {
                 'hostname': str(server_ip),
@@ -370,7 +524,7 @@ class ServerViewSet(viewsets.ModelViewSet):
                 'allow_agent': False,
             }
 
-            # Try PEM key first
+            # Try PEM key firstUntrusted
             used_key = False
             try:
                 if 'BEGIN' in secret and 'KEY' in secret:
@@ -390,6 +544,26 @@ class ServerViewSet(viewsets.ModelViewSet):
 
             if not used_key:
                 connection_args['password'] = secret
+
+            # Fetch and inject current host key in-memory (no trusting beyond this session)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            sock.connect((str(server_ip), ssh_port))
+            transport = paramiko.Transport(sock)
+            transport.start_client(timeout=10)
+            host_key = transport.get_remote_server_key()
+            host_keys = paramiko.HostKeys()
+            host_keys.add(str(server_ip), host_key.get_name(), host_key)
+            client._host_keys = host_keys
+            client._host_keys_filename = None
+            try:
+                transport.close()
+            except Exception:
+                pass
+            try:
+                sock.close()
+            except Exception:
+                pass
 
             client.connect(**connection_args)
             stdin, stdout, stderr = client.exec_command(command, timeout=10)

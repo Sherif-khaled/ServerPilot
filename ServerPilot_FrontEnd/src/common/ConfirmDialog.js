@@ -88,9 +88,6 @@ const ConfirmDialog = ({
         <Box>
           <CancelButton
             onClick={onClose}
-            variant="outlined"
-            color='error'
-            
           >
             {cancelText}
           </CancelButton>

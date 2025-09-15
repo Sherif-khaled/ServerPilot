@@ -630,6 +630,8 @@ const resources = {
           }
         },
         common: {
+          verify: 'Verify',
+          connect: 'Connect',
           servers: '[Customer Name] Servers',
           loadingError: 'Failed to fetch server details.',
           notFound: 'Server not found.',
@@ -1536,6 +1538,8 @@ const resources = {
           }
         },
         common: {
+          verify: 'تأكيد',
+          connect: 'اتصال',
           loadingError: 'فشل في جلب تفاصيل الخادم.',
           notFound: 'الخادم غير موجود.',
           refresh: 'تحديث الخوادم',

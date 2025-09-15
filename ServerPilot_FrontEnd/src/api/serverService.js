@@ -30,6 +30,21 @@ const testServerConnectionWithPayload = (customerId, data) => {
   return apiClient.post(`/customers/${customerId}/servers/test_connection/`, data);
 };
 
+// TOFU: Fetch fingerprint before adding
+const prepareAddServer = (customerId, { server_ip, ssh_port = 22 }) => {
+  return apiClient.post(`/customers/${customerId}/servers/prepare_add/`, { server_ip, ssh_port });
+};
+
+// TOFU: Confirm add with verified fingerprint
+const confirmAddServer = (customerId, { server_name, server_ip, ssh_port = 22, fingerprint }) => {
+  return apiClient.post(`/customers/${customerId}/servers/confirm_add/`, { server_name, server_ip, ssh_port, fingerprint });
+};
+
+// Notifications for a server
+const getServerNotifications = (customerId, serverId) => {
+  return apiClient.get(`/customers/${customerId}/servers/${serverId}/notifications/`);
+};
+
 const getServerHealth = (customerId, serverId) => {
   return apiClient.get(`/customers/${customerId}/servers/${serverId}/server-info/health/`);
 };
@@ -145,6 +160,9 @@ export {
   deleteServer,
   testServerConnection,
   testServerConnectionWithPayload,
+  prepareAddServer,
+  confirmAddServer,
+  getServerNotifications,
   changeServerPassword,
   runSecurityScan,
   getLatestSecurityScan,

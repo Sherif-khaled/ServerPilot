@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Server, SecurityScan, SecurityRecommendation, FirewallRule, ServerCredential
+from .models import Server, SecurityScan, SecurityRecommendation, FirewallRule, ServerCredential, ServerNotification
 # Customer model import might not be strictly needed here anymore unless for type hinting
 # from API.Customers.models import Customer 
 
@@ -8,7 +8,7 @@ class ServerSerializer(serializers.ModelSerializer):
         model = Server
         fields = (
             'id', 'customer', 'server_name', 'server_ip', 'ssh_port', 'firewall_enabled',
-            'is_active', 'created_at', 'updated_at'
+            'is_active', 'stored_fingerprint', 'trusted', 'created_at', 'updated_at'
         )
         read_only_fields = ('created_at', 'updated_at', 'customer')
         extra_kwargs = {
@@ -93,4 +93,14 @@ class ServerCredentialCreateSerializer(serializers.Serializer):
         if len(secret) > 16384:
             raise serializers.ValidationError('Secret too large.')
         return attrs
+
+
+class ServerNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServerNotification
+        fields = (
+            'id', 'server', 'notification_type', 'severity', 'message',
+            'old_fingerprint', 'new_fingerprint', 'created_at'
+        )
+        read_only_fields = fields
 

@@ -6,6 +6,9 @@ from asgiref.sync import sync_to_async
 import paramiko
 import io
 import asyncssh
+import socket
+import hashlib
+import base64
 
 class SecurityScan(models.Model):
     server = models.ForeignKey('Server', related_name='security_scans', on_delete=models.CASCADE)
@@ -69,6 +72,11 @@ class Server(models.Model):
     ssh_port = models.PositiveIntegerField(default=22)
     is_active = models.BooleanField(default=True)
 
+    # TOFU fields
+    # stored_fingerprint stores both SHA256 and HEX formats, e.g. {"sha256": "SHA256:...", "hex": "aa:bb:..."}
+    stored_fingerprint = models.JSONField(null=True, blank=True, default=dict)
+    trusted = models.BooleanField(default=False)
+
     # Monitoring thresholds
     cpu_threshold = models.PositiveIntegerField(default=80, help_text="CPU usage threshold percentage.")
     memory_threshold = models.PositiveIntegerField(default=80, help_text="Memory usage threshold percentage.")
@@ -80,6 +88,60 @@ class Server(models.Model):
     def __str__(self):
         return f"{self.server_name} ({self.server_ip}) for {self.customer.first_name or self.customer.company_name}"
 
+    def _fetch_server_host_key(self, timeout=10):
+        """
+        Perform an SSH handshake without user auth to obtain the server's host key.
+        Returns (host_key, fingerprints_dict) where fingerprints_dict = { 'sha256': 'SHA256:...', 'hex': 'aa:bb:...' }
+        """
+        hostname = str(self.server_ip)
+        port = int(self.ssh_port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        try:
+            sock.connect((hostname, port))
+            transport = paramiko.Transport(sock)
+            transport.start_client(timeout=timeout)
+            key = transport.get_remote_server_key()
+            # SHA256 (OpenSSH-style)
+            sha256_b64 = base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode('ascii')
+            sha256_fp = f"SHA256:{sha256_b64}"
+            # HEX (MD5 hex with colons similar to legacy format)
+            md5_hex = key.get_fingerprint().hex()
+            hex_fp = ":".join(md5_hex[i:i+2] for i in range(0, len(md5_hex), 2))
+            return key, { 'sha256': sha256_fp, 'hex': hex_fp }
+        finally:
+            try:
+                transport.close()
+            except Exception:
+                pass
+            try:
+                sock.close()
+            except Exception:
+                pass
+
+    def _verify_or_alert_fingerprint(self, timeout=10):
+        """
+        Fetch current host key and compare to stored_fingerprint when trusted is True.
+        If mismatch, create a ServerNotification and return (False, details).
+        If no stored or not trusted, return (True, details) but does not change trust.
+        """
+        key, fps = self._fetch_server_host_key(timeout=timeout)
+        if self.trusted and self.stored_fingerprint:
+            stored_sha = (self.stored_fingerprint or {}).get('sha256')
+            stored_hex = (self.stored_fingerprint or {}).get('hex')
+            if stored_sha and stored_hex and (stored_sha != fps['sha256'] or stored_hex != fps['hex']):
+                # create notification
+                ServerNotification.objects.create(
+                    server=self,
+                    notification_type='fingerprint_mismatch',
+                    severity='critical',
+                    old_fingerprint={'sha256': stored_sha, 'hex': stored_hex},
+                    new_fingerprint=fps,
+                    message=f"SSH host key fingerprint changed for {self.server_name} ({self.server_ip})."
+                )
+                return False, fps, key
+        return True, fps, key
+
     def connect_ssh(self, command='ls -la', timeout=10):
         """
         Attempts to connect to the server via SSH and execute a command.
@@ -87,8 +149,15 @@ class Server(models.Model):
         `success` is False only if the connection itself fails.
         `exit_status` is the command's exit code, or -1 on connection failure.
         """
+        # Enforce trust policy: do not allow SSH if server is not trusted
+        if not self.trusted:
+            return False, (
+                "Server is not trusted. SSH operations are blocked until the host key is verified "
+                "and the server is confirmed via the TOFU flow."
+            ), -1
         client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # Enforce strict host key checking; we'll add the expected key in-memory after verification
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
 
         username_to_use = None
         password_to_use = None
@@ -114,9 +183,28 @@ class Server(models.Model):
             except Exception as e:
                 return False, f"Failed to decrypt stored credential: {str(e)}", -1
         else:
+            logger.error("No stored credentials found for this server %s. Please add one from the Credentials tab.", self.server_name)
             return False, "No stored credentials found for this server. Please add one from the Credentials tab.", -1
 
         try:
+            # Verify fingerprint prior to connecting
+            ok, fps, host_key = self._verify_or_alert_fingerprint(timeout=timeout)
+            if not ok:
+                logger.error("Host key fingerprint mismatch detected. Connection refused."
+                    f"\nStored: {self.stored_fingerprint}"
+                    f"\nCurrent: {fps}")
+                return False, (
+                    "Host key fingerprint mismatch detected. Connection refused."
+                    f"\nStored: {self.stored_fingerprint}"
+                    f"\nCurrent: {fps}"
+                ), -1
+
+            # Inject the verified host key to the client's in-memory known hosts
+            host_keys = paramiko.HostKeys()
+            host_keys.add(str(self.server_ip), host_key.get_name(), host_key)
+            client._host_keys = host_keys
+            client._host_keys_filename = None
+
             connection_args = {
                 'hostname': str(self.server_ip),
                 'port': self.ssh_port,
@@ -235,13 +323,31 @@ class Server(models.Model):
                     'password': secret_bytes.decode('utf-8', errors='ignore'),
                 }
         # No stored credentials
+        logger.error("No stored credentials found for this server %s. Please add one from the Credentials tab.", self.server_name)
         raise ValueError("No stored credentials found for this server. Please add one from the Credentials tab.")
 
     @staticmethod
     def async_connect_ssh(server):
         """Reusable method to establish an SSH connection (asyncssh) using stored encrypted credentials when available."""
         async def _connect():
+            # Enforce trust policy: do not allow SSH if server is not trusted
+            if not server.trusted:
+                logger.error("%s is not trusted. SSH operations are blocked until the host key is verified "
+                    "and the server is confirmed via the TOFU flow.", server.server_name)
+                raise asyncssh.Error(
+                    "Server is not trusted. SSH operations are blocked until the host key is verified "
+                    "and the server is confirmed via the TOFU flow."
+                )
+                logger.error("Server is not trusted. SSH operations are blocked until the host key is verified "
+                    "and the server is confirmed via the TOFU flow.")
+            # Pre-verify fingerprint
+            ok, fps, host_key = await sync_to_async(server._verify_or_alert_fingerprint)()
+            if not ok:
+                raise asyncssh.Error(
+                    f"Host key fingerprint mismatch detected. Stored={server.stored_fingerprint}, Current={fps}"
+                )
             auth = await Server._build_async_credentials(server)
+            # Proceed to connect; host key already verified above. We disable asyncssh known_hosts check to avoid double-handshake issues.
             return await asyncssh.connect(
                 str(server.server_ip),
                 username=auth['username'],
@@ -273,6 +379,7 @@ class Server(models.Model):
         if success and exit_status == 0:
             return True, "Password changed successfully."
         else:
+            logger.error("Failed to change password on the remote server %s. Details: %s", self.server_name, output)
             return False, f"Failed to change password on the remote server. Details: {output}"
 
     class Meta:
@@ -305,3 +412,32 @@ class ServerCredential(models.Model):
 
     def __str__(self):
         return f"Credential for {self.username} on {self.server.server_name}"
+
+
+class ServerNotification(models.Model):
+    """
+    Notification entries for server security events such as fingerprint mismatch.
+    """
+    NOTIF_TYPES = (
+        ('fingerprint_mismatch', 'Fingerprint Mismatch'),
+    )
+    SEVERITY = (
+        ('info', 'Info'),
+        ('warning', 'Warning'),
+        ('critical', 'Critical'),
+    )
+    server = models.ForeignKey('Server', related_name='notifications', on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=64, choices=NOTIF_TYPES)
+    severity = models.CharField(max_length=16, choices=SEVERITY, default='critical')
+    message = models.CharField(max_length=512)
+    old_fingerprint = models.JSONField(null=True, blank=True, default=dict)
+    new_fingerprint = models.JSONField(null=True, blank=True, default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Server Notification'
+        verbose_name_plural = 'Server Notifications'
+
+    def __str__(self):
+        return f"[{self.severity}] {self.notification_type} for {self.server.server_name}"

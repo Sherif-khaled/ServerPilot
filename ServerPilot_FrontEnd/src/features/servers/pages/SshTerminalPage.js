@@ -287,7 +287,7 @@ const SshTerminalPage = () => {
                 return newState;
             });
         }, 1000);
-    }, [AUTO_LOGOUT_TIME, IDLE_WARNING_TIME, customerId, navigate, showSuccess]);
+    }, [AUTO_LOGOUT_TIME, IDLE_WARNING_TIME, customerId, navigate, showSuccess, addNotification, serverId]);
 
     // Stop session timers
     const stopSessionTimers = useCallback(() => {
@@ -905,7 +905,7 @@ const SshTerminalPage = () => {
                 term.current.write(event.data); // Assume raw string output
             }
         };
-    }, [connectionDetails, serverId, showError, showSuccess]);
+    }, [connectionDetails, serverId, showError, showSuccess, addNotification]);
 
     useEffect(() => {
         // This effect handles the terminal and WebSocket setup.

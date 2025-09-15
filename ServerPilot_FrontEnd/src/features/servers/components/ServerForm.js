@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField,Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Alert, FormControlLabel, 
-  Checkbox,Typography} from '@mui/material';
-import {getServerDetails } from '../../../api/serverService';
+  Checkbox,Typography, Paper, Divider } from '@mui/material';
+import { getServerDetails, prepareAddServer, confirmAddServer } from '../../../api/serverService';
 import { Save as SaveIcon } from '@mui/icons-material';
 import { textFieldSx, gradientButtonSx, glassDialogSx, checkBoxSx, CancelButton, CircularProgressSx } from '../../../common';
 import { useTranslation } from 'react-i18next';
@@ -22,10 +22,23 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
   const serverId = isEditMode ? serverData.id : null;
 
   const [formData, setFormData] = useState(initialFormData);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [apiFormError, setApiFormError] = useState('');
   const [validationError, setValidationError] = useState({});
+  // TOFU flow state (create mode)
+  const [fingerprint, setFingerprint] = useState(null);
+  const [fpDialogOpen, setFpDialogOpen] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [showFingerprintField, setShowFingerprintField] = useState(false);
   const isRtl = typeof i18n?.dir === 'function' ? i18n.dir() === 'rtl' : (i18n?.language || '').toLowerCase().startsWith('ar');
+
+  // Helper to split long strings into multiple lines
+  const toLines = (s, chunk = 32) => {
+    if (typeof s !== 'string' || !s.length) return '';
+    const re = new RegExp(`.{1,${chunk}}`, 'g');
+    const parts = s.match(re) || [s];
+    return parts.join('\n');
+  };
 
   useEffect(() => {
     const fetchServerDetails = async () => {
@@ -121,7 +134,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
       }
     }
         
-    // Prepare server data for saving
+    // Prepare server data for saving (used in edit mode only)
     const serverData = {
       server_name: formData.server_name,
       server_ip: formData.server_ip,
@@ -131,11 +144,59 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
       is_active: formData.is_active
     };
     
-    // Call onSave with the server data and server ID if in edit mode
-    if (onSave) {
-      onSave(serverData, isEditMode ? serverId : null);
+    // Call onSave only in edit mode to avoid bypassing TOFU create flow
+    if (isEditMode && onSave) {
+      onSave(serverData, serverId);
     }
     return true;
+  };
+
+  // --- TOFU: Fetch fingerprint then show in dialog ---
+  const handleFetchFingerprint = async () => {
+    // Basic validation for required fields
+    const ok = handleSave(); // reuse validations but don't submit; it will call onSave in edit mode only
+    if (!ok) return;
+    setApiFormError('');
+    setLoading(true);
+    try {
+      const { data } = await prepareAddServer(customerId, { server_ip: formData.server_ip, ssh_port: Number(formData.ssh_port) });
+      setFingerprint(data);
+      setFpDialogOpen(true);
+    } catch (err) {
+      setApiFormError(err?.response?.data?.detail || 'Failed to fetch fingerprint.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- TOFU: Confirm (create server with stored fingerprint) ---
+  const handleConfirm = async () => {
+    if (!fingerprint) return;
+    setApiFormError('');
+    setLoading(true);
+    try {
+      await confirmAddServer(customerId, {
+        server_name: formData.server_name,
+        server_ip: formData.server_ip,
+        ssh_port: Number(formData.ssh_port),
+        fingerprint,
+      });
+      // Close dialog and let parent refresh list externally
+      onClose();
+    } catch (err) {
+      setApiFormError(err?.response?.data?.detail || 'Failed to confirm server addition.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dialog handlers
+  const handleCloseFpDialog = () => setFpDialogOpen(false);
+  const handleVerifyFp = () => {
+    // User confirmed they have verified out-of-band
+    setVerified(true);
+    setShowFingerprintField(true);
+    setFpDialogOpen(false);
   };
 
   const handleClose = () => {
@@ -145,6 +206,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
   };
 
   return (
+    <>
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth PaperComponent={glassDialogSx}>
       <DialogTitle fontSize={24} fontWeight="bold">{isEditMode ? t('servers.form.editTitle') : t('servers.form.addTitle')}</DialogTitle>
       <Box component="div" noValidate autoComplete="off" sx={{ mt: 2 }}>
@@ -161,10 +223,12 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               </Typography>
             )}
 
-            {/* Display auth validation errors */}
-            <Alert severity="info" sx={{ mb: 1 }}>
-              {t('servers.form.credentialsManagedInTab')}
-            </Alert>
+            {/* Display info */}
+            {!isEditMode && (
+              <Alert severity="info" sx={{ mb: 1 }}>
+                Trust On First Use: first we will fetch the SSH host key fingerprint so you can verify it out-of-band. Then we will save the server as trusted.
+              </Alert>
+            )}
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
 
@@ -183,7 +247,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
             />
 
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-              <IpMaskInput
+              <TextField
                 required
                 fullWidth
                 id="server_ip"
@@ -247,9 +311,19 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
             {/* Root password and private key fields removed. */}
 
             {/* Private key input removed. */}
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-start'}}>
-              <FormControlLabel
+            {/* After user verifies in dialog, show read-only fingerprint textbox */}
+            {!isEditMode && showFingerprintField && (
+              <TextField
+                fullWidth
+                label="SSH Fingerprint (SHA256)"
+                value={fingerprint?.sha256 || ''}
+                InputProps={{ readOnly: true }}
+                sx={textFieldSx}
+              />
+            )}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start'}}>
+            <FormControlLabel
                   control={
                     <Checkbox
                       checked={formData.is_active}
@@ -278,24 +352,95 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
           </Box>
           
           <Box>
-            <Button 
-              onClick={handleSave}
-              variant="contained"
-              disabled={loading}
-              startIcon={loading ? <CircularProgress size={20} sx={CircularProgressSx}/> : <SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
-              sx={{...gradientButtonSx}}
-            >
-              {loading ? (
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CircularProgress size={20} sx={{ color: 'inherit' }} />
-                  {isEditMode ? t('servers.form.updating') : t('servers.form.creating')}
-                </Box>
-              ) : isEditMode ? t('servers.form.update') : t('servers.form.create')}
-            </Button>
+            {isEditMode ? (
+              <Button 
+                onClick={handleSave}
+                variant="contained"
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} sx={CircularProgressSx}/> : <SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
+                sx={{...gradientButtonSx}}
+              >
+                {loading ? (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CircularProgress size={20} sx={{ color: 'inherit' }} />
+                    {t('servers.form.updating')}
+                  </Box>
+                ) : t('servers.form.update')}
+              </Button>
+            ) : (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {!(showFingerprintField && verified) && (
+                  <Button 
+                    onClick={handleFetchFingerprint}
+                    variant="outlined"
+                    disabled={loading || (!formData.server_name || !formData.server_ip)}
+                    sx={{...gradientButtonSx}}
+                  >
+                    {loading ? 'Fetching…' : 'Fetch Fingerprint'}
+                  </Button>
+                )}
+                {showFingerprintField && verified && (
+                  <Button 
+                    onClick={handleConfirm}
+                    variant="contained"
+                    disabled={loading}
+                    startIcon={loading ? <CircularProgress size={20} sx={CircularProgressSx}/> : <SaveIcon sx={{ml: isRtl ? 1 : 0}}/>}
+                    sx={{...gradientButtonSx}}
+                  >
+                    {loading ? 'Saving…' : 'Save'}
+                  </Button>
+                )}
+              </Box>
+            )}
           </Box>
         </DialogActions>
       </Box>
     </Dialog>
+    {/* Fingerprint Result Dialog */}
+    <Dialog open={fpDialogOpen} onClose={handleCloseFpDialog} maxWidth="sm" fullWidth PaperComponent={glassDialogSx}>
+      <DialogTitle fontSize={20} fontWeight="bold">Verify SSH Host Key Fingerprint</DialogTitle>
+      <DialogContent dividers>
+        {fingerprint ? (
+          <Box>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="subtitle2" color="text.secondary">Fingerprint (SHA256)</Typography>
+              <Typography variant="body1" component="pre" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', m: 0 }}>
+                {toLines(fingerprint.sha256, 32)}
+              </Typography>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2" color="text.secondary">Fingerprint (HEX)</Typography>
+              <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>{fingerprint.hex}</Typography>
+            </Paper>
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Verify this on the server using:
+              <Box component="pre" sx={{ whiteSpace: 'pre-wrap', mt: 1 }}>ssh-keygen -lf /etc/ssh/ssh_host_rsa_key.pub</Box>
+              <Box component="pre" sx={{ whiteSpace: 'pre-wrap' }}>ssh-keyscan -t rsa {formData.server_ip} | ssh-keygen -lf -</Box>
+            </Alert>
+          </Box>
+        ) : (
+          <Alert severity="error">Failed to load fingerprint.</Alert>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+        <Box display="flex" alignItems="center" gap={2}>
+          <CancelButton 
+            onClick={handleCloseFpDialog}>
+              {t('servers.common.cancel')}
+          </CancelButton>
+
+        </Box>
+        <Box justifyContent="flex-end">
+          <Button 
+            onClick={handleVerifyFp} 
+            sx={{...gradientButtonSx}} 
+            variant="contained">
+              {t('servers.common.verify')}
+          </Button>
+
+        </Box>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 };
 

@@ -5,13 +5,22 @@ const ADMIN_API_URL = '/users/admin'; // Base for admin-related user actions
 const CUSTOMER_API_URL = '/customers';
 
 // --- User-facing endpoints ---
-export const registerUser = (data) => apiClient.post(`${USER_API_URL}/register/`, data, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } });
+// Do not attach Authorization for auth bootstrap endpoints
+export const registerUser = (data) => apiClient.post(`${USER_API_URL}/register/`, data);
 
 // Session login: used to initiate login and determine if MFA is required
-export const loginSession = (data) => apiClient.post(`${USER_API_URL}/login/`, data, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } });
+export const loginSession = (data) => {
+    // Clear any stale tokens before login
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    return apiClient.post(`${USER_API_URL}/login/`, data);
+};
 
 // JWT login: obtain tokens and persist them
 export const loginUser = async ({ username, password }) => {
+    // Clear any stale tokens before JWT obtain
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     const res = await apiClient.post(`${USER_API_URL}/token/`, { username, password });
     const { access, refresh } = res.data || {};
     if (access) localStorage.setItem('accessToken', access);

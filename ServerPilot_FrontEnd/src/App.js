@@ -11,6 +11,7 @@ import CustomerList from './features/customers/components/CustomerList';
 import SshTerminalPage from './features/servers/pages/SshTerminalPage';
 import ServerList from './features/servers/components/ServerList';
 import ServerForm from './features/servers/components/ServerForm';
+import ServerNotificationsList from './features/servers/components/ServerNotificationsList';
 import ServerDetailsPage from './features/servers/pages/ServerDetailsPage';
 import SettingsPage from './features/settings/pages/SettingsPage';
 import ProtectedRoute from './features/core/components/ProtectedRoute';
@@ -64,6 +65,7 @@ function AppRoutes({ toggleTheme, currentThemeMode }) {
         <Route path="/customers/:customerId/servers" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerList /></Dashboard>} />
         <Route path="/customers/:customerId/servers/:serverId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerDetailsPage /></Dashboard>} />
         <Route path="/customers/:customerId/servers/add" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerForm /></Dashboard>} />
+        <Route path="/customers/:customerId/servers/:serverId/notifications" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerNotificationsList /></Dashboard>} />
         <Route path="/customers/:customerId/servers/edit/:serverId" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><ServerForm /></Dashboard>} />
         <Route path="/customers/:customerId/servers/:serverId/console" element={<Dashboard toggleTheme={toggleTheme} currentThemeMode={currentThemeMode}><SshTerminalPage /></Dashboard>} />
         {/* Add other protected dashboard routes here if needed */}

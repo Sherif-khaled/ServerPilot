@@ -10,12 +10,21 @@ const apiClient = axios.create({
   },
 });
 
-// Attach JWT from localStorage if present
+// Attach JWT from localStorage if present, except for auth bootstrap endpoints
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const url = config.url || '';
+    const isAuthBootstrap = (
+      url.includes('/users/login/') ||
+      url.includes('/users/register/') ||
+      url.includes('/users/token/') ||
+      url.includes('/users/password/reset')
+    );
+    if (!isAuthBootstrap) {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -29,6 +38,17 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      const isAuthBootstrap = (
+        url.includes('/users/login/') ||
+        url.includes('/users/register/') ||
+        url.includes('/users/token/') ||
+        url.includes('/users/password/reset')
+      );
+      if (isAuthBootstrap) {
+        // For auth endpoints, don't try refresh or force redirect
+        return Promise.reject(error);
+      }
       // Try refresh flow if refresh token stored
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken && !error.config.__isRetryRequest) {

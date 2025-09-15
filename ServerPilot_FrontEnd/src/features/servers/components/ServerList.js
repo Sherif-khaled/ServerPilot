@@ -226,6 +226,8 @@ export default function ServerList({ customerId: propCustomerId, beforeSearch, t
   const handleCloseModal = () => {
     setEditingServer(null);
     setIsModalOpen(false);
+    // Ensure list is refreshed after modal closes (covers TOFU create flow inside ServerForm)
+    fetchServers();
   };
 
   const handleSaveSuccess = async (serverData, serverId = null) => {

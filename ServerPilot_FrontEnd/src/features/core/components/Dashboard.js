@@ -56,7 +56,7 @@ export default function Dashboard({ children, toggleTheme, currentThemeMode, ove
       info: 'info.main',
       success: 'success.main',
     };
-    const sx = { color: (theme) => theme.palette?.[severity] ? theme.palette[severity].main : theme.palette.info.main };
+    const sx = { color: colorMap[severity] || 'info.main' };
     const baseIconProps = { sx };
     const iconBySeverity = {
       error: <ErrorOutlineIcon {...baseIconProps} />,
