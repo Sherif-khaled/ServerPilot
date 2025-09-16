@@ -20,12 +20,12 @@ class CryptoEnvelopeTests(TestCase):
     def test_encrypt_decrypt_roundtrip_utf8(self):
         plaintext = b"myS3cretP@ssw0rd"
         blob = encrypt_secret(plaintext)
-        assert set(blob.keys()) == {"ciphertext", "nonce", "encrypted_dek"}
+        self.assertSetEqual(set(blob.keys()), {"ciphertext", "nonce", "encrypted_dek"})
         out = decrypt_secret(blob)
-        assert out == plaintext
+        self.assertEqual(out, plaintext)
 
     def test_encrypt_decrypt_roundtrip_binary(self):
         plaintext = bytes(range(0, 256))
         blob = encrypt_secret(plaintext)
         out = decrypt_secret(blob)
-        assert out == plaintext
+        self.assertEqual(out, plaintext)

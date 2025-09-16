@@ -1,4 +1,5 @@
 import random
+import secrets
 import string
 import logging
 from datetime import datetime
@@ -1026,7 +1027,7 @@ class RecoveryCodeViewSet(viewsets.GenericViewSet):
 
             WebAuthnKey.objects.create(
                 user=user,
-                name=request.data.get('name', f'Key-{random.randint(1000, 9999)}'),
+                name=request.data.get('name', f"Key-{secrets.randbelow(9000) + 1000}"),
                 credential_id=verification.credential_id,
                 public_key=verification.credential_public_key,
                 sign_count=verification.sign_count,

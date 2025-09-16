@@ -1,6 +1,6 @@
 import logging
 import os
-import subprocess
+import subprocess  # nosec B404 - controlled, shell is not used, args derived from trusted settings
 from datetime import datetime
 
 from celery import shared_task
@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 def backup_db():
     """
     A Celery task to back up the PostgreSQL database using pg_dump.
+    Security notes:
+    - Command arguments are constructed from Django settings (trusted), not user input.
+    - We pass a list of arguments with shell disabled (default), mitigating injection risk.
+    - Environment variables are set explicitly for pg_dump.
     """
     db_settings = settings.DATABASES['default']
     db_name = db_settings['NAME']
@@ -47,7 +51,7 @@ def backup_db():
         env['PGPASSWORD'] = db_password
 
         # Execute the command
-        process = subprocess.run(
+        process = subprocess.run(  # nosec B603 - no shell; args from trusted settings
             command,
             check=True,
             capture_output=True,

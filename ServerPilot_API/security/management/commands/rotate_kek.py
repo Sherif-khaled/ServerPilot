@@ -31,15 +31,17 @@ def _decode_key(value: str) -> bytes:
         k = base64.b64decode(value, validate=True)
         if len(k) in (16, 24, 32):
             return k
-    except Exception:
-        pass
+    except (binascii.Error, ValueError):
+        # Not valid base64; try next format
+        ...
     # Try hex
     try:
         k = binascii.unhexlify(value)
         if len(k) in (16, 24, 32):
             return k
-    except Exception:
-        pass
+    except (binascii.Error, ValueError):
+        # Not valid hex; fallback below
+        ...
     # Fallback: raw bytes
     k = value.encode("utf-8")
     if len(k) in (16, 24, 32):

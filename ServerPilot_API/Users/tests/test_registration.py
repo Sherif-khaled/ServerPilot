@@ -1,4 +1,5 @@
 import pytest
+import secrets
 from django.urls import reverse
 from rest_framework.test import APIClient
 from ServerPilot_API.Users.models import CustomUser
@@ -11,7 +12,7 @@ def test_register_and_activate():
     data = {
         'username': 'testuser',
         'email': 'test@example.com',
-        'password': 'testpass123',  # Simple password for testing
+        'password': secrets.token_urlsafe(12),  # Random test password
         'first_name': 'Test',
         'last_name': 'User'
     }
@@ -20,6 +21,6 @@ def test_register_and_activate():
     with patch('django.contrib.auth.password_validation.validate_password', return_value=None):
         response = client.post(url, data)
         
-    assert response.status_code == 201
+    assert response.status_code == 201  # nosec
     user = CustomUser.objects.get(username='testuser')
-    assert user.is_active
+    assert user.is_active  # nosec

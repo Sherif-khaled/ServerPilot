@@ -1,5 +1,6 @@
 import pytest
 import uuid
+import secrets
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -22,9 +23,10 @@ class ServerAPITests(APITestCase):
         test_prefix = f'test_{uuid.uuid4().hex[:8]}_'
         
         # Create test user and customer
+        self.user_password = secrets.token_urlsafe(16)
         self.user = User.objects.create_user(
             username=f'{test_prefix}user',
-            password='testpass123',
+            password=self.user_password,
             email=f'{test_prefix}user@example.com'
         )
         self.customer = Customer.objects.create(
@@ -35,9 +37,10 @@ class ServerAPITests(APITestCase):
         )
         
         # Create another user and customer for permission tests
+        self.other_user_password = secrets.token_urlsafe(16)
         self.other_user = User.objects.create_user(
             username=f'{test_prefix}other_user',
-            password='otherpass123',
+            password=self.other_user_password,
             email=f'{test_prefix}other@example.com'
         )
         self.other_customer = Customer.objects.create(
@@ -67,13 +70,14 @@ class ServerAPITests(APITestCase):
         # Ensure we start with clean database
         self.assertEqual(Server.objects.count(), 0)
         
+        self.non_root_password = secrets.token_urlsafe(12)
         data = {
             'server_name': 'My Test Server',
             'server_ip': '192.168.1.100',
             'ssh_port': 2222,
             'login_using_root': False,
             'ssh_user': 'testsshuser',
-            'ssh_password': 'sshpassword123'
+            'ssh_password': self.non_root_password
         }
         response = self.client.post(self.servers_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -140,12 +144,13 @@ class ServerAPITests(APITestCase):
         """
         Test creation fails if non-root login and ssh_user is 'root'.
         """
+        self.some_password = secrets.token_urlsafe(12)
         data = {
             'server_name': 'Fail Server',
             'server_ip': '192.168.1.102',
             'login_using_root': False,
             'ssh_user': 'root',
-            'ssh_password': 'somepassword'
+            'ssh_password': self.some_password
         }
         response = self.client.post(self.servers_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -182,10 +187,13 @@ class ServerAPITests(APITestCase):
         """
         Ensure we can list servers for a specific customer.
         """
-        Server.objects.create(customer=self.customer, server_name='Server A', server_ip='10.0.0.1', ssh_user='user_a', ssh_password='pw_a')
-        Server.objects.create(customer=self.customer, server_name='Server B', server_ip='10.0.0.2', ssh_user='user_b', ssh_password='pw_b')
+        pw_a = secrets.token_urlsafe(8)
+        pw_b = secrets.token_urlsafe(8)
+        Server.objects.create(customer=self.customer, server_name='Server A', server_ip='10.0.0.1', ssh_user='user_a', ssh_password=pw_a)
+        Server.objects.create(customer=self.customer, server_name='Server B', server_ip='10.0.0.2', ssh_user='user_b', ssh_password=pw_b)
         # Server for another customer, should not be listed
-        Server.objects.create(customer=self.other_customer, server_name='Server C', server_ip='10.0.0.3', ssh_user='user_c', ssh_password='pw_c')
+        pw_c = secrets.token_urlsafe(8)
+        Server.objects.create(customer=self.other_customer, server_name='Server C', server_ip='10.0.0.3', ssh_user='user_c', ssh_password=pw_c)
 
         response = self.client.get(self.servers_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -199,9 +207,10 @@ class ServerAPITests(APITestCase):
         """
         Ensure we can retrieve a specific server and passwords are not exposed.
         """
+        root_password = secrets.token_urlsafe(12)
         server = Server.objects.create(
             customer=self.customer, server_name='Detail Test Server', server_ip='10.0.0.5',
-            login_using_root=True, ssh_root_password='rootpassword', ssh_key='akey'
+            login_using_root=True, ssh_root_password=root_password, ssh_key='akey'
         )
         detail_url = reverse('customer-servers-detail', kwargs={'customer_pk': self.customer.pk, 'pk': server.pk})
         
@@ -216,9 +225,10 @@ class ServerAPITests(APITestCase):
         """
         Test partially updating a server (e.g., name and login type).
         """
+        old_password = secrets.token_urlsafe(12)
         server = Server.objects.create(
             customer=self.customer, server_name='Initial Name', server_ip='10.0.0.6',
-            login_using_root=False, ssh_user='olduser', ssh_password='oldpassword'
+            login_using_root=False, ssh_user='olduser', ssh_password=old_password
         )
         detail_url = reverse('customer-servers-detail', kwargs={'customer_pk': self.customer.pk, 'pk': server.pk})
         
@@ -240,7 +250,8 @@ class ServerAPITests(APITestCase):
         """
         Test deleting a server.
         """
-        server = Server.objects.create(customer=self.customer, server_name='To Delete', server_ip='10.0.0.7', ssh_user='deluser', ssh_password='delpw')
+        del_pw = secrets.token_urlsafe(8)
+        server = Server.objects.create(customer=self.customer, server_name='To Delete', server_ip='10.0.0.7', ssh_user='deluser', ssh_password=del_pw)
         detail_url = reverse('customer-servers-detail', kwargs={'customer_pk': self.customer.pk, 'pk': server.pk})
         
         response = self.client.delete(detail_url)

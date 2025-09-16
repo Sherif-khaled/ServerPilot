@@ -34,7 +34,7 @@ async def test_ssh_connection():
             print("\nMemory Usage:")
             print(result.stdout)
             
-            assert True
+            assert True  # nosec
             
     except Exception as e:
         print(f"\n✗ SSH Connection failed: {str(e)}")

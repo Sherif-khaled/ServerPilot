@@ -1,5 +1,6 @@
 import pytest
 import uuid
+import secrets
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -13,24 +14,27 @@ User = get_user_model()
 class ServerCredentialsTests(APITestCase):
     def setUp(self):
         # Create a user with unique credentials
+        self._user_password = secrets.token_urlsafe(16)
         self.user = User.objects.create_user(
             username=f'testuser_{uuid.uuid4().hex[:8]}',
             email=f'test_{uuid.uuid4().hex[:8]}@example.com',
-            password='testpassword123'
+            password=self._user_password
         )
         
         # Create another user for permission tests
+        self._other_user_password = secrets.token_urlsafe(16)
         self.other_user = User.objects.create_user(
             username=f'otheruser_{uuid.uuid4().hex[:8]}',
             email=f'other_{uuid.uuid4().hex[:8]}@example.com',
-            password='otherpassword123'
+            password=self._other_user_password
         )
 
         # Create an admin user
+        self._admin_password = secrets.token_urlsafe(16)
         self.admin_user = User.objects.create_superuser(
             username=f'admin_{uuid.uuid4().hex[:8]}',
             email=f'admin_{uuid.uuid4().hex[:8]}@example.com',
-            password='adminpassword123'
+            password=self._admin_password
         )
 
         # Create a customer type
@@ -55,6 +59,7 @@ class ServerCredentialsTests(APITestCase):
         )
         
         # Create a server for the customer
+        server_pw = secrets.token_urlsafe(12)
         self.server = Server.objects.create(
             customer=self.customer,
             server_name='Test Server',
@@ -62,7 +67,7 @@ class ServerCredentialsTests(APITestCase):
             ssh_port=22,
             login_using_root=False,
             ssh_user='testuser',
-            ssh_password='testpass123',
+            ssh_password=server_pw,
             ssh_key=None
         )
         

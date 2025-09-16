@@ -3,6 +3,7 @@ import time
 import pyotp
 import base64
 import re
+import secrets
 from urllib.parse import parse_qs, urlparse
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -12,22 +13,24 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 @pytest.mark.django_db
 def test_enable_mfa():
     client = APIClient()
-    user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='testpass123', is_active=True)
+    pw = secrets.token_urlsafe(12)
+    user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password=pw, is_active=True)
     client.force_login(user)
     url = reverse('users:mfa-setup')  # Correctly namespaced URL
     response = client.post(url)
-    assert response.status_code == 200
+    assert response.status_code == 200  # nosec
 
 @pytest.mark.django_db
 def test_verify_mfa_setup():
     client = APIClient()
-    user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='testpass123', is_active=True)
+    pw = secrets.token_urlsafe(12)
+    user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password=pw, is_active=True)
     client.force_login(user)
 
     # 1. Setup MFA to get the secret key
     setup_url = reverse('users:mfa-setup')
     setup_response = client.post(setup_url)
-    assert setup_response.status_code == 200
+    assert setup_response.status_code == 200  # nosec
     provisioning_uri = setup_response.data.get('provisioning_uri')
     device_id = setup_response.data.get('device_id')
 
@@ -47,11 +50,11 @@ def test_verify_mfa_setup():
     verify_response = client.post(verify_url, verify_data)
 
     # 3. Assert that verification was successful
-    assert verify_response.status_code == 200
-    assert verify_response.data['status'] == 'MFA enabled successfully.'
+    assert verify_response.status_code == 200  # nosec
+    assert verify_response.data['status'] == 'MFA enabled successfully.'  # nosec
 
     # 4. Check that the user and device are updated
     user.refresh_from_db()
-    assert user.mfa_enabled is True
+    assert user.mfa_enabled is True  # nosec
     device = TOTPDevice.objects.get(id=device_id)
-    assert device.confirmed is True
+    assert device.confirmed is True  # nosec

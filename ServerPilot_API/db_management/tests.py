@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 from unittest.mock import patch, MagicMock
+import secrets
 from django.urls import reverse
 from django.test import override_settings
 from rest_framework import status
@@ -16,8 +17,9 @@ original_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.absp
 class DBManagementTests(APITestCase):
 
     def setUp(self):
-        self.user = CustomUser.objects.create_user(username='testuser', password='testpassword')
-        self.client.login(username='testuser', password='testpassword')
+        self._pw = secrets.token_urlsafe(12)
+        self.user = CustomUser.objects.create_user(username='testuser', password=self._pw)
+        self.client.login(username='testuser', password=self._pw)
         # Use the temporary directory from override_settings
         from django.conf import settings
         self.backup_dir = os.path.join(settings.BASE_DIR, 'backups')

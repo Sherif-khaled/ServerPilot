@@ -113,11 +113,11 @@ class Server(models.Model):
             try:
                 transport.close()
             except Exception:
-                pass
+                logger.error("Failed to close transport", exc_info=True)
             try:
                 sock.close()
             except Exception:
-                pass
+                logger.error("Failed to close socket", exc_info=True)
 
     def _verify_or_alert_fingerprint(self, timeout=10):
         """
@@ -142,7 +142,7 @@ class Server(models.Model):
                 return False, fps, key
         return True, fps, key
 
-    def connect_ssh(self, command='ls -la', timeout=10):
+    def connect_ssh(self, command='ls -la', timeout=10, trusted=False):
         """
         Attempts to connect to the server via SSH and execute a command.
         Returns a tuple: (success: bool, output: str, exit_status: int)
@@ -259,18 +259,27 @@ class Server(models.Model):
             connection_args['timeout'] = timeout
             client.connect(**connection_args)
 
+            # --- Command safety validation --- #
+            # To mitigate shell injection risks flagged by Bandit B601, we restrict commands
+            # unless they are explicitly marked as trusted (internal, framework-generated).
+            # Disallow common shell metacharacters for untrusted invocations.
+            if not trusted:
+                dangerous_tokens = [';', '&&', '||', '|', '$(', '`', '>', '<']
+                if any(tok in command for tok in dangerous_tokens):
+                    return False, "Command rejected due to unsafe characters. Use a trusted internal call if necessary.", -1
+
             # --- Sudo Handling --- #
             # If the command uses sudo, we need to handle it specially.
             if command.strip().startswith('sudo'):
                 # Use -S to read password from stdin. get_pty is often needed for sudo.
-                stdin, stdout, stderr = client.exec_command(command, timeout=timeout, get_pty=True)
+                stdin, stdout, stderr = client.exec_command(command, timeout=timeout, get_pty=True)  # nosec B601 - validated above
                 # We need to write the password to stdin for sudo.
                 # Note: This assumes the ssh user's password is the sudo password.
                 if password_to_use:
                     stdin.write(password_to_use + '\n')
                     stdin.flush()
             else:
-                stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+                stdin, stdout, stderr = client.exec_command(command, timeout=timeout)  # nosec B601 - validated above
             output = stdout.read().decode('utf-8', errors='replace').strip()
             error_output = stderr.read().decode('utf-8', errors='replace').strip()
             
@@ -374,7 +383,7 @@ class Server(models.Model):
         command = f"echo '{username_to_change}:{escaped_password}' | {chpasswd_prefix}chpasswd"
 
         # connect_ssh returns (success: bool, output: str, exit_status: int)
-        success, output, exit_status = self.connect_ssh(command=command)
+        success, output, exit_status = self.connect_ssh(command=command, trusted=True)
 
         if success and exit_status == 0:
             return True, "Password changed successfully."

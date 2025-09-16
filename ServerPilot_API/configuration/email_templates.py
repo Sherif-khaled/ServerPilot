@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 from .models import Favicon
 
@@ -9,8 +10,8 @@ def get_logo_url():
         if favicon.icon:
             # Return relative URL since this will be used in email context
             return favicon.icon.url
-    except:
-        pass
+    except Exception as e:
+        logging.getLogger(__name__).warning("Failed to load favicon for email templates: %s", e)
     return None
 
 

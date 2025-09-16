@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from ServerPilot_API.Customers.models import Customer
 from ServerPilot_API.Servers.models import Server
 import uuid
+import secrets
 
 User = get_user_model()
 
@@ -17,9 +18,10 @@ async def create_test_user() -> User:
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
+    password = secrets.token_urlsafe(16)
     return await sync_to_async(User.objects.create_user)(
         username=f'testuser_{uuid.uuid4().hex[:8]}',
-        password='testpass123',
+        password=password,
         email=f'test_{uuid.uuid4().hex[:8]}@example.com'
     )
 
@@ -40,7 +42,7 @@ async def create_test_server(customer: Customer) -> Server:
         server_name='Test Server',
         server_ip='127.0.0.1',
         ssh_user='testuser',
-        ssh_password='testpass123'
+        ssh_password=secrets.token_urlsafe(12)
     )
 
 @pytest.mark.django_db
@@ -91,9 +93,9 @@ Filesystem     1K-blocks     Used Available Use% Mounted on
     response = await client.get(url)
     
     # Verify successful response
-    assert response.status_code == status.HTTP_200_OK
-    assert 'os' in response.json()
-    assert 'cpu_usage' in response.json()
+    assert response.status_code == status.HTTP_200_OK  # nosec B101
+    assert 'os' in response.json()  # nosec B101
+    assert 'cpu_usage' in response.json()  # nosec B101
 
 @pytest.mark.django_db
 @pytest.mark.asyncio
@@ -120,6 +122,6 @@ async def test_get_server_info_permission_denied():
     response = await client.get(url)
     
     # Verify access is denied
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert 'error' in response.json()
-    assert 'permission' in response.json()['error'].lower()
+    assert response.status_code == status.HTTP_403_FORBIDDEN  # nosec B101
+    assert 'error' in response.json()  # nosec B101
+    assert 'permission' in response.json()['error'].lower()  # nosec B101

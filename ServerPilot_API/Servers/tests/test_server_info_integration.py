@@ -84,29 +84,29 @@ async def test_get_server_info_live_connection(live_server_data, settings):
     print(f"Response Status: {response.status_code}")
     print(f"Response JSON: {response.json()}")
 
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_200_OK  # nosec
     data = response.json()
 
     # Check for the presence of basic metrics
     required_keys = ['os', 'cpu_usage', 'memory', 'disks']
     for key in required_keys:
-        assert key in data, f"Missing expected key: {key}"
+        assert key in data, f"Missing expected key: {key}"  # nosec
     
     # Verify OS contains Linux
-    assert 'Linux' in data['os'], "Expected Linux OS"
+    assert 'Linux' in data['os'], "Expected Linux OS"  # nosec
     
     # Verify CPU usage is numeric
-    assert isinstance(float(data['cpu_usage']), (int, float)), "CPU usage should be numeric"
+    assert isinstance(float(data['cpu_usage']), (int, float)), "CPU usage should be numeric"  # nosec
     
     # Verify memory structure
     memory_keys = ['total_gb', 'used_gb', 'available_gb']
     for key in memory_keys:
-        assert key in data['memory'], f"Missing memory key: {key}"
-        assert isinstance(data['memory'][key], (int, float)), f"Memory {key} should be numeric"
+        assert key in data['memory'], f"Missing memory key: {key}"  # nosec
+        assert isinstance(data['memory'][key], (int, float)), f"Memory {key} should be numeric"  # nosec
     
     # Verify disks structure
-    assert isinstance(data['disks'], list), "Disks should be a list"
-    assert len(data['disks']) > 0, "Expected at least one disk"
+    assert isinstance(data['disks'], list), "Disks should be a list"  # nosec
+    assert len(data['disks']) > 0, "Expected at least one disk"  # nosec
     disk_keys = ['filesystem', 'total_gb', 'used_gb', 'available_gb', 'mountpoint']
     for key in disk_keys:
-        assert key in data['disks'][0], f"Missing disk key: {key}"
+        assert key in data['disks'][0], f"Missing disk key: {key}"  # nosec
