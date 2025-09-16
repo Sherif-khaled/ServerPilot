@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
-from ..models import SecurityRisk
+from ServerPilot_API.security.models import SecurityRisk
 
 
 class SecurityRiskAPITests(APITestCase):

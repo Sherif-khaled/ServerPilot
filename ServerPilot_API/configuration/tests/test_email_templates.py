@@ -9,13 +9,15 @@ import sys
 import django
 
 # Add the project root to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
 
 # Set up Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'serverpilot_project.settings')
 django.setup()
 
-from configuration.email_templates import (
+from ServerPilot_API.configuration.email_templates import (
     get_forgot_password_template,
     get_signup_template,
     get_verification_template

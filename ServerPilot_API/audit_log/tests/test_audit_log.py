@@ -1,8 +1,8 @@
 import secrets
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from .models import Log
-from .services import log_action
+from ServerPilot_API.audit_log.models import Log
+from ServerPilot_API.audit_log.services import log_action
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
