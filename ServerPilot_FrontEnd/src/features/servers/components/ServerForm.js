@@ -48,8 +48,7 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
           server_name: response.data.server_name || '',
           server_ip: response.data.server_ip || '',
           ssh_port: response.data.ssh_port || 22,
-          login_using_root: response.data.login_using_root || false,
-          ssh_user: response.data.ssh_user || '',
+
           is_active: response.data.is_active === undefined ? true : response.data.is_active,
         });
       } catch (err) {
@@ -139,9 +138,8 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
       server_name: formData.server_name,
       server_ip: formData.server_ip,
       ssh_port: formData.ssh_port,
-      login_using_root: formData.login_using_root,
-      ssh_user: formData.login_using_root ? null : formData.ssh_user,
-      is_active: formData.is_active
+      // Do not send login_using_root/ssh_user; credentials are handled in Credentials tab
+      is_active: formData.is_active,
     };
     
     // Call onSave only in edit mode to avoid bypassing TOFU create flow
@@ -278,40 +276,6 @@ const ServerForm = ({ open, onClose, customerId, serverData, onSave }) => {
               />
             </Box>
 
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={formData.login_using_root} 
-                  onChange={handleChange} 
-                  name="login_using_root"
-                  disabled={loading}
-                  sx={{ ...checkBoxSx}} 
-                />
-              }
-              label={t('servers.form.loginAsRoot')}
-              sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 1 }}
-            />
-
-            {!formData.login_using_root && (
-              <TextField
-                fullWidth
-                id="ssh_user"
-                label={t('servers.form.sshUser')}
-                name="ssh_user"
-                value={formData.ssh_user}
-                onChange={handleChange}
-                error={!!validationError.ssh_user}
-                helperText={validationError.ssh_user || ''}
-                required={!formData.login_using_root}
-                sx={textFieldSx}
-                disabled={loading}
-              />
-            )}
-
-            {/* Root password and private key fields removed. */}
-
-            {/* Private key input removed. */}
-            {/* After user verifies in dialog, show read-only fingerprint textbox */}
             {!isEditMode && showFingerprintField && (
               <TextField
                 fullWidth
