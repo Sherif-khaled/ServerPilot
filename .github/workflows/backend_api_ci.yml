@@ -86,8 +86,22 @@ jobs:
         pytest ServerPilot_API/ -v
 
         echo "Stopping services..."
-        kill $WEBSOCKET_PID
-        kill $CELERY_PID
+        # Gracefully stop background processes if still running; do not fail if already exited
+        if [ -n "${WEBSOCKET_PID:-}" ] && kill -0 "$WEBSOCKET_PID" 2>/dev/null; then
+          kill "$WEBSOCKET_PID" || true
+        else
+          echo "WebSocket process $WEBSOCKET_PID not running"
+        fi
+
+        if [ -n "${CELERY_PID:-}" ] && kill -0 "$CELERY_PID" 2>/dev/null; then
+          kill "$CELERY_PID" || true
+        else
+          echo "Celery process $CELERY_PID not running"
+        fi
+
+        # Optionally wait to ensure clean shutdown (non-fatal)
+        wait "$WEBSOCKET_PID" 2>/dev/null || true
+        wait "$CELERY_PID" 2>/dev/null || true
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
