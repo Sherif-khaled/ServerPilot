@@ -1,3 +1,4 @@
+import secrets
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -8,8 +9,10 @@ class CustomerAPITests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         # Create user once for all tests in this class
-        cls.user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='password123')
-        cls.staff_user = CustomUser.objects.create_user(username='staffuser', email='staff.api@example.com', password='password123', is_staff=True)
+        cls.password = secrets.token_urlsafe(16)
+        cls.staff_password = secrets.token_urlsafe(16)
+        cls.user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password=cls.password)
+        cls.staff_user = CustomUser.objects.create_user(username='staffuser', email='staff.api@example.com', password=cls.staff_password, is_staff=True)
 
         # Create customer types once
         # Ensure unique names to avoid conflicts if tests run multiple times or with existing data
@@ -21,7 +24,7 @@ class CustomerAPITests(APITestCase):
 
     def setUp(self):
         # Log in the default test user for each test
-        self.client.login(username='testuser', password='password123')
+        self.client.login(username='testuser', password=self.password)
         # Clean up customers before each test to ensure isolation
         Customer.objects.all().delete()
 
@@ -83,7 +86,7 @@ class CustomerAPITests(APITestCase):
             email='list.test2.api@example.com',
             customer_type=self.customer_type_company
         )
-        another_user = CustomUser.objects.create_user(username='anotheruser_listtest', email='another_listtest.api@example.com', password='password123')
+        another_user = CustomUser.objects.create_user(username='anotheruser_listtest', email='another_listtest.api@example.com', password=self.password)
         Customer.objects.create(
             owner=another_user,
             first_name='OtherListTest',
@@ -437,7 +440,7 @@ class CustomerAPITests(APITestCase):
 
     def test_customer_access_non_owner(self):
         """Test that a non-owner user cannot access/modify another user's customer."""
-        another_user = CustomUser.objects.create_user(username='otheruser_access', email='other_access.api@example.com', password='password123')
+        another_user = CustomUser.objects.create_user(username='otheruser_access', email='other_access.api@example.com', password=self.password)
         other_customer = Customer.objects.create(
             owner=another_user,
             first_name='OtherOwner',
@@ -464,10 +467,10 @@ class CustomerAPITests(APITestCase):
     def test_customer_access_by_staff_user(self):
         """Test that a staff user can access/list all customers."""
         self.client.logout()
-        self.client.login(username='staffuser', password='password123')
+        self.client.login(username='staffuser', password=self.staff_password)
 
         cust1 = Customer.objects.create(owner=self.user, first_name='UserCust', last_name='A', email='usercust.api@example.com', customer_type=self.customer_type_individual)
-        another_user_for_staff = CustomUser.objects.create_user(username='anotheruser_stafftest', email='another_stafftest.api@example.com', password='password123')
+        another_user_for_staff = CustomUser.objects.create_user(username='anotheruser_stafftest', email='another_stafftest.api@example.com', password=self.password)
         cust2 = Customer.objects.create(owner=another_user_for_staff, first_name='OtherCust', last_name='B', email='othercust_stafftest.api@example.com', customer_type=self.customer_type_company, company_name='Staff Access Co.', delegated_person_name='Delegate Staff')
 
         response_list = self.client.get(self.customers_url, format='json')

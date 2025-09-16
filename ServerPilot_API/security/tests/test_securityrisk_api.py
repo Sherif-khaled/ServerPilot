@@ -1,3 +1,4 @@
+import secrets
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
@@ -11,8 +12,9 @@ class SecurityRiskAPITests(APITestCase):
 
     def setUp(self):
         self.User = get_user_model()
+        admin_password = secrets.token_urlsafe(16)
         self.admin_user = self.User.objects.create_superuser(
-            username="admin", email="admin@example.com", password="password123"
+            username="admin", email="admin@example.com", password=admin_password
         )
         self.client: APIClient = APIClient()
         self.client.force_authenticate(user=self.admin_user)

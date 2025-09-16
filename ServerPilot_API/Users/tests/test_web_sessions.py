@@ -1,3 +1,4 @@
+import secrets
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -7,10 +8,11 @@ class WebSessionTests(APITestCase):
 
     def setUp(self):
         # Create a user
-        self.user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password='password123')
+        self.password = secrets.token_urlsafe(16)
+        self.user = CustomUser.objects.create_user(username='testuser', email='test@example.com', password=self.password)
         
         # Log in the user to create a session
-        self.client.login(username='testuser', password='password123')
+        self.client.login(username='testuser', password=self.password)
         
         # Get the session key
         self.session_key = self.client.session.session_key

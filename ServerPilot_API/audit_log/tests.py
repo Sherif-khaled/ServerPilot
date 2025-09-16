@@ -1,3 +1,4 @@
+import secrets
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from .models import Log
@@ -13,10 +14,11 @@ User = get_user_model()
 class AuditLogServiceTest(TestCase):
     def setUp(self):
         """Set up a test user for the tests."""
+        self._password = secrets.token_urlsafe(16)
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
-            password='password123'
+            password=self._password
         )
 
     def test_log_action_creates_log_entry(self):
@@ -34,9 +36,12 @@ class AuditLogServiceTest(TestCase):
 
 class AuditLogAPIViewTest(APITestCase):
     def setUp(self):
-        self.admin_user = User.objects.create_superuser('admin', 'admin@example.com', 'password123')
-        self.user1 = User.objects.create_user('user1', 'user1@example.com', 'password123')
-        self.user2 = User.objects.create_user('user2', 'user2@example.com', 'password123')
+        admin_password = secrets.token_urlsafe(16)
+        user1_password = secrets.token_urlsafe(16)
+        user2_password = secrets.token_urlsafe(16)
+        self.admin_user = User.objects.create_superuser('admin', 'admin@example.com', admin_password)
+        self.user1 = User.objects.create_user('user1', 'user1@example.com', user1_password)
+        self.user2 = User.objects.create_user('user2', 'user2@example.com', user2_password)
 
         # Create logs with different users and timestamps
         now = timezone.now()
