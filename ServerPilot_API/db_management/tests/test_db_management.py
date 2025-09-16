@@ -1,124 +1,251 @@
+import io
 import os
-import shutil
-import tempfile
-from unittest.mock import patch, MagicMock
-import secrets
+import re
+import pytest
 from django.urls import reverse
-from django.test import override_settings
-from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient
+from django.conf import settings
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
-from ServerPilot_API.Users.models import CustomUser
 
-# Get the original BASE_DIR
-original_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+pytestmark = pytest.mark.django_db
 
-@override_settings(BASE_DIR=tempfile.mkdtemp())
-class DBManagementTests(APITestCase):
 
-    def setUp(self):
-        self._pw = secrets.token_urlsafe(12)
-        self.user = CustomUser.objects.create_user(username='testuser', password=self._pw)
-        self.client.login(username='testuser', password=self._pw)
-        # Use the temporary directory from override_settings
-        from django.conf import settings
-        self.backup_dir = os.path.join(settings.BASE_DIR, 'backups')
-        os.makedirs(self.backup_dir, exist_ok=True)
+@pytest.fixture
+def api_client():
+    return APIClient()
 
-    def tearDown(self):
-        from django.conf import settings
-        shutil.rmtree(settings.BASE_DIR)
 
-    @patch('db_management.views.backup_db.delay')
-    def test_trigger_backup_now(self, mock_backup_db_delay):
-        """Ensure we can trigger a database backup."""
-        mock_task = MagicMock()
-        mock_task.id = 'test-task-id'
-        mock_backup_db_delay.return_value = mock_task
+@pytest.fixture
+def user(db, django_user_model):
+    return django_user_model.objects.create_user(
+        username="tester",
+        email="tester@example.com",
+        password="pass",
+        is_staff=False,
+    )
 
-        url = reverse('db-backup')
-        response = self.client.post(url)
 
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
-        self.assertEqual(response.data['message'], 'Database backup process started.')
-        self.assertEqual(response.data['task_id'], 'test-task-id')
-        mock_backup_db_delay.assert_called_once()
+def auth(client: APIClient, user):
+    client.force_authenticate(user=user)
+    return client
 
-    def test_list_backups(self):
-        """Ensure we can list available backups."""
-        with open(os.path.join(self.backup_dir, 'backup_2023-01-01_12-00-00.sqlc'), 'w') as f:
-            f.write('dummy content')
 
-        url = reverse('db-backups-list')
-        response = self.client.get(url)
+@pytest.fixture
+def base_dir_with_backups(tmp_path, monkeypatch):
+    """
+    Points settings.BASE_DIR to a temp dir and returns the backup dir path.
+    """
+    monkeypatch.setattr(settings, "BASE_DIR", tmp_path)
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    return backup_dir
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['filename'], 'backup_2023-01-01_12-00-00.sqlc')
 
-    def test_download_backup(self):
-        """Ensure we can download a valid backup file."""
-        filename = 'backup_2023-01-01_12-00-00.sqlc'
-        with open(os.path.join(self.backup_dir, filename), 'w') as f:
-            f.write('dummy backup data')
+# -----------------------
+# Backup listing endpoint
+# -----------------------
 
-        url = reverse('db-backup-download', kwargs={'filename': filename})
-        response = self.client.get(url)
+def test_list_backups_empty_dir(api_client, user, base_dir_with_backups):
+    url = reverse("db-backups-list")
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 200
+    assert res.data == []
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.get('Content-Disposition'), f'attachment; filename="{filename}"')
 
-    def test_download_backup_not_found(self):
-        """Ensure a 404 is returned for a non-existent backup file."""
-        filename = 'backup_2023-01-01_12-00-00.sqlc'
-        url = reverse('db-backup-download', kwargs={'filename': filename})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+def test_list_backups_filters_sqlc_and_returns_metadata(api_client, user, base_dir_with_backups):
+    # Create some files
+    valid1 = base_dir_with_backups / "db_backup_2025-09-16_10-00-00.sqlc"
+    valid1.write_bytes(b"dummy1")
+    valid2 = base_dir_with_backups / "db_backup_2025-09-16_11-00-00.sqlc"
+    valid2.write_bytes(b"dummy2")
+    ignored = base_dir_with_backups / "readme.txt"
+    ignored.write_text("ignore me")
 
-    def test_download_backup_invalid_filename(self):
-        """Ensure that invalid filenames are rejected."""
-        # We construct the URL manually to bypass the URL pattern validation in reverse()
-        url = '/api/db/backups/download/../etc/passwd/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    url = reverse("db-backups-list")
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 200
+    # Only .sqlc files should be included
+    filenames = {item["filename"] for item in res.data}
+    assert "db_backup_2025-09-16_10-00-00.sqlc" in filenames
+    assert "db_backup_2025-09-16_11-00-00.sqlc" in filenames
+    assert "readme.txt" not in filenames
+    # Check presence of size and created_at metadata
+    for item in res.data:
+        assert "size" in item
+        assert "created_at" in item
 
-    def test_get_backup_schedule(self):
-        """Ensure we can retrieve the backup schedule status."""
-        url = reverse('db-backup-schedule')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data['enabled'])
 
-    def test_enable_backup_schedule(self):
-        """Ensure we can enable and configure the backup schedule."""
-        url = reverse('db-backup-schedule')
-        data = {'enabled': True, 'hour': 3, 'minute': 30}
-        response = self.client.post(url, data, format='json')
+# -----------------------
+# Backup download endpoint
+# -----------------------
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'Backup schedule enabled successfully.')
+def test_download_backup_happy_path(api_client, user, base_dir_with_backups):
+    name = "mydb_backup_2025-09-16_12-00-00.sqlc"
+    fp = base_dir_with_backups / name
+    fp.write_bytes(b"content")
 
-        task = PeriodicTask.objects.get(name='daily-database-backup')
-        self.assertTrue(task.enabled)
-        self.assertEqual(task.crontab.hour, '3')
-        self.assertEqual(task.crontab.minute, '30')
+    url = reverse("db-backup-download", args=[name])
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 200
+    # FileResponse with headers
+    assert res["Content-Disposition"] == f'attachment; filename="{name}"'
+    assert res["Content-Type"] == "application/octet-stream"
+    # Stream the content
+    content = b"".join(res.streaming_content)
+    assert content == b"content"
 
-    def test_disable_backup_schedule(self):
-        """Ensure we can disable the backup schedule."""
-        CrontabSchedule.objects.create(hour=2, minute=0)
-        PeriodicTask.objects.create(
-            name='daily-database-backup',
-            task='db_management.tasks.backup_db',
-            crontab=CrontabSchedule.objects.get(hour=2, minute=0),
-            enabled=True
-        )
 
-        url = reverse('db-backup-schedule')
-        data = {'enabled': False}
-        response = self.client.post(url, data, format='json')
+def test_download_backup_invalid_name_rejected(api_client, user, base_dir_with_backups):
+    # Name that doesn't match the strict pattern
+    bad_name = "escape.sqlc"
+    url = reverse("db-backup-download", args=[bad_name])
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 400
+    assert "Invalid filename format" in str(res.data)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'Backup schedule disabled successfully.')
 
-        task = PeriodicTask.objects.get(name='daily-database-backup')
-        self.assertFalse(task.enabled)
+def test_download_backup_missing_file_404(api_client, user, base_dir_with_backups):
+    name = "mydb_backup_2025-09-16_13-00-00.sqlc"
+    url = reverse("db-backup-download", args=[name])
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 404
+
+
+# -----------------------
+# Backup delete endpoint
+# -----------------------
+
+def test_delete_backup_happy_path(api_client, user, base_dir_with_backups):
+    name = "mydb_backup_2025-09-16_14-00-00.sqlc"
+    fp = base_dir_with_backups / name
+    fp.write_text("delete me")
+
+    url = reverse("db-backup-delete", args=[name])
+    res = auth(api_client, user).delete(url)
+    assert res.status_code == 200
+    assert "deleted successfully" in str(res.data).lower()
+    assert not fp.exists()
+
+
+def test_delete_backup_invalid_name_rejected(api_client, user, base_dir_with_backups):
+    bad_name = "evil.sqlc"
+    # Does not match the strict pattern
+    url = reverse("db-backup-delete", args=[bad_name])
+    res = auth(api_client, user).delete(url)
+    assert res.status_code == 400
+    assert "Invalid filename format" in str(res.data)
+
+
+def test_delete_backup_missing_file_404(api_client, user, base_dir_with_backups):
+    name = "mydb_backup_2025-09-16_15-00-00.sqlc"
+    url = reverse("db-backup-delete", args=[name])
+    res = auth(api_client, user).delete(url)
+    assert res.status_code == 404
+    assert "does not exist" in str(res.data)
+
+
+# -----------------------
+# Scheduling endpoint
+# -----------------------
+
+def test_get_schedule_when_not_configured_returns_disabled(api_client, user):
+    # Ensure no task exists
+    PeriodicTask.objects.filter(name="daily-database-backup").delete()
+    url = reverse("db-backup-schedule")
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 200
+    assert res.data == {"enabled": False}
+
+
+def test_enable_schedule_creates_or_updates_task(api_client, user):
+    url = reverse("db-backup-schedule")
+    payload = {"enabled": True, "hour": 3, "minute": 30}
+    res = auth(api_client, user).post(url, payload, format="json")
+    assert res.status_code == 200
+    assert "enabled successfully" in str(res.data).lower()
+
+    # Validate task exists and is enabled with correct crontab
+    task = PeriodicTask.objects.get(name="daily-database-backup")
+    assert task.enabled is True
+    assert task.task == "db_management.tasks.backup_db"
+    assert task.crontab is not None
+    assert task.crontab.hour == "3"
+    assert task.crontab.minute == "30"
+
+
+def test_disable_schedule_existing_task(api_client, user):
+    # Pre-create a task as enabled
+    crontab = CrontabSchedule.objects.create(minute="0", hour="2", day_of_week="*", day_of_month="*", month_of_year="*")
+    task = PeriodicTask.objects.create(
+        name="daily-database-backup",
+        task="db_management.tasks.backup_db",
+        crontab=crontab,
+        enabled=True,
+    )
+    url = reverse("db-backup-schedule")
+    payload = {"enabled": False}
+    res = auth(api_client, user).post(url, payload, format="json")
+    assert res.status_code == 200
+    assert "disabled successfully" in str(res.data).lower()
+    task.refresh_from_db()
+    assert task.enabled is False
+
+
+def test_disable_schedule_when_not_configured_returns_message(api_client, user):
+    PeriodicTask.objects.filter(name="daily-database-backup").delete()
+    url = reverse("db-backup-schedule")
+    payload = {"enabled": False}
+    res = auth(api_client, user).post(url, payload, format="json")
+    assert res.status_code == 200
+    assert "remains disabled" in str(res.data).lower()
+
+
+def test_schedule_requires_enabled_field(api_client, user):
+    url = reverse("db-backup-schedule")
+    res = auth(api_client, user).post(url, {}, format="json")
+    assert res.status_code == 400
+    assert "enabled" in str(res.data).lower()
+
+
+# -----------------------
+# Backup trigger endpoint
+# -----------------------
+
+@pytest.fixture
+def mock_delay(monkeypatch):
+    class DummyTask:
+        id = "task-123"
+
+    # Patch the Celery delay call
+    from ServerPilot_API.db_management import tasks as task_module
+    def fake_delay():
+        return DummyTask()
+
+    monkeypatch.setattr(task_module.backup_db, "delay", lambda: fake_delay())
+    return DummyTask
+
+
+def test_trigger_backup_returns_202_with_task_id(api_client, user, mock_delay):
+    url = reverse("db-backup")
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 202
+    assert "task_id" in res.data
+    assert res.data["task_id"] == "task-123"
+
+    # POST should behave the same
+    res2 = auth(api_client, user).post(url)
+    assert res2.status_code == 202
+    assert res2.data["task_id"] == "task-123"
+
+
+def test_trigger_backup_handles_task_error(api_client, user, monkeypatch):
+    # Make delay raise an exception
+    from ServerPilot_API.db_management import tasks as task_module
+    def boom():
+        raise RuntimeError("boom")
+    monkeypatch.setattr(task_module.backup_db, "delay", lambda: boom())
+
+    url = reverse("db-backup")
+    res = auth(api_client, user).get(url)
+    assert res.status_code == 500
+    assert "failed to start backup task" in str(res.data).lower()

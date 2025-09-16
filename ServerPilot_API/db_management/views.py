@@ -78,13 +78,14 @@ class DatabaseBackupDownloadView(APIView):
 
         if os.path.exists(file_path):
             try:
-                # Open file in binary mode and create FileResponse
-                with open(file_path, 'rb') as file:
-                    response = FileResponse(file, as_attachment=True)
-                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-                    response['Content-Type'] = 'application/octet-stream'
-                    response['Content-Length'] = os.path.getsize(file_path)
-                    return response
+                # Open file in binary mode and create FileResponse.
+                # Do NOT use a context manager here; the streaming response needs the file handle to remain open.
+                file = open(file_path, 'rb')
+                response = FileResponse(file, as_attachment=True)
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                response['Content-Type'] = 'application/octet-stream'
+                response['Content-Length'] = os.path.getsize(file_path)
+                return response
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
